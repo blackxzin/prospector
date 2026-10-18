@@ -1,0 +1,102 @@
+# Listas editáveis do prospector.
+
+# Franquias e redes grandes: leads com estes nomes são descartados.
+# A comparação ignora maiúsculas, acentos, espaços e pontuação
+# ("Smart Fit", "SmartFit" e "smart-fit" batem igual).
+franquias:
+  - Smart Fit
+  - Skyfit
+  - Bluefit
+  - Selfit
+  - Bodytech
+  - Panobianco
+  - Just Fit
+  - Pratique Fitness
+  - Bio Ritmo
+  - McDonald's
+  - Burger King
+  - Subway
+  - Habib's
+  - Bob's
+  - Giraffas
+  - KFC
+  - Pizza Hut
+  - Domino's
+  - Spoleto
+  - China in Box
+  - Outback
+  - Madero
+  - Jeronimo
+  - Coco Bambu
+  - Starbucks
+  - Cacau Show
+  - Kopenhagen
+  - Chiquinho Sorvetes
+  - Oakberry
+  - Boticário
+  - O Boticário
+  - Natura
+  - Drogasil
+  - Droga Raia
+  - Drogaria São Paulo
+  - Pague Menos
+  - Ultrafarma
+  - Carrefour
+  - Assaí
+  - Atacadão
+  - Pão de Açúcar
+  - Magazine Luiza
+  - Casas Bahia
+  - Americanas
+  - Sodiê
+  - Odontocompany
+  - OdontoExcellence
+  - Sorridents
+  - Espaçolaser
+  - Chilli Beans
+
+# Domínios que contam como "só rede social / guia de terceiros" (oferta so_social).
+dominios_social:
+  - instagram.com
+  - instagr.am
+  - facebook.com
+  - fb.com
+  - fb.me
+  - m.facebook.com
+  - linktr.ee
+  - linktree.com
+  - wa.me
+  - api.whatsapp.com
+  - whatsapp.com
+  - tiktok.com
+  - youtube.com
+  - twitter.com
+  - x.com
+  - bio.link
+  - beacons.ai
+  - taplink.cc
+  - linkbio.co
+  - lnk.bio
+  - ifood.com.br
+  - aiqfome.com
+  - goomer.app
+  - anota.ai
+  - cardapioweb.com
+  - menudino.com
+  - deliverydireto.com.br
+  - instadelivery.com.br
+  - ubereats.com
+  - tripadvisor.com
+  - tripadvisor.com.br
+  - guiamais.com.br
+  - apontador.com.br
+  - telelistas.net
+  - yelp.com
+  - business.site
+  - negocio.site
+  - gympass.com
+  - wellhub.com
+  - tecnofit.com.br
+  - doctoralia.com.br
+  - booksy.com
+  - trinks.com

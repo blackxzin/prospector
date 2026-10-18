@@ -1,0 +1,28 @@
+[project]
+name = "prospector"
+version = "0.1.0"
+description = "Prospecção local de clientes: Google Maps -> SQLite -> WhatsApp (WA-AKG) com aprovação manual"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "flask>=3.0",
+    "pyyaml>=6.0",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+prospector = "prospector.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["prospector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

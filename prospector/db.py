@@ -1,0 +1,278 @@
+"""SQLite: esquema e acesso aos dados."""
+
+from __future__ import annotations
+
+import sqlite3
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterator
+
+# Status do lead
+NOVO = "novo"
+DESCARTADO = "descartado"
+NA_FILA = "na_fila"
+REJEITADO = "rejeitado"
+ENVIADO = "enviado"
+FOLLOW_UP = "follow_up"
+RESPONDEU = "respondeu"
+INTERESSADO = "interessado"
+NAO_QUER = "nao_quer"
+SEM_RESPOSTA = "sem_resposta"
+SEM_WHATSAPP = "sem_whatsapp"
+ERRO = "erro"
+
+STATUSES = (
+    NOVO, DESCARTADO, NA_FILA, REJEITADO, ENVIADO, FOLLOW_UP,
+    RESPONDEU, INTERESSADO, NAO_QUER, SEM_RESPOSTA, SEM_WHATSAPP, ERRO,
+)
+
+# Tipos de envio
+PRIMEIRA = "primeira"
+FOLLOWUP = "followup"
+AUTO_RESPOSTA = "auto_resposta"
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY,
+    chave TEXT NOT NULL UNIQUE,
+    nome TEXT NOT NULL,
+    categoria TEXT,
+    endereco TEXT,
+    cidade TEXT,
+    telefone_raw TEXT,
+    telefone TEXT,              -- celular normalizado 55DDXXXXXXXXX (ou NULL)
+    jid TEXT,                   -- JID confirmado pelo WA-AKG
+    site TEXT,
+    email TEXT,
+    nota REAL,
+    avaliacoes INTEGER,
+    maps_link TEXT,
+    busca TEXT,
+    oferta TEXT,
+    status TEXT NOT NULL DEFAULT 'novo',
+    motivo TEXT,
+    resposta TEXT,
+    auto_resposta_enviada INTEGER NOT NULL DEFAULT 0,
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL,
+    aprovado_em TEXT,
+    enviado_em TEXT,
+    followup_em TEXT,
+    respondeu_em TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+CREATE INDEX IF NOT EXISTS idx_leads_telefone ON leads(telefone);
+
+CREATE TABLE IF NOT EXISTS fila (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER NOT NULL REFERENCES leads(id),
+    tipo TEXT NOT NULL,          -- primeira | followup
+    texto TEXT NOT NULL,
+    dia TEXT NOT NULL,           -- YYYY-MM-DD (fuso local)
+    status TEXT NOT NULL DEFAULT 'pendente',  -- pendente|aprovado|rejeitado|enviado|erro|cancelado
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_fila_status ON fila(status);
+
+CREATE TABLE IF NOT EXISTS envios (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER REFERENCES leads(id),
+    fila_id INTEGER REFERENCES fila(id),
+    telefone TEXT NOT NULL,
+    tipo TEXT NOT NULL,          -- primeira | followup | auto_resposta
+    texto TEXT NOT NULL,
+    dry_run INTEGER NOT NULL DEFAULT 0,
+    ok INTEGER NOT NULL DEFAULT 0,
+    http_status INTEGER,
+    resposta_api TEXT,
+    enviado_em TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_envios_tel ON envios(telefone);
+-- Garante no banco: nunca duas primeiras mensagens reais para o mesmo número.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_primeira_por_numero
+    ON envios(telefone) WHERE tipo = 'primeira' AND ok = 1 AND dry_run = 0;
+
+CREATE TABLE IF NOT EXISTS respostas (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER REFERENCES leads(id),
+    telefone TEXT NOT NULL,
+    texto TEXT,
+    recebido_em TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bloqueio (
+    telefone TEXT PRIMARY KEY,
+    motivo TEXT,
+    criado_em TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS estado (
+    chave TEXT PRIMARY KEY,
+    valor TEXT,
+    atualizado_em TEXT NOT NULL
+);
+"""
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def iso(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
+def parse_iso(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value else None
+
+
+def connect(path: Path) -> sqlite3.Connection:
+    if str(path) != ":memory:":
+        path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path), timeout=30, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 30000")
+    if str(path) != ":memory:":
+        conn.execute("PRAGMA journal_mode = WAL")
+    conn.executescript(SCHEMA)
+    return conn
+
+
+@contextmanager
+def tx(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    """Transação explícita: commit no sucesso, rollback em erro."""
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+# ---------- estado global (parada de emergência) ----------
+
+PARADO = "parado"
+
+
+def get_state(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT valor FROM estado WHERE chave = ?", (key,)).fetchone()
+    return row["valor"] if row else None
+
+
+def set_state(conn: sqlite3.Connection, key: str, value: str | None) -> None:
+    with tx(conn):
+        conn.execute(
+            "INSERT INTO estado (chave, valor, atualizado_em) VALUES (?, ?, ?) "
+            "ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor, atualizado_em = excluded.atualizado_em",
+            (key, value, iso(utcnow())),
+        )
+
+
+def stop_reason(conn: sqlite3.Connection) -> str | None:
+    return get_state(conn, PARADO) or None
+
+
+# ---------- bloqueio permanente ----------
+
+def is_blocked(conn: sqlite3.Connection, numbers: set[str]) -> bool:
+    if not numbers:
+        return False
+    marks = ",".join("?" * len(numbers))
+    row = conn.execute(f"SELECT 1 FROM bloqueio WHERE telefone IN ({marks})", tuple(numbers)).fetchone()
+    return row is not None
+
+
+def block(conn: sqlite3.Connection, number: str, reason: str) -> None:
+    conn.execute(
+        "INSERT OR IGNORE INTO bloqueio (telefone, motivo, criado_em) VALUES (?, ?, ?)",
+        (number, reason, iso(utcnow())),
+    )
+
+
+# ---------- leads ----------
+
+_LEAD_COLUMNS = frozenset({
+    "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
+    "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
+    "resposta", "auto_resposta_enviada", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+})
+
+
+def update_lead(conn: sqlite3.Connection, lead_id: int, **fields: object) -> None:
+    if not fields:
+        return
+    unknown = set(fields) - _LEAD_COLUMNS
+    if unknown:
+        raise ValueError(f"Colunas desconhecidas: {sorted(unknown)}")
+    if "status" in fields and fields["status"] not in STATUSES:
+        raise ValueError(f"Status inválido: {fields['status']}")
+    fields = {**fields, "atualizado_em": iso(utcnow())}
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    conn.execute(f"UPDATE leads SET {cols} WHERE id = ?", (*fields.values(), lead_id))
+
+
+def get_lead(conn: sqlite3.Connection, lead_id: int) -> sqlite3.Row | None:
+    return conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone()
+
+
+def first_message_already_sent(conn: sqlite3.Connection, numbers: set[str]) -> bool:
+    if not numbers:
+        return False
+    marks = ",".join("?" * len(numbers))
+    row = conn.execute(
+        f"SELECT 1 FROM envios WHERE tipo = 'primeira' AND ok = 1 AND dry_run = 0 AND telefone IN ({marks})",
+        tuple(numbers),
+    ).fetchone()
+    return row is not None
+
+
+def log_send(
+    conn: sqlite3.Connection,
+    *,
+    lead_id: int | None,
+    fila_id: int | None,
+    telefone: str,
+    tipo: str,
+    texto: str,
+    dry_run: bool,
+    ok: bool,
+    http_status: int | None,
+    resposta_api: str | None,
+    when: datetime | None = None,
+) -> None:
+    conn.execute(
+        "INSERT INTO envios (lead_id, fila_id, telefone, tipo, texto, dry_run, ok, http_status, resposta_api, enviado_em) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (lead_id, fila_id, telefone, tipo, texto, int(dry_run), int(ok), http_status,
+         resposta_api, iso(when or utcnow())),
+    )
+
+
+def real_send_times(conn: sqlite3.Connection, since: datetime) -> list[datetime]:
+    """Horários dos envios reais que contam para os limites (primeira + followup)."""
+    rows = conn.execute(
+        "SELECT enviado_em FROM envios WHERE ok = 1 AND dry_run = 0 "
+        "AND tipo IN ('primeira', 'followup') AND enviado_em >= ? ORDER BY enviado_em",
+        (iso(since),),
+    ).fetchall()
+    return [datetime.fromisoformat(r["enviado_em"]) for r in rows]
+
+
+def funnel(conn: sqlite3.Connection) -> dict[str, int]:
+    q = lambda sql: conn.execute(sql).fetchone()[0]  # noqa: E731
+    return {
+        "encontrados": q("SELECT COUNT(*) FROM leads"),
+        "validos": q("SELECT COUNT(*) FROM leads WHERE status != 'descartado'"),
+        "aprovados": q("SELECT COUNT(*) FROM leads WHERE aprovado_em IS NOT NULL"),
+        "enviados": q("SELECT COUNT(*) FROM leads WHERE enviado_em IS NOT NULL"),
+        "responderam": q("SELECT COUNT(*) FROM leads WHERE respondeu_em IS NOT NULL"),
+        "interessados": q("SELECT COUNT(*) FROM leads WHERE status = 'interessado'"),
+    }
+
+
+def status_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute("SELECT status, COUNT(*) AS n FROM leads GROUP BY status ORDER BY n DESC").fetchall()
+    return {r["status"]: r["n"] for r in rows}

@@ -1,0 +1,62 @@
+# Templates de mensagem do prospector. Edite à vontade.
+#
+# Variáveis disponíveis em qualquer texto:
+#   {saudacao}   "Bom dia" / "Boa tarde" / "Boa noite" (pelo horário local); {saudacao_minuscula} idem, minúsculo
+#   {nome}       nome do negócio, limpo (sem " - Delivery", " | Centro" etc.)
+#   {remetente}  definido abaixo
+#   {elogio}     frase sobre a nota no Google (ou frase neutra, se não houver nota boa)
+#   {nota}       ex.: 4,7          {avaliacoes}  ex.: 132
+#   {vitrine}    "o cardápio" / "os planos e horários" / "os serviços" (pela categoria)
+#
+# Dica: evite artigo antes de {nome} ("o {nome}", "a {nome}"): não dá para saber o gênero.
+# Use o nome no vocativo ("{saudacao}, {nome}!") ou sem artigo.
+
+remetente: "Lucas, desenvolvedor aqui da região"
+
+# Nota mínima e número mínimo de avaliações para elogiar a nota.
+elogio_nota_minima: 4.0
+elogio_avaliacoes_minimas: 10
+
+elogios_com_nota:
+  - "Vi que vocês têm nota {nota} com {avaliacoes} avaliações no Google, mandaram bem!"
+  - "{nota} de nota e {avaliacoes} avaliações no Google não é pouca coisa, parabéns."
+  - "Achei vocês no Google Maps, nota {nota} com {avaliacoes} avaliações, muito bom."
+
+elogios_sem_nota:
+  - "Achei vocês no Google Maps."
+  - "Encontrei vocês pelo Google Maps."
+  - "Vi o perfil de vocês no Google Maps."
+
+vitrine:
+  padrao: "os serviços"
+  por_categoria:
+    - palavras: [pizza, restaurante, lanche, hamburg, burger, açaí, acai, sorvete, padaria, confeitaria, doceria, bar, café, cafe, marmita, comida, delivery, esfiha, sushi, japon, churrasc, pastel]
+      texto: "o cardápio"
+    - palavras: [academia, fitness, crossfit, pilates, musculação, musculacao, studio, estúdio, funcional, natação, natacao, luta, jiu, muay]
+      texto: "os planos e horários"
+    - palavras: [salão, salao, barbearia, beleza, estética, estetica, manicure, cabeleireiro, sobrancelha]
+      texto: "os serviços e preços"
+
+primeira:
+  sem_site:
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Reparei que vocês ainda não têm site. Eu faço um site simples, com {vitrine} e um botão que abre direto o WhatsApp de vocês. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Não achei um site de vocês, e muita gente procura no Google antes de pedir. Monto uma página rápida com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Vi que falta um site para vocês aparecerem melhor no Google. Faço um bem simples, com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+  so_social:
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Vi que vocês usam o Instagram como site. Dá para ter uma página própria, simples, com {vitrine} e um botão que abre o WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Hoje o link de vocês leva só para rede social. Eu faço um site simples com {vitrine} e botão de WhatsApp, que ajuda a aparecer no Google. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Reparei que não tem um site próprio, só rede social. Monto uma página rápida com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+  tem_site:
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Vi que vocês já têm site, legal! Eu configuro atendimento automático no WhatsApp: responde as dúvidas comuns e passa os pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Trabalho com automação de atendimento no WhatsApp, pra ninguém ficar sem resposta no horário de pico. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Faço automação do WhatsApp: mensagem de boas-vindas, respostas prontas e encaminhamento pra vocês. Posso te mandar um exemplo, sem compromisso?"
+
+followup:
+  - "Oi, {nome}! Passando só pra saber se viu minha mensagem. Se não fizer sentido agora, tudo bem, é só me falar. Posso te mandar o exemplo?"
+  - "{saudacao}! Sei que a rotina é corrida, por isso volto só mais esta vez. Quer que eu te mande o exemplo, sem compromisso?"
+  - "Oi de novo, {nome}! Não quero incomodar, é o último recado. Se tiver interesse em ver o exemplo, me avisa por aqui?"
+
+fora_do_horario:
+  - "Oi! Obrigado pela resposta. Agora estou fora do horário, mas te respondo no próximo horário útil, combinado?"
+  - "Opa, valeu por responder! Já encerrei por hoje, mas te retorno no próximo horário útil, tudo bem?"
+  - "Recebi sua mensagem, obrigado! Estou fora do horário agora, mas retorno no próximo horário comercial."
