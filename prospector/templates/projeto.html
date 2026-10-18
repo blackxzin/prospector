@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ p.cliente }}{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <p style="margin:0 0 4px"><a href="{{ url_for('projetos') }}">← Projetos</a></p>
+    <h1>{{ p.cliente }}</h1>
+    <p>{{ p.tipo }}{% if p.descricao %} · {{ p.descricao }}{% endif %} · fechado em {{ data_br(p.fechado_em) }}
+      {% if p.prazo %} · prazo {{ data_br(p.prazo) }}{% endif %}{% if p.entregue_em %} · entregue em {{ data_br(p.entregue_em) }}{% endif %}</p>
+  </div>
+  <div class="toolbar">
+    <span class="tag {{ project_color(p.status) }}">{{ p.status.replace('_', ' ') }}</span>
+    {% for s, label in [('em_andamento', 'Em andamento'), ('entregue', 'Marcar entregue'), ('cancelado', 'Cancelar')] if s != p.status %}
+      <form method="post" action="{{ url_for('projeto_status', project_id=p.id) }}">
+        <input type="hidden" name="status" value="{{ s }}">
+        <button class="btn-sm {{ 'btn-danger' if s == 'cancelado' }}">{{ label }}</button></form>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid g-kpi" style="margin-bottom:16px">
+  <div class="card kpi"><div class="label">Valor</div><div class="value">{{ brl(p.valor_centavos) }}</div>
+    <div class="sub">{% if p.mensalidade_centavos %}+ {{ brl(p.mensalidade_centavos) }}/mês{% else %}sem mensalidade{% endif %}</div></div>
+  <div class="card kpi"><div class="label">Recebido</div><div class="value">{{ brl(p.recebido) }}</div></div>
+  <div class="card kpi"><div class="label">A receber</div><div class="value">{{ brl(p.a_receber) }}</div></div>
+  <div class="card kpi"><div class="label">Lucro até agora</div><div class="value {{ 'bad' if p.lucro < 0 }}">{{ brl(p.lucro) }}</div>
+    <div class="sub">despesas {{ brl(p.despesas) }}</div></div>
+</div>
+
+<div class="stack">
+  <section class="card" aria-labelledby="pg-h">
+    <div class="card-head"><h2 id="pg-h">Parcelas</h2></div>
+    {% if pagamentos %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Descrição</th><th>Vencimento</th><th class="r">Valor</th><th>Situação</th><th></th></tr></thead>
+      <tbody>{% for g in pagamentos %}<tr>
+        <td>{{ g.descricao }}</td><td class="num">{{ data_br(g.vencimento) }}</td>
+        <td class="r num">{{ brl(g.valor_centavos) }}</td>
+        <td>{% if g.pago_em %}<span class="tag green">pago {{ data_br(g.pago_em) }}</span>
+          {% elif g.vencimento < hoje %}<span class="tag red">vencido</span>
+          {% else %}<span class="tag amber">em aberto</span>{% endif %}</td>
+        <td><form method="post" action="{{ url_for('pagamento_toggle', payment_id=g.id) }}">
+          <input type="hidden" name="volta" value="{{ p.id }}">
+          <button class="btn-sm">{{ 'Desfazer' if g.pago_em else 'Recebi' }}</button></form></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Sem parcelas.</p>{% endif %}
+    <form method="post" action="{{ url_for('pagamento_novo', project_id=p.id) }}" class="toolbar" style="margin-top:14px">
+      <input name="descricao" placeholder="Descrição" aria-label="Descrição da parcela" style="flex:1;min-width:140px">
+      <input name="valor" placeholder="R$" inputmode="decimal" aria-label="Valor" style="width:110px" required>
+      <input type="date" name="vencimento" value="{{ hoje }}" aria-label="Vencimento" required>
+      <button>Adicionar parcela</button>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="dp-h">
+    <div class="card-head"><h2 id="dp-h">Despesas do projeto</h2></div>
+    {% if despesas %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="r">Valor</th><th></th></tr></thead>
+      <tbody>{% for d in despesas %}<tr>
+        <td class="num">{{ data_br(d.data) }}</td><td>{{ d.descricao }}</td><td><span class="tag plain">{{ d.categoria }}</span></td>
+        <td class="r num">{{ brl(d.valor_centavos) }}</td>
+        <td><form method="post" action="{{ url_for('despesa_apagar', expense_id=d.id) }}">
+          <input type="hidden" name="volta" value="{{ p.id }}"><button class="btn-sm btn-danger" aria-label="Apagar despesa">×</button></form></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Nenhuma despesa lançada.{% if p.custo_estimado_centavos %} Custo estimado: {{ brl(p.custo_estimado_centavos) }}.{% endif %}</p>{% endif %}
+    <form method="post" action="{{ url_for('despesa_nova') }}" class="toolbar" style="margin-top:14px">
+      <input type="hidden" name="projeto_id" value="{{ p.id }}">
+      <input name="descricao" placeholder="Descrição" aria-label="Descrição da despesa" required style="flex:1;min-width:140px">
+      <select name="categoria" aria-label="Categoria">{% for c in categorias %}<option>{{ c }}</option>{% endfor %}</select>
+      <input name="valor" placeholder="R$" inputmode="decimal" aria-label="Valor" required style="width:100px">
+      <input type="date" name="data" value="{{ hoje }}" aria-label="Data" required>
+      <button>Lançar</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

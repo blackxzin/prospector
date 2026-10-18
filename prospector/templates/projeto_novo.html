@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Registrar projeto{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Registrar projeto</h1>
+    <p>{% if lead %}Fechamento com <b>{{ lead.nome }}</b>{% if lead.resposta %}: “{{ lead.resposta[:120] }}”{% endif %}{% else %}Projeto avulso (sem lead){% endif %}</p></div>
+</div>
+<section class="card" style="max-width:760px">
+  <form method="post" action="{{ url_for('projeto_criar') }}">
+    {% if lead %}<input type="hidden" name="lead_id" value="{{ lead.id }}">{% endif %}
+    <div class="form-grid">
+      <label class="f full">Cliente<input name="cliente" required maxlength="160" value="{{ form.cliente }}"></label>
+      <label class="f">Serviço
+        <select name="tipo">{% for t in tipos %}<option value="{{ t }}" {{ 'selected' if t == form.tipo }}>{{ t }}</option>{% endfor %}</select></label>
+      <label class="f">Valor total (R$)<input name="valor" required inputmode="decimal" value="{{ form.valor }}"></label>
+      <label class="f">Fechado em<input type="date" name="fechado_em" required value="{{ form.fechado_em }}"></label>
+      <label class="f">Prazo de entrega<input type="date" name="prazo" value="{{ form.prazo }}"></label>
+      <label class="f">Entrada (%)<input name="entrada" inputmode="numeric" value="{{ form.entrada }}"></label>
+      <label class="f">Mensalidade (R$, 0 = sem)<input name="mensalidade" inputmode="decimal" value="{{ form.mensalidade }}"></label>
+      <label class="f">Custo estimado (R$)<input name="custo" inputmode="decimal" value="{{ form.custo }}"></label>
+      <label class="f full">Descrição<textarea name="descricao" style="min-height:70px">{{ form.descricao }}</textarea></label>
+    </div>
+    <p class="muted">As parcelas são criadas sozinhas: a entrada vence no fechamento e o restante no prazo. A mensalidade começa a ser cobrada um mês depois da entrega.</p>
+    <div class="toolbar"><button class="btn-primary">Registrar projeto</button><a class="btn" href="{{ url_for('projetos') }}">Cancelar</a></div>
+  </form>
+</section>
+{% endblock %}

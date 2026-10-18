@@ -151,8 +151,9 @@ def test_webhook_connection_drop_stops_sending(web):
 def test_panel_pages_and_export(web, listas):
     client, app = web
     import_rows(app.conn, [csv_row(title="=cmd|' /C calc'!A0")], "pizzaria em Itaí SP", listas)
-    page = client.get("/")
-    assert page.status_code == 200 and "encontrados" in page.get_data(as_text=True)
+    page = client.get("/leads")
+    assert page.status_code == 200 and "Pizzaria" in page.get_data(as_text=True)
+    assert client.get("/").status_code == 200
     assert client.get("/fila").status_code == 200
     assert client.get("/envios").status_code == 200
     resp = client.post("/fila/gerar")
@@ -166,7 +167,7 @@ def test_panel_pages_and_export(web, listas):
 def test_panel_escapes_html(web, listas):
     client, app = web
     import_rows(app.conn, [csv_row(title="<script>alert(1)</script>")], "q", listas)
-    html = client.get("/").get_data(as_text=True)
+    html = client.get("/leads").get_data(as_text=True)
     assert "<script>alert(1)</script>" not in html
 
 
@@ -175,3 +176,42 @@ def test_panel_rejects_cross_origin_post(web, listas):
     import_rows(app.conn, [csv_row()], "q", listas)
     resp = client.post("/leads/1/status", data={"status": "interessado"}, headers={"Origin": "http://evil.com"})
     assert resp.status_code == 403
+
+
+# ---------- projetos / financeiro no painel ----------
+
+def test_register_project_from_lead_flow(web, listas):
+    client, app = web
+    import_rows(app.conn, [csv_row()], "pizzaria em Itaí SP", listas)
+    form = client.get("/projetos/novo?lead=1").get_data(as_text=True)
+    assert "Pizzaria Bella" in form and 'value="600,00"' in form
+    resp = client.post("/projetos", data={
+        "lead_id": "1", "cliente": "Pizzaria Bella", "tipo": "site", "valor": "650,00",
+        "fechado_em": "2026-10-19", "prazo": "2026-10-26", "entrada": "50", "mensalidade": "0", "custo": "60"})
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/projetos/1")
+    assert db.get_lead(app.conn, 1)["status"] == db.CLIENTE
+    page = client.get("/projetos/1").get_data(as_text=True)
+    assert "R$ 650,00" in page and "Entrada" in page
+    pay = app.conn.execute("SELECT id FROM pagamentos ORDER BY id").fetchone()["id"]
+    client.post(f"/pagamentos/{pay}/toggle", data={"volta": "1"})
+    assert app.conn.execute("SELECT pago_em FROM pagamentos WHERE id = ?", (pay,)).fetchone()["pago_em"]
+    client.post("/despesas", data={"projeto_id": "1", "descricao": "domínio", "categoria": "dominio",
+                                   "valor": "40", "data": "2026-10-19"})
+    assert "R$ 40,00" in client.get("/projetos/1").get_data(as_text=True)
+    for url in ("/", "/projetos", "/financeiro"):
+        assert client.get(url).status_code == 200
+
+
+def test_invalid_money_shows_error_not_crash(web):
+    client, app = web
+    resp = client.post("/projetos", data={"cliente": "X", "tipo": "site", "valor": "abc", "fechado_em": "2026-10-19"},
+                       follow_redirects=True)
+    assert resp.status_code == 200 and "Não deu para registrar" in resp.get_data(as_text=True)
+    assert app.conn.execute("SELECT COUNT(*) FROM projetos").fetchone()[0] == 0
+
+
+def test_security_headers(web):
+    client, _ = web
+    resp = client.get("/leads")
+    assert resp.headers["X-Frame-Options"] == "DENY"
+    assert "script-src 'none'" in resp.headers["Content-Security-Policy"]

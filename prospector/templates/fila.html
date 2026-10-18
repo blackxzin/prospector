@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Fila de aprovação{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Fila de aprovação</h1>
+    <p>Aprovar não envia: o envio só acontece com <code>prospector enviar</code>, dentro do horário e dos limites.</p></div>
+  <div class="toolbar">
+    <form method="post" action="{{ url_for('gerar_fila') }}"><button>Gerar fila do dia</button></form>
+    {% if pendentes %}<form method="post" action="{{ url_for('aprovar_todos') }}"><button class="btn-primary">Aprovar {{ pendentes }} pendente(s)</button></form>{% endif %}
+  </div>
+</div>
+
+{% if not itens %}
+<section class="card"><p class="empty">Fila vazia. Clique em "Gerar fila do dia" ou rode <code>prospector fila</code>.</p></section>
+{% endif %}
+
+<div class="stack">
+{% for i in itens %}
+<article class="card msg-card">
+  <div class="msg-meta">
+    <span class="name">#{{ i.id }} · {{ i.nome }}</span>
+    <span class="tag {{ 'amber' if i.status == 'pendente' else 'green' }}">{{ i.status }}</span>
+    <span class="tag plain">{{ i.tipo }}</span><span class="tag plain">{{ i.oferta }}</span>
+    <span class="muted num">{{ pretty(i.telefone) }}{% if i.cidade %} · {{ i.cidade }}{% endif %}{% if i.nota %} · nota {{ i.nota }} ({{ i.avaliacoes or 0 }}){% endif %}</span>
+  </div>
+  <form method="post" action="{{ url_for('aprovar_item', item_id=i.id) }}">
+    {% if i.status == 'pendente' %}
+      <textarea name="texto" aria-label="Mensagem para {{ i.nome }}">{{ i.texto }}</textarea>
+    {% else %}
+      <div class="bubble">{{ i.texto }}</div>
+    {% endif %}
+    <div class="toolbar" style="margin-top:10px">
+      {% if i.status == 'pendente' %}<button class="btn-primary">Aprovar com este texto</button>{% endif %}
+      <button class="btn-danger" formaction="{{ url_for('rejeitar_item', item_id=i.id) }}">Rejeitar</button>
+    </div>
+  </form>
+</article>
+{% endfor %}
+</div>
+{% endblock %}

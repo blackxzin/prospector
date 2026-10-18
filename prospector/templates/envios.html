@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Log de envios{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>Log de envios</h1><p>Tudo o que foi enviado ou simulado, com a resposta da API (últimos 500).</p></div></div>
+<section class="card">
+  {% if envios %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Quando</th><th>Número</th><th>Tipo</th><th>Mensagem</th><th>Resultado</th></tr></thead>
+    <tbody>{% for e in envios %}<tr>
+      <td class="num">{{ quando(e.enviado_em) }}</td>
+      <td class="num">{{ pretty(e.telefone) }}</td>
+      <td><span class="tag plain">{{ e.tipo }}</span>{% if e.dry_run %} <span class="tag">dry-run</span>{% endif %}</td>
+      <td class="ink2" style="max-width:480px">{{ e.texto }}</td>
+      <td>{% if e.ok %}<span class="tag green">ok</span>{% else %}<span class="tag red">erro</span>{% endif %}
+        <span class="muted num">{{ e.http_status or '' }}</span>
+        <div class="sub">{{ (e.resposta_api or '')[:160] }}</div></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty">Nenhum envio ainda.</p>{% endif %}
+</section>
+{% endblock %}

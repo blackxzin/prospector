@@ -34,6 +34,7 @@ services:
       - ./data:/app/data
       - ./templates.yaml:/app/templates.yaml:ro
       - ./listas.yaml:/app/listas.yaml:ro
+      - ./financeiro.yaml:/app/financeiro.yaml:ro
       - /run/user/${UID:-1000}/bus:/run/user/${UID:-1000}/bus
     command: ["painel", "--host", "127.0.0.1"]
     depends_on:

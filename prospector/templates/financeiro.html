@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Financeiro{% endblock %}
+{% block body %}
+{% set r = painel.resumo %}
+<div class="page-head">
+  <div><h1>Financeiro</h1><p>Valores do mês atual. Metas e preços padrão ficam no <code>financeiro.yaml</code>.</p></div>
+</div>
+
+<div class="grid g-kpi" style="margin-bottom:16px">
+  <div class="card kpi"><div class="label">Recebido no mês</div><div class="value">{{ brl(r.recebido_mes) }}</div>
+    <div class="sub">{% if r.meta %}{{ r.meta_pct }}% da meta de {{ brl(r.meta) }}{% endif %}</div></div>
+  <div class="card kpi"><div class="label">Despesas no mês</div><div class="value">{{ brl(r.despesas_mes) }}</div></div>
+  <div class="card kpi"><div class="label">Lucro no mês</div><div class="value {{ 'bad' if r.lucro_mes < 0 }}">{{ brl(r.lucro_mes) }}</div>
+    <div class="sub">{% if r.margem_pct is not none %}margem {{ r.margem_pct }}%{% endif %}</div></div>
+  <div class="card kpi"><div class="label">A receber</div><div class="value">{{ brl(r.a_receber) }}</div>
+    <div class="sub">{% if r.vencido %}<span class="tag red">{{ brl(r.vencido) }} vencido</span>{% else %}nada vencido{% endif %}</div></div>
+</div>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="ab-h">
+    <div class="card-head"><h2 id="ab-h">Contas a receber</h2></div>
+    {% if abertos %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th class="r">Valor</th><th></th></tr></thead>
+      <tbody>{% for g in abertos %}<tr>
+        <td><a href="{{ url_for('projeto', project_id=g.projeto_id) }}">{{ g.cliente }}</a></td><td>{{ g.descricao }}</td>
+        <td class="num">{{ data_br(g.vencimento) }} {% if g.vencimento < hoje %}<span class="tag red">vencido</span>{% endif %}</td>
+        <td class="r num">{{ brl(g.valor_centavos) }}</td>
+        <td><form method="post" action="{{ url_for('pagamento_toggle', payment_id=g.id) }}"><button class="btn-sm">Recebi</button></form></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Nada a receber.</p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="ds-h">
+    <div class="card-head"><h2 id="ds-h">Despesas</h2><span class="muted">gerais e por projeto</span></div>
+    <form method="post" action="{{ url_for('despesa_nova') }}" class="toolbar" style="margin-bottom:12px">
+      <input name="descricao" placeholder="Ex.: domínio .com.br" aria-label="Descrição" required style="flex:1;min-width:140px">
+      <select name="categoria" aria-label="Categoria">{% for c in categorias %}<option>{{ c }}</option>{% endfor %}</select>
+      <input name="valor" placeholder="R$" inputmode="decimal" aria-label="Valor" required style="width:100px">
+      <input type="date" name="data" value="{{ hoje }}" aria-label="Data" required>
+      <button>Lançar</button>
+    </form>
+    {% if despesas %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Data</th><th>Descrição</th><th>Projeto</th><th class="r">Valor</th><th></th></tr></thead>
+      <tbody>{% for d in despesas %}<tr>
+        <td class="num">{{ data_br(d.data) }}</td>
+        <td>{{ d.descricao }} <span class="tag plain">{{ d.categoria }}</span></td>
+        <td>{% if d.projeto_id %}<a href="{{ url_for('projeto', project_id=d.projeto_id) }}">{{ d.cliente }}</a>{% else %}<span class="muted">geral</span>{% endif %}</td>
+        <td class="r num">{{ brl(d.valor_centavos) }}</td>
+        <td><form method="post" action="{{ url_for('despesa_apagar', expense_id=d.id) }}"><button class="btn-sm btn-danger" aria-label="Apagar despesa">×</button></form></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Nenhuma despesa lançada.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px" aria-labelledby="mes-h">
+  <div class="card-head"><h2 id="mes-h">Mês a mês</h2>
+    <div class="legend"><span><i style="background:var(--series-1)"></i>Receita</span><span><i style="background:var(--series-2)"></i>Despesas</span></div></div>
+  {{ grafico_receita|safe }}
+  <div class="table-wrap" style="margin-top:8px"><table>
+    <thead><tr><th>Mês</th><th class="r">Receita</th><th class="r">Despesas</th><th class="r">Lucro</th></tr></thead>
+    <tbody>{% for m in painel.serie|reverse %}<tr><td>{{ mes_nome(m.mes) }}</td><td class="r num">{{ brl(m.receita) }}</td>
+      <td class="r num">{{ brl(m.despesas) }}</td><td class="r num"><b>{{ brl(m.lucro) }}</b></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

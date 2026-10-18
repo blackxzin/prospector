@@ -229,6 +229,35 @@ def cmd_status(app: App, _args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_financeiro(app: App, args: argparse.Namespace) -> int:
+    """Resumo do mês, alertas e sugestões do gerenciador."""
+    from . import insights
+    from .finance import brl
+    hoje = db.utcnow().astimezone(app.settings.tz).date()
+    painel = insights.build(app.conn, app.finance, hoje)
+    r = painel.resumo
+    print(f"Mês: recebido {brl(r.recebido_mes)} · despesas {brl(r.despesas_mes)} · lucro {brl(r.lucro_mes)}"
+          + (f" · meta {r.meta_pct}% de {brl(r.meta)}" if r.meta else ""))
+    print(f"A receber {brl(r.a_receber)} (vencido {brl(r.vencido)}) · previsto 30 dias {brl(r.previsao_30d)} · "
+          f"recorrente {brl(r.mrr)}/mês · {r.projetos_ativos} projeto(s) em andamento")
+    marks = {insights.CRITICO: "[URGENTE]", insights.ATENCAO: "[atenção]", insights.BOM: "[oportunidade]",
+             insights.INFO: "[info]"}
+    if painel.alertas:
+        print("\nO que fazer agora:")
+        for a in painel.alertas:
+            print(f"  {marks[a.nivel]} {a.titulo}: {a.detalhe}")
+    if painel.sugestoes:
+        print("\nSugestões:")
+        for i, sug in enumerate(painel.sugestoes, 1):
+            print(f"  {i}. {sug}")
+    if args.notificar:
+        urgent = [a for a in painel.alertas if a.nivel in (insights.CRITICO, insights.BOM)]
+        if urgent:
+            app.notify(f"{len(urgent)} item(ns) pedem atenção", "\n".join(a.titulo for a in urgent[:5]),
+                       urgent=any(a.nivel == insights.CRITICO for a in urgent))
+    return 0
+
+
 def cmd_retomar(app: App, _args: argparse.Namespace) -> int:
     db.set_state(app.conn, db.PARADO, None)
     print("Envio liberado de novo.")
@@ -318,6 +347,10 @@ def build_parser() -> argparse.ArgumentParser:
     a.set_defaults(fn=cmd_teste)
 
     sub.add_parser("status", help="funil, limites e situação do envio").set_defaults(fn=cmd_status)
+    a = sub.add_parser("financeiro", help="resumo financeiro, alertas e sugestões do gerenciador")
+    a.add_argument("--notificar", action="store_true", help="manda notify-send dos alertas importantes (bom p/ cron)")
+    a.set_defaults(fn=cmd_financeiro)
+
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)
 
     a = sub.add_parser("desbloquear", help="remove um número da lista de bloqueio (correção manual)")

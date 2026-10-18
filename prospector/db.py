@@ -20,11 +20,12 @@ INTERESSADO = "interessado"
 NAO_QUER = "nao_quer"
 SEM_RESPOSTA = "sem_resposta"
 SEM_WHATSAPP = "sem_whatsapp"
+CLIENTE = "cliente"
 ERRO = "erro"
 
 STATUSES = (
     NOVO, DESCARTADO, NA_FILA, REJEITADO, ENVIADO, FOLLOW_UP,
-    RESPONDEU, INTERESSADO, NAO_QUER, SEM_RESPOSTA, SEM_WHATSAPP, ERRO,
+    RESPONDEU, INTERESSADO, NAO_QUER, SEM_RESPOSTA, SEM_WHATSAPP, ERRO, CLIENTE,
 )
 
 # Tipos de envio
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS leads (
     motivo TEXT,
     resposta TEXT,
     auto_resposta_enviada INTEGER NOT NULL DEFAULT 0,
+    sinal_fechamento INTEGER NOT NULL DEFAULT 0,  -- resposta parece fechamento (confirmar no painel)
     criado_em TEXT NOT NULL,
     atualizado_em TEXT NOT NULL,
     aprovado_em TEXT,
@@ -108,6 +110,48 @@ CREATE TABLE IF NOT EXISTS bloqueio (
     criado_em TEXT NOT NULL
 );
 
+-- Financeiro: valores sempre em centavos (INTEGER), nunca float.
+CREATE TABLE IF NOT EXISTS projetos (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER REFERENCES leads(id),
+    cliente TEXT NOT NULL,
+    tipo TEXT NOT NULL,              -- site | automacao | outro
+    descricao TEXT,
+    valor_centavos INTEGER NOT NULL,
+    custo_estimado_centavos INTEGER NOT NULL DEFAULT 0,
+    mensalidade_centavos INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'em_andamento',  -- em_andamento | entregue | cancelado
+    fechado_em TEXT NOT NULL,        -- YYYY-MM-DD
+    prazo TEXT,                      -- YYYY-MM-DD
+    entregue_em TEXT,                -- YYYY-MM-DD
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_projetos_status ON projetos(status);
+
+CREATE TABLE IF NOT EXISTS pagamentos (
+    id INTEGER PRIMARY KEY,
+    projeto_id INTEGER NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
+    descricao TEXT NOT NULL,
+    valor_centavos INTEGER NOT NULL,
+    vencimento TEXT NOT NULL,        -- YYYY-MM-DD
+    pago_em TEXT,                    -- YYYY-MM-DD
+    competencia TEXT,                -- YYYY-MM das mensalidades (evita duplicar)
+    criado_em TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mensalidade
+    ON pagamentos(projeto_id, competencia) WHERE competencia IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS despesas (
+    id INTEGER PRIMARY KEY,
+    projeto_id INTEGER REFERENCES projetos(id) ON DELETE SET NULL,
+    descricao TEXT NOT NULL,
+    categoria TEXT NOT NULL DEFAULT 'outro',
+    valor_centavos INTEGER NOT NULL,
+    data TEXT NOT NULL,              -- YYYY-MM-DD
+    criado_em TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS estado (
     chave TEXT PRIMARY KEY,
     valor TEXT,
@@ -138,7 +182,22 @@ def connect(path: Path) -> sqlite3.Connection:
     if str(path) != ":memory:":
         conn.execute("PRAGMA journal_mode = WAL")
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn
+
+
+# Colunas adicionadas depois da primeira versão: (tabela, coluna, definição).
+_MIGRATIONS = (
+    ("leads", "sinal_fechamento", "INTEGER NOT NULL DEFAULT 0"),
+)
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, column, definition in _MIGRATIONS:
+        cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in cols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    conn.commit()
 
 
 @contextmanager
@@ -197,7 +256,7 @@ def block(conn: sqlite3.Connection, number: str, reason: str) -> None:
 _LEAD_COLUMNS = frozenset({
     "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
     "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
-    "resposta", "auto_resposta_enviada", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+    "resposta", "auto_resposta_enviada", "sinal_fechamento", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
 })
 
 

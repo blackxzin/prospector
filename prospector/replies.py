@@ -29,6 +29,19 @@ _INTEREST = re.compile(
 )
 
 
+# Sinais de que o cliente fechou (vira "possível fechamento" para você confirmar no painel).
+_CLOSING = re.compile(
+    r"\bfechado\b|\bfechou\b|\bfechamos\b|\bvamos fechar\b|\bpode fazer\b|\bpode comecar\b|"
+    r"\bpode seguir\b|\bvamos fazer\b|\bbora fazer\b|\bquero fazer\b|\bquero contratar\b|"
+    r"\bvou querer\b|\bvou fechar\b|\bqual (o|a) (seu )?pix\b|\bmanda (o )?pix\b|\bchave pix\b|"
+    r"\bcomo (eu )?pago\b|\bcomo faco (o|para) pag|\bfaz o contrato\b|\bpode mandar o contrato\b",
+)
+
+
+def is_closing(text: str | None) -> bool:
+    return not is_opt_out(text) and bool(_CLOSING.search(fold(text or "")))
+
+
 def is_opt_out(text: str | None) -> bool:
     return bool(_OPT_OUT.search(fold(text or "")))
 
@@ -111,6 +124,7 @@ class ReplyOutcome:
     lead_id: int | None
     status: str | None
     auto_reply: bool = False
+    closing: bool = False
 
 
 def handle_inbound(
@@ -131,14 +145,17 @@ def handle_inbound(
         fields: dict[str, object] = {"resposta": msg.text[:2000]}
         if not lead["respondeu_em"]:
             fields["respondeu_em"] = db.iso(now)
-        if lead["status"] == db.NAO_QUER or is_opt_out(msg.text):
+        if lead["status"] == db.CLIENTE:
+            # já é cliente: conversa normal, um "não" aqui não é pedido de descadastro
+            new_status = db.CLIENTE
+        elif lead["status"] == db.NAO_QUER or is_opt_out(msg.text):
             new_status = db.NAO_QUER
             for number in variants(lead["telefone"]) | set(msg.numbers):
                 db.block(conn, number, f"opt-out: {msg.text[:120]}")
             # cancela qualquer coisa pendente para esse lead
             conn.execute("UPDATE fila SET status = 'cancelado', atualizado_em = ? "
                          "WHERE lead_id = ? AND status IN ('pendente', 'aprovado')", (db.iso(now), lead["id"]))
-        elif lead["status"] == db.INTERESSADO or is_interested(msg.text):
+        elif lead["status"] == db.INTERESSADO or is_interested(msg.text) or is_closing(msg.text):
             new_status = db.INTERESSADO
         else:
             new_status = db.RESPONDEU
@@ -147,11 +164,17 @@ def handle_inbound(
                          "WHERE lead_id = ? AND tipo = 'followup' AND status IN ('pendente', 'aprovado')",
                          (db.iso(now), lead["id"]))
         fields["status"] = new_status
-        auto = (new_status != db.NAO_QUER and not in_business_hours and not lead["auto_resposta_enviada"])
+        closing = new_status == db.INTERESSADO and is_closing(msg.text)
+        if closing:
+            fields["sinal_fechamento"] = 1
+        auto = (new_status not in (db.NAO_QUER, db.CLIENTE) and not in_business_hours
+                and not lead["auto_resposta_enviada"])
         if auto:
             fields["auto_resposta_enviada"] = 1  # reserva já: no máximo uma vez por contato
         db.update_lead(conn, lead["id"], **fields)
 
     label = {db.NAO_QUER: "pediu para parar (bloqueado)", db.INTERESSADO: "parece interessado"}.get(new_status, "respondeu")
+    if closing:
+        label = "POSSÍVEL FECHAMENTO, confirme no painel"
     notify_fn(f"{lead['nome']} {label}", f"{msg.text[:300]}", new_status == db.INTERESSADO)
-    return ReplyOutcome(lead["id"], new_status, auto)
+    return ReplyOutcome(lead["id"], new_status, auto, closing)

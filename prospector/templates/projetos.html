@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Projetos{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Projetos</h1><p>Cada fechamento vira um projeto com parcelas, despesas e lucro.</p></div>
+  <a class="btn btn-primary" href="{{ url_for('projeto_novo') }}">Registrar projeto</a>
+</div>
+
+{% if fechamentos %}
+<section class="card" style="margin-bottom:16px" aria-labelledby="fech-h">
+  <div class="card-head"><h2 id="fech-h">Possíveis fechamentos</h2><span class="muted">detectados nas respostas do WhatsApp</span></div>
+  <ul class="alerts">
+    {% for l in fechamentos %}
+    <li class="lv-bom"><span class="ico" aria-hidden="true">✓</span>
+      <div><div class="t">{{ l.nome }}</div>
+        <div class="d">“{{ (l.resposta or '')[:160] }}”</div>
+        <div class="toolbar" style="margin-top:8px">
+          <a class="btn btn-primary btn-sm" href="{{ url_for('projeto_novo', lead=l.id) }}">Confirmar e registrar</a>
+          <form method="post" action="{{ url_for('descartar_fechamento', lead_id=l.id) }}"><button class="btn-sm">Não fechou</button></form>
+        </div></div></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  {% if projetos %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Cliente</th><th>Status</th><th>Prazo</th><th class="r">Valor</th><th class="r">Recebido</th>
+      <th class="r">A receber</th><th class="r">Despesas</th><th class="r">Lucro</th></tr></thead>
+    <tbody>{% for p in projetos %}<tr>
+      <td><a class="name" href="{{ url_for('projeto', project_id=p.id) }}">{{ p.cliente }}</a>
+        <div class="sub">{{ p.tipo }}{% if p.mensalidade_centavos %} · {{ brl(p.mensalidade_centavos) }}/mês{% endif %}</div></td>
+      <td><span class="tag {{ project_color(p.status) }}">{{ p.status.replace('_', ' ') }}</span></td>
+      <td class="num">{{ data_br(p.prazo) if p.prazo else '—' }}</td>
+      <td class="r num">{{ brl(p.valor_centavos) }}</td>
+      <td class="r num">{{ brl(p.recebido) }}</td>
+      <td class="r num">{{ brl(p.a_receber) }}</td>
+      <td class="r num">{{ brl(p.despesas) }}</td>
+      <td class="r num"><b>{{ brl(p.lucro) }}</b></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty">Nenhum projeto ainda. Quando um lead fechar, clique em "Fechou" na lista de leads ou em "Registrar projeto".</p>{% endif %}
+</section>
+{% endblock %}

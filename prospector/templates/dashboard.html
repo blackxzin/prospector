@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Visão geral{% endblock %}
+{% block body %}
+{% set r = painel.resumo %}
+<div class="page-head">
+  <div>
+    <h1>Visão geral</h1>
+    <p>{{ hoje_extenso }}</p>
+  </div>
+  <div class="toolbar">
+    <a class="btn" href="{{ url_for('fila') }}">Revisar fila</a>
+    <a class="btn btn-primary" href="{{ url_for('projeto_novo') }}">Registrar projeto</a>
+  </div>
+</div>
+
+<div class="stack">
+  <section class="card" aria-labelledby="hero-l">
+    <div class="hero">
+      <div>
+        <div class="hero-label" id="hero-l">Lucro do mês</div>
+        <div class="hero-value">{{ brl(r.lucro_mes) }}</div>
+        <div class="hero-sub">recebido <b>{{ brl(r.recebido_mes) }}</b> · despesas <b>{{ brl(r.despesas_mes) }}</b>
+          {% if r.margem_pct is not none %} · margem <b>{{ r.margem_pct }}%</b>{% endif %}</div>
+      </div>
+      {% if r.meta %}
+      <div class="meter" aria-label="Meta do mês">
+        <div class="meter-row"><span>Meta do mês</span><span class="num">{{ r.meta_pct }}%</span></div>
+        <div class="meter-track"><div class="meter-fill" style="width: {{ r.meta_pct }}%"></div></div>
+        <div class="meter-row"><span class="num">{{ brl(r.recebido_mes) }}</span><span class="num">{{ brl(r.meta) }}</span></div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <div class="grid g-kpi">
+    <div class="card kpi"><div class="label">A receber</div><div class="value">{{ brl(r.a_receber) }}</div>
+      <div class="sub">{% if r.vencido %}<span class="tag red">{{ brl(r.vencido) }} vencido</span>{% else %}nada vencido{% endif %}</div></div>
+    <div class="card kpi"><div class="label">Previsto em 30 dias</div><div class="value">{{ brl(r.previsao_30d) }}</div>
+      <div class="sub">parcelas + mensalidades</div></div>
+    <div class="card kpi"><div class="label">Receita recorrente</div><div class="value">{{ brl(r.mrr) }}<span class="muted" style="font-size:14px">/mês</span></div>
+      <div class="sub">mensalidades ativas</div></div>
+    <div class="card kpi"><div class="label">Projetos</div><div class="value">{{ r.projetos_ativos }} <span class="muted" style="font-size:14px">em andamento</span></div>
+      <div class="sub">{{ r.projetos_total }} no total · ticket médio {{ brl(r.ticket_medio) }}</div></div>
+  </div>
+
+  <div class="grid g-3">
+    <section class="card" aria-labelledby="alertas-h">
+      <div class="card-head"><h2 id="alertas-h">O que fazer agora</h2><span class="muted">{{ painel.alertas|length }} item(ns)</span></div>
+      {% if painel.alertas %}
+      <ul class="alerts">
+        {% for a in painel.alertas %}
+        <li class="lv-{{ a.nivel }}">
+          <span class="ico" aria-hidden="true">{{ {'critico': '!', 'atencao': '•', 'bom': '✓', 'info': 'i'}[a.nivel] }}</span>
+          <div>
+            <div class="t">{% if a.link %}<a href="{{ a.link }}">{{ a.titulo }}</a>{% else %}{{ a.titulo }}{% endif %}
+              <span class="sr">({{ {'critico': 'urgente', 'atencao': 'atenção', 'bom': 'oportunidade', 'info': 'informativo'}[a.nivel] }})</span></div>
+            <div class="d">{{ a.detalhe }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="empty">Tudo em dia. Nenhuma cobrança, prazo ou resposta pendente.</p>{% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="sug-h">
+      <div class="card-head"><h2 id="sug-h">Sugestões</h2></div>
+      {% if painel.sugestoes %}
+      <ol class="tips">{% for s in painel.sugestoes %}<li>{{ s }}</li>{% endfor %}</ol>
+      {% else %}<p class="empty">Sem sugestões por enquanto.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="grid g-2">
+    <section class="card" aria-labelledby="rec-h">
+      <div class="card-head"><h2 id="rec-h">Receita x despesas</h2>
+        <div class="legend"><span><i style="background:var(--series-1)"></i>Receita</span><span><i style="background:var(--series-2)"></i>Despesas</span></div></div>
+      {{ grafico_receita|safe }}
+      <details class="table-view"><summary>Ver como tabela</summary>
+        <table><thead><tr><th>Mês</th><th class="r">Receita</th><th class="r">Despesas</th><th class="r">Lucro</th></tr></thead><tbody>
+        {% for m in painel.serie %}<tr><td>{{ mes_nome(m.mes) }}</td><td class="r num">{{ brl(m.receita) }}</td>
+          <td class="r num">{{ brl(m.despesas) }}</td><td class="r num">{{ brl(m.lucro) }}</td></tr>{% endfor %}
+        </tbody></table></details>
+    </section>
+
+    <section class="card" aria-labelledby="fun-h">
+      <div class="card-head"><h2 id="fun-h">Funil de prospecção</h2><a href="{{ url_for('leads') }}">ver leads</a></div>
+      {{ grafico_funil|safe }}
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="seg-h">
+    <div class="card-head"><h2 id="seg-h">O que converte</h2><span class="muted">por busca e oferta, só leads já contatados</span></div>
+    {% if painel.segmentos %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Busca</th><th>Oferta</th><th class="r">Contatados</th><th class="r">Responderam</th>
+        <th class="r">Fecharam</th><th class="r">Recusaram</th><th class="r">Faturado</th></tr></thead>
+      <tbody>{% for s in painel.segmentos %}<tr>
+        <td class="name">{{ s.busca }}</td><td><span class="tag plain">{{ s.oferta }}</span></td>
+        <td class="r num">{{ s.contatados }}</td>
+        <td class="r num">{{ s.responderam }} <span class="muted">{{ '%.0f'|format(s.taxa_resposta * 100) }}%</span></td>
+        <td class="r num">{{ s.clientes }} <span class="muted">{{ '%.0f'|format(s.taxa_fechamento * 100) }}%</span></td>
+        <td class="r num">{{ s.recusaram }}</td><td class="r num">{{ brl(s.faturado) }}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Aparece aqui depois dos primeiros envios.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

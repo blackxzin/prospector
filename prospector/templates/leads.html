@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Leads{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Leads</h1><p>{{ leads|length }} lead(s){% if leads|length == limite %}, mostrando os {{ limite }} mais recentes{% endif %}</p></div>
+  <a class="btn" href="{{ url_for('export_csv', **f) }}">Exportar CSV</a>
+</div>
+
+<form class="filters" method="get" role="search">
+  <select name="busca" aria-label="Busca"><option value="">Todas as buscas</option>
+    {% for b in buscas %}<option {{ 'selected' if b == f.busca }}>{{ b }}</option>{% endfor %}</select>
+  <select name="cidade" aria-label="Cidade"><option value="">Todas as cidades</option>
+    {% for c in cidades %}<option {{ 'selected' if c == f.cidade }}>{{ c }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status"><option value="">Todos os status</option>
+    {% for s in statuses %}<option {{ 'selected' if s == f.status }}>{{ s }}</option>{% endfor %}</select>
+  <input name="q" placeholder="Nome contém…" value="{{ f.q or '' }}" aria-label="Nome">
+  <button>Filtrar</button>
+  {% if f %}<a class="btn" href="{{ url_for('leads') }}">Limpar</a>{% endif %}
+</form>
+
+<section class="card">
+  {% if leads %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Negócio</th><th>Telefone</th><th>Oferta</th><th class="r">Nota</th><th>Status</th><th>Última resposta</th><th></th></tr></thead>
+    <tbody>
+    {% for l in leads %}
+    <tr>
+      <td class="col-main"><div class="name">{{ l.nome }}</div>
+        <div class="sub">{{ l.categoria or '' }}{% if l.cidade %} · {{ l.cidade }}{% endif %}
+          {% if l.maps_link %} · <a href="{{ l.maps_link }}" target="_blank" rel="noopener noreferrer">Maps</a>{% endif %}
+          {% if l.site %} · <a href="{{ l.site if l.site.startswith('http') else 'http://' ~ l.site }}" target="_blank" rel="noopener noreferrer">site</a>{% endif %}</div></td>
+      <td class="num">{{ pretty(l.telefone or l.telefone_raw) or '—' }}</td>
+      <td><span class="tag plain">{{ l.oferta }}</span></td>
+      <td class="r num">{% if l.nota %}{{ l.nota }} <span class="muted">({{ l.avaliacoes or 0 }})</span>{% else %}—{% endif %}</td>
+      <td><span class="tag {{ status_color(l.status) }}">{{ l.status }}</span>
+        {% if l.sinal_fechamento and l.status != 'cliente' %}<div><a href="{{ url_for('projeto_novo', lead=l.id) }}">possível fechamento</a></div>{% endif %}
+        {% if l.motivo %}<div class="sub">{{ l.motivo }}</div>{% endif %}</td>
+      <td class="ink2" style="max-width:260px">{{ (l.resposta or '')[:140] }}</td>
+      <td>
+        <form method="post" action="{{ url_for('set_status', lead_id=l.id) }}" class="inline-form">
+          <select name="status" aria-label="Novo status de {{ l.nome }}">
+            {% if l.status not in manual_statuses %}<option value="" selected disabled>{{ l.status }}</option>{% endif %}
+            {% for s in manual_statuses %}<option {{ 'selected' if s == l.status }}>{{ s }}</option>{% endfor %}
+          </select>
+          <button class="btn-sm">Salvar</button>
+        </form>
+        {% if l.status in ('respondeu', 'interessado') %}
+          <a class="btn btn-sm" href="{{ url_for('projeto_novo', lead=l.id) }}" style="margin-top:6px">Fechou</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="empty">Nenhum lead com esses filtros. Rode <code>prospector buscar "pizzaria em Itaí SP"</code>.</p>{% endif %}
+</section>
+{% endblock %}

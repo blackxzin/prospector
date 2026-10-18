@@ -14,6 +14,7 @@ from typing import Callable
 
 from . import db
 from .classify import Listas
+from .finance import FinanceConfig
 from .config import Settings, load_settings
 from .importer import ImportResult, import_rows, read_csv_text
 from .messages import Templates
@@ -43,6 +44,10 @@ class App:
     @cached_property
     def listas(self) -> Listas:
         return Listas.load(self.settings.listas_path)
+
+    @cached_property
+    def finance(self) -> FinanceConfig:
+        return FinanceConfig.load(self.settings.financeiro_path)
 
     @cached_property
     def templates(self) -> Templates:

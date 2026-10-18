@@ -59,6 +59,7 @@ class Settings:
     data_dir: Path
     templates_path: Path
     listas_path: Path
+    financeiro_path: Path
     tz: ZoneInfo
     windows: tuple[tuple[time, time], ...]
     weekdays: frozenset[int]
@@ -111,6 +112,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         data_dir=data_dir,
         templates_path=_path(env, "TEMPLATES_PATH", ROOT / "templates.yaml"),
         listas_path=_path(env, "LISTAS_PATH", ROOT / "listas.yaml"),
+        financeiro_path=_path(env, "FINANCEIRO_PATH", ROOT / "financeiro.yaml"),
         tz=ZoneInfo(env.get("TZ_PROSPECTOR", "America/Sao_Paulo")),
         windows=parse_windows(env.get("JANELAS", "09:00-11:30,14:00-17:30")),
         weekdays=parse_weekdays(env.get("DIAS_UTEIS", "0,1,2,3,4")),

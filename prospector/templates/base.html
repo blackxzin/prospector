@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Prospector{% endblock %} · Prospector</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">P</span>prospector</div>
+    <nav class="nav" aria-label="Navegação principal">
+      {% set nav = [
+        ('dashboard', 'Visão geral', nav_counts.alertas),
+        ('leads', 'Leads', none),
+        ('fila', 'Fila de aprovação', nav_counts.fila),
+        ('projetos', 'Projetos', nav_counts.projetos),
+        ('financeiro', 'Financeiro', none),
+        ('envios', 'Log de envios', none),
+      ] %}
+      {% for endpoint, label, count in nav %}
+        <a href="{{ url_for(endpoint) }}" class="{{ 'on' if page == endpoint }}"
+           {% if page == endpoint %}aria-current="page"{% endif %}>
+          <span>{{ label }}</span>{% if count %}<span class="count">{{ count }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="side-foot">
+      {% if parado %}<span class="dot off"></span>envio parado{% else %}<span class="dot"></span>envio liberado{% endif %}
+    </div>
+  </aside>
+  <main>
+    {% if parado %}
+      <div class="banner critico" role="alert"><b>Envio parado.</b>&nbsp;{{ parado }} — confira a sessão no WA-AKG e rode <code>prospector retomar</code>.</div>
+    {% endif %}
+    {% for m in get_flashed_messages() %}<div class="banner info flash" role="status">{{ m }}</div>{% endfor %}
+    {% block body %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

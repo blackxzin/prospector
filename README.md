@@ -72,19 +72,52 @@ Outros comandos:
 | `prospector webhook http://localhost:5050/webhook` | cadastra o webhook no WA-AKG |
 | `prospector retomar` | libera o envio depois de uma parada de emergência |
 | `prospector desbloquear 14991234567` | tira um número da lista de bloqueio (correção manual) |
+| `prospector financeiro [--notificar]` | resumo do mês, alertas e sugestões do gerenciador |
 | `prospector painel` | sobe o painel web e o receptor de webhook |
 
 ### Painel
 
-`http://127.0.0.1:5050` mostra:
+`http://127.0.0.1:5050` (tema claro/escuro automático, funciona no celular):
 
-- o funil: encontrados → aprovados → enviados → responderam → interessados;
-- a lista de leads com filtro por busca, cidade e status, e troca manual de status;
-- a fila de aprovação: dá para editar o texto, aprovar um a um ou todos de uma vez;
-- o log de envios;
-- exportação de CSV (respeita os filtros).
+- **Visão geral**: lucro do mês, meta, a receber, alertas do que fazer agora, sugestões, gráficos de receita × despesas e do funil (encontrados → aprovados → enviados → responderam → interessados → fecharam) e conversão por busca;
+- **Leads**: filtro por busca, cidade e status, troca manual de status, botão "Fechou" e exportação de CSV (respeita os filtros);
+- **Fila de aprovação**: dá para editar o texto, aprovar um a um ou todos de uma vez;
+- **Projetos**: possíveis fechamentos, projetos com recebido, a receber, despesas e lucro;
+- **Financeiro**: contas a receber, despesas, mês a mês;
+- **Log de envios**.
+
+O painel não usa JavaScript nem nada de fora (gráficos em SVG gerados no servidor), e manda cabeçalhos de segurança (CSP, sem iframe).
 
 Aprovar no painel não envia nada. O envio só acontece com `prospector enviar`.
+
+## Projetos, lucro e gerenciador
+
+Quando um lead fecha, o prospector cuida do dinheiro.
+
+**Detecção de fechamento.** Se a resposta no WhatsApp tiver algo como "fechado", "pode fazer", "qual o pix?", "como eu pago?" ou "vou querer", o lead vira `interessado` com o aviso **possível fechamento**, e chega uma notificação. Nada é registrado sozinho: você confirma no painel (Projetos, ou o botão "Fechou" na lista de leads).
+
+**Projeto.** Ao confirmar, o formulário já vem preenchido com o preço padrão do serviço (`financeiro.yaml`): site para `sem_site`/`so_social`, automação para `tem_site`. Ao salvar:
+
+- as parcelas são criadas: entrada (padrão 50%) no dia do fechamento e o restante no prazo de entrega;
+- o lead vira `cliente` (e um "não" dele daqui em diante é conversa normal, não pedido de descadastro);
+- com mensalidade, a cobrança de cada mês aparece sozinha a partir de um mês depois da entrega;
+- cancelar o projeto apaga as parcelas ainda não pagas.
+
+Na página do projeto você marca parcelas como recebidas ("Recebi"), lança despesas (domínio, hospedagem…) e vê recebido, a receber e lucro. Valores são guardados em centavos, sem erro de arredondamento.
+
+**Gerenciador inteligente** (Visão geral, ou `prospector financeiro`):
+
+- *O que fazer agora*: parcelas vencidas para cobrar, pagamentos que vencem em até 3 dias, prazos estourados ou próximos, projetos entregues e não quitados, possíveis fechamentos, interessados sem retorno e mensagens esperando aprovação;
+- *Sugestões*: quanto falta para a meta do mês (e quantos projetos isso representa), qual busca/oferta converte melhor e qual responde pouco, aviso de preço baixo quando a taxa de fechamento passa de 30%, clientes sem mensalidade, margem baixa, estoque de leads acabando;
+- *Números*: lucro do mês, meta, a receber, previsto para 30 dias (parcelas + mensalidades), receita recorrente, ticket médio, gráfico receita × despesas dos últimos 6 meses, funil completo até "fecharam" e uma tabela de conversão por busca.
+
+As regras são explícitas e estão em `prospector/insights.py`: dá para ver de onde sai cada número. Para receber os alertas importantes no desktop todo dia, coloque no cron:
+
+```
+0 9 * * 1-5  cd ~/prospector && .venv/bin/prospector financeiro --notificar
+```
+
+Edite o `financeiro.yaml` com os seus preços, custos, prazo, entrada e meta mensal. Os valores que vêm nele são só exemplos.
 
 ## Regras de envio
 
@@ -147,7 +180,7 @@ Os celulares são guardados no formato `55DDXXXXXXXXX`. A deduplicação usa o t
 
 ## Status dos leads
 
-`novo` → `na_fila` → `enviado` → `follow_up` → `sem_resposta`, e a qualquer momento `respondeu` / `interessado` / `nao_quer`. Também existem `descartado`, `rejeitado` (você recusou na fila), `sem_whatsapp` e `erro`.
+`novo` → `na_fila` → `enviado` → `follow_up` → `sem_resposta`, e a qualquer momento `respondeu` / `interessado` / `nao_quer`; quem fecha vira `cliente`. Também existem `descartado`, `rejeitado` (você recusou na fila), `sem_whatsapp` e `erro`.
 
 ## Testes
 
@@ -155,7 +188,7 @@ Os celulares são guardados no formato `55DDXXXXXXXXX`. A deduplicação usa o t
 .venv/bin/pytest -q
 ```
 
-Cobrem normalização de telefone, classificação de oferta e franquias, deduplicação, janela de horário (com fuso), limites por dia e por hora, intervalo, dias úteis, geração de mensagens, fila e follow-up, envio com um WA-AKG falso (dry-run, parada de emergência, nada de primeira mensagem duplicada), webhook (HMAC, opt-out, resposta fora do horário) e o painel (escape de HTML, CSV seguro, proteção contra POST de outra origem).
+Cobrem normalização de telefone, classificação de oferta e franquias, deduplicação, janela de horário (com fuso), limites por dia e por hora, intervalo, dias úteis, geração de mensagens, fila e follow-up, envio com um WA-AKG falso (dry-run, parada de emergência, nada de primeira mensagem duplicada), webhook (HMAC, opt-out, resposta fora do horário, detecção de fechamento), financeiro (dinheiro em centavos, parcelas, mensalidades, cancelamento, lucro), gerenciador (alertas e sugestões) e o painel (escape de HTML, CSV seguro, cabeçalhos de segurança, proteção contra POST de outra origem).
 
 ## Estrutura
 
@@ -176,8 +209,14 @@ prospector/
   whatsapp.py     API do WA-AKG
   replies.py      webhook: opt-out, notificação, resposta automática
   web.py          painel Flask + endpoint /webhook
+  web_finance.py  painel: visão geral, projetos, financeiro
+  finance.py      projetos, parcelas, despesas, mensalidades (centavos)
+  insights.py     gerenciador: alertas, sugestões, previsão
+  charts.py       gráficos SVG
+  templates/      HTML do painel     static/  CSS
 templates.yaml    textos das mensagens
 listas.yaml       franquias e domínios de redes sociais
+financeiro.yaml   preços, custos, entrada, meta mensal
 ```
 
 ## Avisos

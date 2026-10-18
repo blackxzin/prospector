@@ -1,0 +1,33 @@
+# Financeiro do prospector. Edite os valores com os SEUS preços.
+# Valores em reais (use ponto para centavos: 599.90).
+
+# Meta de faturamento por mês (recebido), usada no painel e nas sugestões.
+meta_mensal: 3000
+
+# Preços padrão que aparecem pré-preenchidos ao confirmar um fechamento.
+# Dá para mudar caso a caso no painel.
+precos:
+  site:
+    descricao: "Site simples com cardápio/planos e botão de WhatsApp"
+    valor: 600
+    custo_estimado: 60      # domínio, hospedagem do 1º ano etc.
+    mensalidade: 0          # manutenção mensal (0 = sem mensalidade)
+    prazo_dias: 7
+  automacao:
+    descricao: "Automação de atendimento no WhatsApp"
+    valor: 900
+    custo_estimado: 0
+    mensalidade: 150
+    prazo_dias: 10
+
+# Qual serviço cada oferta vira quando fecha.
+oferta_para_tipo:
+  sem_site: site
+  so_social: site
+  tem_site: automacao
+
+# Como o valor é cobrado: entrada no fechamento e o resto na entrega (prazo).
+entrada_percentual: 50
+
+# Categorias de despesa disponíveis no painel.
+categorias_despesa: [dominio, hospedagem, ferramenta, anuncio, transporte, imposto, outro]
