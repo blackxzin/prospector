@@ -37,6 +37,7 @@ services:
       - ./listas.yaml:/app/listas.yaml:ro
       - ./financeiro.yaml:/app/financeiro.yaml:ro
       - ./buscas.yaml:/app/buscas.yaml:ro
+      - ./nichos.yaml:/app/nichos.yaml:ro
       - ${BACKUP_DIR_HOST:-~/prospector-backups}:/backups
       - /run/user/${UID:-1000}/bus:/run/user/${UID:-1000}/bus
     command: ["painel", "--host", "127.0.0.1"]

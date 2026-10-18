@@ -130,7 +130,17 @@ Edite o `financeiro.yaml` com os seus preços, custos, prazo, entrada e meta men
 
 ### Site de exemplo automático
 
-Quando um lead responde com interesse ("pode mandar", "quero ver", "quanto custa"…), o prospector gera na hora um site de exemplo com a cara do negócio: nome, nota e avaliações do Google, cardápio, planos ou serviços de exemplo conforme a categoria, botão de WhatsApp com mensagem pronta e "como chegar". A mensagem com o link entra na **fila de aprovação** e você é notificado.
+Quando um lead responde com interesse ("pode mandar", "quero ver", "quanto custa"…), o prospector gera na hora um site de exemplo com a cara do negócio, e a mensagem com o link entra na **fila de aprovação** (você é notificado).
+
+O site muda conforme o **nicho** detectado pela categoria do Google Maps. São 11 nichos prontos: pizzaria, hamburgueria/lanchonete, esfiharia, açaí/sorveteria, padaria/confeitaria, restaurante, academia, barbearia, salão de beleza, pet shop e um geral. Cada um tem paleta, tipografia (Google Fonts), ilustração animada própria (pizza girando, hambúrguer flutuando, poste de barbearia rodando, halter levantando…) e o formato certo de conteúdo:
+
+- **cardápio** em grupos (tradicionais, especiais, doces…) para comida;
+- **planos** com cartões de preço e "mais escolhido" para academia e açaí;
+- **serviços** com duração e preço para barbearia, salão e pet shop.
+
+Todas as páginas têm menu fixo, abertura animada, faixa rolando com os itens, diferenciais, "como pedir" em 3 passos, nota do Google com estrelas, endereço com mapa, chamada final e botão flutuante do WhatsApp. Cada item do cardápio ou serviço abre o WhatsApp com a mensagem já escrita ("Olá! Quero pedir: Calabresa."). As animações são só CSS: abrem rápido, aparecem conforme a página rola e desligam sozinhas para quem prefere menos movimento. Tudo funciona no celular.
+
+Para mudar textos, cores, fontes, itens e preços de cada nicho, edite o `nichos.yaml`. A página avisa no topo que itens e valores são ilustrativos.
 
 - Prévia local: botão "ver exemplo" na lista de leads, ou `http://127.0.0.1:5050/demos/<slug>/`.
 - Gerar na mão: botão "Gerar exemplo" no painel ou `prospector demo gerar <id-do-lead>`.
@@ -288,6 +298,7 @@ templates.yaml    textos das mensagens
 listas.yaml       franquias e domínios de redes sociais
 financeiro.yaml   preços, custos, entrada, meta mensal, itens incluídos
 buscas.yaml       nichos × cidades das buscas em lote
+nichos.yaml       visual e conteúdo dos sites de exemplo por nicho
 ```
 
 ## Avisos

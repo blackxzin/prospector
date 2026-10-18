@@ -358,3 +358,44 @@ def test_panel_pix_proposal_and_demo_preview(web, listas):
     assert client.get("/demos/nao-existe-123/").status_code == 404
     dash = client.get("/").get_data(as_text=True)
     assert "Nenhum backup do banco ainda" in dash and "Textos que mais funcionam" in dash
+
+
+# ---------- sites de exemplo por nicho ----------
+
+@pytest.mark.parametrize("categoria,nome,esperado", [
+    ("Pizzaria", "Bella", "pizzaria"), ("Lanchonete", "Gilmar Lanches Pizzaria", "hamburgueria"),
+    ("Hamburgueria", "Brutus", "hamburgueria"), ("Esfiharia", "Nossa Massa", "esfiharia"),
+    ("Loja de açaí", "Açaí da Praça", "acaiteria"), ("Padaria", "Pão Dourado", "padaria"),
+    ("Restaurante", "Sabor Caseiro", "restaurante"), ("Academia", "Força Total", "academia"),
+    ("Barbearia", "Do Léo", "barbearia"), ("Salão de beleza", "Studio Bella", "salao"),
+    ("Pet shop", "Pet Amigo", "petshop"), ("Ótica", "Visão", "geral"),
+    ("", "Pizzaria do Zé", "pizzaria"),            # sem categoria: usa o nome
+    ("Barbearia", "Bar do Zé", "barbearia"),       # "bar" não confunde
+])
+def test_pick_niche(categoria, nome, esperado):
+    assert demo.pick_niche(demo.load_nichos(), categoria, nome) == esperado
+
+
+def test_every_niche_renders_complete_page():
+    nichos = demo.load_nichos()
+    for key, n in nichos.items():
+        cat = {"geral": "Ótica"}.get(key, n["match"][0] if n["match"] else "")
+        html = demo.render({"nome": "Negócio Teste", "categoria": cat, "telefone": "5514991234567", "chave": key,
+                            "cidade": "Itaí", "endereco": "Rua A, 1", "nota": 4.5, "avaliacoes": 30}, "Lucas",
+                           nichos=nichos)
+        assert html.count("wa.me/5514991234567") >= 4, key
+        assert n["fontes"]["display"].split()[0] in html and n["tema"]["accent"] in html
+        assert "<svg" in html and "@keyframes" in html and "prefers-reduced-motion" in html
+        assert "maps?q=Rua%20A%2C%201%2C%20It" in html
+
+
+def test_demo_without_phone_or_rating_still_renders():
+    html = demo.render({"nome": "Sem Dados", "categoria": "Pizzaria", "chave": "x"}, "Lucas")
+    assert "wa.me" not in html and "#contato" in html and "avaliações no Google" not in html
+
+
+def test_load_nichos_validates(tmp_path):
+    bad = tmp_path / "n.yaml"
+    bad.write_text("pizzaria: {match: [pizza]}\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        demo.load_nichos(bad)

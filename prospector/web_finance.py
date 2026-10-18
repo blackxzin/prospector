@@ -174,7 +174,13 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
         path = (ctx.settings.demos_dir / slug / "index.html").resolve()
         if not path.is_relative_to(ctx.settings.demos_dir.resolve()) or not path.exists():
             abort(404)
-        return send_file(path, mimetype="text/html")
+        resp = send_file(path, mimetype="text/html")
+        # a prévia usa Google Fonts e o mapa do Google, como no site publicado
+        resp.headers["Content-Security-Policy"] = (
+            "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.google.com; "
+            "script-src 'none'; base-uri 'none'")
+        return resp
 
     @web.post("/projetos/<int:project_id>/status")
     def projeto_status(project_id: int) -> Response:

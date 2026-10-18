@@ -61,6 +61,7 @@ class Settings:
     listas_path: Path
     financeiro_path: Path
     buscas_path: Path
+    nichos_path: Path
     backup_dir: Path
     backup_keep: int
     demos_dir: Path
@@ -123,6 +124,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         listas_path=_path(env, "LISTAS_PATH", ROOT / "listas.yaml"),
         financeiro_path=_path(env, "FINANCEIRO_PATH", ROOT / "financeiro.yaml"),
         buscas_path=_path(env, "BUSCAS_PATH", ROOT / "buscas.yaml"),
+        nichos_path=_path(env, "NICHOS_PATH", ROOT / "nichos.yaml"),
         backup_dir=_path(env, "BACKUP_DIR", Path.home() / "prospector-backups"),
         backup_keep=_int(env, "BACKUP_MANTER", 30),
         demos_dir=_path(env, "DEMOS_DIR", data_dir / "demos"),

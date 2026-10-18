@@ -50,6 +50,10 @@ class App:
         return FinanceConfig.load(self.settings.financeiro_path)
 
     @cached_property
+    def nichos(self) -> dict:
+        return demo.load_nichos(self.settings.nichos_path)
+
+    @cached_property
     def templates(self) -> Templates:
         return Templates.load(self.settings.templates_path)
 
@@ -94,7 +98,8 @@ class App:
     def make_demo(self, lead_id: int, *, queue_message: bool = True) -> demo.DemoResult:
         """Gera o site de exemplo do lead e, se houver DEMO_BASE_URL, põe a mensagem com o link na fila."""
         s = self.settings
-        result = demo.generate(self.conn, lead_id, s.demos_dir, s.demo_base_url, str(self.templates.data["remetente"]))
+        result = demo.generate(self.conn, lead_id, s.demos_dir, s.demo_base_url, str(self.templates.data["remetente"]),
+                               nichos=self.nichos)
         if queue_message and result.url:
             lead = db.get_lead(self.conn, lead_id)
             text = self.templates.demo_message(dict(lead), result.url, db.utcnow(), s.tz)
