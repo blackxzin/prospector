@@ -12,11 +12,12 @@ from pathlib import Path
 from . import db
 from . import fila as fq
 from .app import App
+from .classify import classify_offer, is_franchise
 from .importer import import_csv
 from .phone import normalize_mobile, pretty, variants
 from .scraper import ScraperError
 from .sender import RealClock, run as run_sender, type_and_send
-from .schedule import in_window, next_window_start, sent_last_hour, sent_today, typing_seconds
+from .schedule import fmt_local, in_window, next_window_start, sent_last_hour, sent_today, typing_seconds
 from .whatsapp import WhatsAppError
 
 log = logging.getLogger("prospector")
@@ -59,6 +60,27 @@ def cmd_buscar(app: App, args: argparse.Namespace) -> int:
 def cmd_importar(app: App, args: argparse.Namespace) -> int:
     result = import_csv(app.conn, Path(args.arquivo), args.busca, app.listas)
     print(f"Importação: {result}")
+    return 0
+
+
+def cmd_reclassificar(app: App, _args: argparse.Namespace) -> int:
+    """Reaplica listas.yaml (franquias e domínios) nos leads ainda não contatados."""
+    changed = 0
+    with db.tx(app.conn):
+        for lead in app.conn.execute("SELECT * FROM leads WHERE status IN ('novo', 'descartado')").fetchall():
+            oferta = classify_offer(lead["site"], app.listas.dominios_social)
+            franchise = is_franchise(lead["nome"], app.listas.franquias)
+            fields: dict[str, object] = {}
+            if oferta != lead["oferta"]:
+                fields["oferta"] = oferta
+            if franchise and lead["status"] == db.NOVO:
+                fields.update(status=db.DESCARTADO, motivo=f"franquia: {franchise}")
+            elif not franchise and (lead["motivo"] or "").startswith("franquia") and lead["telefone"]:
+                fields.update(status=db.NOVO, motivo=None)
+            if fields:
+                db.update_lead(app.conn, lead["id"], **fields)
+                changed += 1
+    print(f"{changed} leads atualizados.")
     return 0
 
 
@@ -135,7 +157,7 @@ def cmd_enviar(app: App, args: argparse.Namespace) -> int:
         now = db.utcnow()
         if not in_window(now, app.rules):
             nxt = next_window_start(now, app.rules).astimezone(s.tz)
-            print(f"Fora do horário comercial agora. Próxima janela: {nxt:%a %d/%m %H:%M}.")
+            print(f"Fora do horário comercial agora. Próxima janela: {fmt_local(nxt, s.tz)}.")
             if not args.aguardar:
                 print("Use --aguardar para deixar rodando até lá.")
                 return 0
@@ -194,8 +216,8 @@ def cmd_status(app: App, _args: argparse.Namespace) -> int:
     print(f"Hoje: {sent_today(now, sent, s.tz)}/{s.max_per_day} envios · última hora: "
           f"{sent_last_hour(now, sent)}/{s.max_per_hour}")
     window = "dentro" if in_window(now, app.rules) else "fora"
-    print(f"Agora: {now.astimezone(s.tz):%a %d/%m %H:%M} ({window} do horário). Próxima janela: "
-          f"{next_window_start(now, app.rules).astimezone(s.tz):%a %d/%m %H:%M}")
+    print(f"Agora: {fmt_local(now, s.tz)} ({window} do horário). Próxima janela: "
+          f"{fmt_local(next_window_start(now, app.rules), s.tz)}")
     pend = conn.execute("SELECT status, COUNT(*) n FROM fila WHERE status IN ('pendente','aprovado') "
                         "GROUP BY status").fetchall()
     print("Fila: " + (", ".join(f"{r['status']} {r['n']}" for r in pend) or "vazia"))
@@ -265,6 +287,9 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("arquivo")
     a.add_argument("--busca", required=True, help="texto da busca de origem")
     a.set_defaults(fn=cmd_importar)
+
+    sub.add_parser("reclassificar", help="reaplica listas.yaml nos leads não contatados").set_defaults(
+        fn=cmd_reclassificar)
 
     a = sub.add_parser("fila", help="gera e mostra a fila do dia (com follow-ups vencidos)")
     a.add_argument("--busca")

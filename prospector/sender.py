@@ -15,7 +15,7 @@ from . import fila as fq
 from .messages import fix_greeting
 from .notify import notify
 from .phone import to_jid, variants
-from .schedule import Rules, earliest_send, random_gap, typing_seconds
+from .schedule import fmt_local, Rules, earliest_send, random_gap, typing_seconds
 from .whatsapp import WhatsAppError
 
 log = logging.getLogger("prospector")
@@ -196,7 +196,7 @@ def run(
                 report.motivo_fim = "Sem horário disponível."
                 break
         if when.astimezone(rules.tz).date() != clock.now().astimezone(rules.tz).date() and not cross_days:
-            report.motivo_fim = (f"Fora do horário. Próxima janela: {when.astimezone(rules.tz):%a %d/%m %H:%M}. "
+            report.motivo_fim = (f"Fora do horário. Próxima janela: {fmt_local(when, rules.tz)}. "
                                  "Use --aguardar para esperar.")
             break
         wait_s = (when - clock.now()).total_seconds()
@@ -210,7 +210,7 @@ def run(
 
         if dry_run:
             clock.sleep(typing_s)
-            line = (f"[DRY-RUN {now_local:%a %d/%m %H:%M}] #{item['id']} {item['tipo']} -> {item['telefone']} "
+            line = (f"[DRY-RUN {fmt_local(now_local, rules.tz)}] #{item['id']} {item['tipo']} -> {item['telefone']} "
                     f"({item['nome']}), digitando {typing_s:.0f}s:\n    {text}")
             out(line)
             report.linhas.append(line)

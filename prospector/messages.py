@@ -18,6 +18,7 @@ MIN_VARIANTS = 3
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
 _PARENS = re.compile(r"\s*\([^)]*\)\s*")
 _SPACES = re.compile(r"\s{2,}")
+_CONNECTORS = frozenset({"de", "da", "do", "das", "dos", "e", "em", "na", "no"})
 
 
 class TemplateError(ValueError):
@@ -134,7 +135,7 @@ def clean_name(name: str) -> str:
     out = _PARENS.sub(" ", out)
     out = _SPACES.sub(" ", out).strip(" -|,")
     if out.isupper() and len(out) > 3:
-        out = " ".join(w.capitalize() if len(w) > 2 else w.lower() for w in out.split())
+        out = " ".join(w.lower() if w.lower() in _CONNECTORS else w.capitalize() for w in out.split())
     return out or name.strip()
 
 

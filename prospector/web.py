@@ -60,7 +60,8 @@ def create_app(app_ctx: App | None = None) -> Flask:
     ctx = app_ctx or App.create()
     web = Flask(__name__)
     web.secret_key = secrets.token_hex(32)  # só para as mensagens "flash" do painel
-    web.jinja_loader = DictLoader({"base": BASE, "leads": LEADS, "fila": FILA, "envios": ENVIOS})
+    web.jinja_loader = DictLoader({  # extensão .html liga o autoescape do Flask
+        "base.html": BASE, "leads.html": LEADS, "fila.html": FILA, "envios.html": ENVIOS})
     web.jinja_env.globals["pretty"] = pretty
 
     def render(name: str, **kw: Any) -> str:
@@ -80,7 +81,7 @@ def create_app(app_ctx: App | None = None) -> Flask:
         f = _filters()
         conn = ctx.conn
         return render(
-            "leads", page="leads", f=f, leads=_query_leads(conn, f, LIST_LIMIT), limite=LIST_LIMIT,
+            "leads.html", page="leads", f=f, leads=_query_leads(conn, f, LIST_LIMIT), limite=LIST_LIMIT,
             funil=db.funnel(conn), statuses=db.STATUSES, manual_statuses=MANUAL_STATUSES,
             buscas=[r[0] for r in conn.execute("SELECT DISTINCT busca FROM leads WHERE busca IS NOT NULL ORDER BY 1")],
             cidades=[r[0] for r in conn.execute("SELECT DISTINCT cidade FROM leads WHERE cidade IS NOT NULL ORDER BY 1")],
@@ -114,7 +115,7 @@ def create_app(app_ctx: App | None = None) -> Flask:
     @web.get("/fila")
     def fila() -> str:
         itens = fq.list_items(ctx.conn)
-        return render("fila", page="fila", itens=itens, pendentes=sum(1 for i in itens if i["status"] == fq.PENDENTE))
+        return render("fila.html", page="fila", itens=itens, pendentes=sum(1 for i in itens if i["status"] == fq.PENDENTE))
 
     @web.post("/fila/gerar")
     def gerar_fila() -> Response:
@@ -150,7 +151,7 @@ def create_app(app_ctx: App | None = None) -> Flask:
     @web.get("/envios")
     def envios() -> str:
         rows = ctx.conn.execute("SELECT * FROM envios ORDER BY id DESC LIMIT 500").fetchall()
-        return render("envios", page="envios", envios=rows)
+        return render("envios.html", page="envios", envios=rows)
 
     @web.post("/webhook")
     def webhook() -> tuple[str, int]:

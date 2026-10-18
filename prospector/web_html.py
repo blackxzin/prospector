@@ -37,7 +37,7 @@ th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-a
 {% block body %}{% endblock %}
 </main></body></html>"""
 
-LEADS = """{% extends 'base' %}{% block body %}
+LEADS = """{% extends 'base.html' %}{% block body %}
 <div class="funnel">
 {% for k, label in [('encontrados','encontrados'),('aprovados','aprovados'),('enviados','enviados'),('responderam','responderam'),('interessados','interessados')] %}
 <div class="step"><b>{{ funil[k] }}</b><span>{{ label }}</span></div>{% endfor %}
@@ -68,7 +68,7 @@ LEADS = """{% extends 'base' %}{% block body %}
 </table></div>
 {% endblock %}"""
 
-FILA = """{% extends 'base' %}{% block body %}
+FILA = """{% extends 'base.html' %}{% block body %}
 <div class="row" style="margin-bottom:12px">
 <form method="post" action="{{ url_for('gerar_fila') }}"><button>Gerar fila do dia</button></form>
 {% if pendentes %}<form method="post" action="{{ url_for('aprovar_todos') }}"><button class="pri">Aprovar todos os pendentes ({{ pendentes }})</button></form>{% endif %}
@@ -86,7 +86,7 @@ FILA = """{% extends 'base' %}{% block body %}
 </form></div>{% endfor %}
 {% endblock %}"""
 
-ENVIOS = """{% extends 'base' %}{% block body %}
+ENVIOS = """{% extends 'base.html' %}{% block body %}
 <div class="wrap"><table><tr><th>Quando</th><th>Número</th><th>Tipo</th><th>Texto</th><th>Resultado</th></tr>
 {% for e in envios %}<tr><td>{{ e.enviado_em }}</td><td>{{ pretty(e.telefone) }}</td>
 <td>{{ e.tipo }}{% if e.dry_run %} <span class="tag">dry-run</span>{% endif %}</td>

@@ -107,7 +107,8 @@ def earliest_send(now: datetime, sent: list[datetime], rules: Rules, gap_s: int)
         recent = sorted(s for s in sent if candidate - HOUR < s <= candidate)
         if len(recent) >= rules.max_per_hour:
             # espera o envio mais antigo da última hora "sair" da janela de 60 min
-            candidate = recent[len(recent) - rules.max_per_hour] + HOUR + timedelta(seconds=1)
+            # (+ um pedaço do intervalo sorteado, para não cair sempre no mesmo minuto)
+            candidate = recent[len(recent) - rules.max_per_hour] + HOUR + timedelta(seconds=1 + gap_s % 300)
             continue
         return candidate
     return None
@@ -134,3 +135,12 @@ def add_business_days(start: datetime, days: int, rules: Rules) -> datetime:
         if current.weekday() in rules.weekdays:
             added += 1
     return datetime.combine(current, t.timetz().replace(tzinfo=None), tzinfo=rules.tz)
+
+
+_WEEKDAYS_PT = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
+
+
+def fmt_local(dt: datetime, tz: tzinfo) -> str:
+    """'seg 19/10 09:00' no fuso local."""
+    t = local(dt, tz)
+    return f"{_WEEKDAYS_PT[t.weekday()]} {t:%d/%m %H:%M}"

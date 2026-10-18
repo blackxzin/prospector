@@ -18,32 +18,34 @@ elogio_nota_minima: 4.0
 elogio_avaliacoes_minimas: 10
 
 elogios_com_nota:
-  - "Vi que vocês têm nota {nota} com {avaliacoes} avaliações no Google, mandaram bem!"
+  - "Vocês têm nota {nota} com {avaliacoes} avaliações no Google, mandaram bem!"
   - "{nota} de nota e {avaliacoes} avaliações no Google não é pouca coisa, parabéns."
   - "Achei vocês no Google Maps, nota {nota} com {avaliacoes} avaliações, muito bom."
 
 elogios_sem_nota:
   - "Achei vocês no Google Maps."
   - "Encontrei vocês pelo Google Maps."
-  - "Vi o perfil de vocês no Google Maps."
+  - "Dei uma olhada no perfil de vocês no Google Maps."
 
 vitrine:
   padrao: "os serviços"
   por_categoria:
-    - palavras: [pizza, restaurante, lanche, hamburg, burger, açaí, acai, sorvete, padaria, confeitaria, doceria, bar, café, cafe, marmita, comida, delivery, esfiha, sushi, japon, churrasc, pastel]
+    - palavras: [pizza, restaurante, lanch, hamburg, esfih, burger, açaí, acai, sorvete, padaria, confeitaria, doceria, bar, café, cafe, marmita, comida, delivery, esfiha, sushi, japon, churrasc, pastel]
       texto: "o cardápio"
     - palavras: [academia, fitness, crossfit, pilates, musculação, musculacao, studio, estúdio, funcional, natação, natacao, luta, jiu, muay]
       texto: "os planos e horários"
     - palavras: [salão, salao, barbearia, beleza, estética, estetica, manicure, cabeleireiro, sobrancelha]
       texto: "os serviços e preços"
+    - palavras: [loja, cosmético, cosmetico, roupa, moda, calçado, calcado, presente, papelaria, ótica, otica, pet shop]
+      texto: "os produtos"
 
 primeira:
   sem_site:
     - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Reparei que vocês ainda não têm site. Eu faço um site simples, com {vitrine} e um botão que abre direto o WhatsApp de vocês. Posso te mandar um exemplo, sem compromisso?"
     - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Não achei um site de vocês, e muita gente procura no Google antes de pedir. Monto uma página rápida com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Vi que falta um site para vocês aparecerem melhor no Google. Faço um bem simples, com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Notei que falta um site para vocês aparecerem melhor no Google. Faço um bem simples, com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
   so_social:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Vi que vocês usam o Instagram como site. Dá para ter uma página própria, simples, com {vitrine} e um botão que abre o WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Reparei que vocês usam o Instagram como site. Dá para ter uma página própria, simples, com {vitrine} e um botão que abre o WhatsApp. Posso te mandar um exemplo, sem compromisso?"
     - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Hoje o link de vocês leva só para rede social. Eu faço um site simples com {vitrine} e botão de WhatsApp, que ajuda a aparecer no Google. Posso te mandar um exemplo, sem compromisso?"
     - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Reparei que não tem um site próprio, só rede social. Monto uma página rápida com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
   tem_site:

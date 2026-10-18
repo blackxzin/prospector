@@ -1,0 +1,41 @@
+# Sobe o scraper e o painel/webhook do prospector.
+# O WA-AKG NÃO faz parte deste compose: ele já roda à parte em http://localhost:3000.
+#
+#   docker compose up -d                      # scraper + painel
+#   docker compose run --rm prospector buscar "pizzaria em Itaí SP"
+#   docker compose run --rm prospector enviar --dry-run
+
+services:
+  gmaps:
+    image: gosom/google-maps-scraper
+    container_name: gmaps
+    command: ["-data-folder", "/gmapsdata"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./gmapsdata:/gmapsdata
+    restart: unless-stopped
+
+  prospector:
+    build: .
+    image: prospector:local
+    # Rede do host: enxerga o WA-AKG em localhost:3000 e o scraper em localhost:8080,
+    # e o WA-AKG enxerga o webhook em localhost:5050.
+    network_mode: host
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GMAPS_URL: http://localhost:8080
+      # notify-send do container falando com o desktop do host
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/${UID:-1000}/bus
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./data:/app/data
+      - ./templates.yaml:/app/templates.yaml:ro
+      - ./listas.yaml:/app/listas.yaml:ro
+      - /run/user/${UID:-1000}/bus:/run/user/${UID:-1000}/bus
+    command: ["painel", "--host", "127.0.0.1"]
+    depends_on:
+      - gmaps
+    restart: unless-stopped
