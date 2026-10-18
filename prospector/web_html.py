@@ -10,7 +10,7 @@ BASE = """<!doctype html>
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
 header{display:flex;gap:16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card);flex-wrap:wrap}
 header a{color:var(--fg);text-decoration:none;font-weight:600}header a.on{color:var(--acc)}
-main{padding:16px;max-width:1300px;margin:0 auto}
+a{color:var(--acc)}main{padding:16px;max-width:1300px;margin:0 auto}
 .funnel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .step{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:120px}
 .step b{display:block;font-size:22px}.step span{color:var(--muted);font-size:12px}
@@ -63,7 +63,8 @@ LEADS = """{% extends 'base.html' %}{% block body %}
 <td><span class="tag">{{ l.status }}</span>{% if l.motivo %}<br><span class="muted">{{ l.motivo }}</span>{% endif %}</td>
 <td class="muted">{{ (l.resposta or '')[:140] }}</td>
 <td><form method="post" action="{{ url_for('set_status', lead_id=l.id) }}" class="row">
-<select name="status">{% for s in manual_statuses %}<option {{ 'selected' if s==l.status }}>{{ s }}</option>{% endfor %}</select>
+<select name="status">{% if l.status not in manual_statuses %}<option value="" selected disabled>{{ l.status }}</option>{% endif %}
+{% for s in manual_statuses %}<option {{ 'selected' if s==l.status }}>{{ s }}</option>{% endfor %}</select>
 <button>ok</button></form></td></tr>{% endfor %}
 </table></div>
 {% endblock %}"""
