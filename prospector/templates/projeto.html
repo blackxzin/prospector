@@ -9,6 +9,7 @@
       {% if p.prazo %} · prazo {{ data_br(p.prazo) }}{% endif %}{% if p.entregue_em %} · entregue em {{ data_br(p.entregue_em) }}{% endif %}</p>
   </div>
   <div class="toolbar">
+    <a class="btn btn-sm" href="{{ url_for('proposta_pdf', project_id=p.id) }}" target="_blank" rel="noopener">Proposta (PDF)</a>
     <span class="tag {{ project_color(p.status) }}">{{ p.status.replace('_', ' ') }}</span>
     {% for s, label in [('em_andamento', 'Em andamento'), ('entregue', 'Marcar entregue'), ('cancelado', 'Cancelar')] if s != p.status %}
       <form method="post" action="{{ url_for('projeto_status', project_id=p.id) }}">
@@ -32,13 +33,19 @@
     <div class="card-head"><h2 id="pg-h">Parcelas</h2></div>
     {% if pagamentos %}
     <div class="table-wrap"><table>
-      <thead><tr><th>Descrição</th><th>Vencimento</th><th class="r">Valor</th><th>Situação</th><th></th></tr></thead>
+      <thead><tr><th>Descrição</th><th>Vencimento</th><th class="r">Valor</th><th>Situação</th><th>Pix</th><th></th></tr></thead>
       <tbody>{% for g in pagamentos %}<tr>
         <td>{{ g.descricao }}</td><td class="num">{{ data_br(g.vencimento) }}</td>
         <td class="r num">{{ brl(g.valor_centavos) }}</td>
         <td>{% if g.pago_em %}<span class="tag green">pago {{ data_br(g.pago_em) }}</span>
           {% elif g.vencimento < hoje %}<span class="tag red">vencido</span>
-          {% else %}<span class="tag amber">em aberto</span>{% endif %}</td>
+          {% else %}<span class="tag amber">em aberto</span>{% endif %}
+          {% if g.cobrancas %}<div class="sub">{{ g.cobrancas }} cobrança(s) enviada(s)</div>{% endif %}</td>
+        <td>{% if g.id in pix_codes %}
+          <details class="pix"><summary>QR e copia e cola</summary>
+            <div class="pix-box">{{ pix_codes[g.id].svg|safe }}
+              <textarea readonly aria-label="Pix copia e cola">{{ pix_codes[g.id].code }}</textarea></div></details>
+          {% elif not g.pago_em and not pix_ok %}<span class="sub">configure PIX_CHAVE</span>{% endif %}</td>
         <td><form method="post" action="{{ url_for('pagamento_toggle', payment_id=g.id) }}">
           <input type="hidden" name="volta" value="{{ p.id }}">
           <button class="btn-sm">{{ 'Desfazer' if g.pago_em else 'Recebi' }}</button></form></td>

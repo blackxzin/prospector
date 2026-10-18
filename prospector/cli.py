@@ -89,8 +89,8 @@ def cmd_fila(app: App, args: argparse.Namespace) -> int:
     if not args.so_mostrar:
         res = fq.build_queue(app.conn, app.templates, app.rules, db.utcnow(),
                              size=args.tamanho or s.max_per_day, followup_days=s.followup_business_days,
-                             busca=args.busca, cidade=args.cidade)
-        print(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups "
+                             busca=args.busca, cidade=args.cidade, charge_text=app.charge_text)
+        print(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças "
               f"({res.encerrados} leads encerrados como sem_resposta).")
     itens = fq.list_items(app.conn)
     if not itens:
@@ -258,6 +258,128 @@ def cmd_financeiro(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backup(app: App, args: argparse.Namespace) -> int:
+    from .backup import BackupError, list_backups, make_backup
+    from .config import ROOT
+    dest = Path(args.destino).expanduser() if args.destino else app.settings.backup_dir
+    if args.listar:
+        for b in list_backups(dest):
+            print(b)
+        return 0
+    try:
+        res = make_backup(app.conn, dest, keep=args.manter or app.settings.backup_keep, config_root=ROOT)
+    except (BackupError, OSError) as exc:
+        print(f"Backup falhou: {exc}", file=sys.stderr)
+        app.notify("backup falhou", str(exc), urgent=True)
+        return 1
+    print(f"Backup ok: {res.path} ({res.size / 1024:.0f} KB). Removidos {len(res.removed)} antigos.")
+    return 0
+
+
+def cmd_ab(app: App, _args: argparse.Namespace) -> int:
+    """Desempenho de cada variação da primeira mensagem."""
+    from .messages import variant_id
+    stats = fq.ab_stats(app.conn)
+    for oferta, options in app.templates.data["primeira"].items():
+        print(f"\n{oferta}:")
+        for text in options:
+            sent, pos = stats.get(variant_id(text), (0, 0))
+            rate = f"{pos / sent:.0%}" if sent else "  -"
+            print(f"  [{variant_id(text)}] {sent:3d} enviados · {pos:3d} positivas · {rate:>4}  {text[:70]}...")
+    print("\nAs variações com mais respostas positivas passam a ser sorteadas com mais frequência.")
+    return 0
+
+
+def cmd_checar_sites(app: App, args: argparse.Namespace) -> int:
+    from .sitecheck import check_leads
+    checked, bad = check_leads(app.conn, limit=args.limite)
+    print(f"{checked} site(s) checado(s), {bad} com problema (oferta virou site_problema).")
+    return 0
+
+
+def cmd_lote(app: App, args: argparse.Namespace) -> int:
+    from .lote import BatchConfig, pending, run_batch
+    try:
+        cfg = BatchConfig.load(app.settings.buscas_path)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    todo = pending(app.conn, cfg)
+    if args.listar or not todo:
+        print(f"{len(todo)} busca(s) pendente(s) de {len(cfg.queries())}:")
+        for q in todo:
+            print(f"  {q}")
+        return 0
+    results = run_batch(app.conn, cfg, app.search, limit=args.max)
+    ok = sum(1 for _, r in results if not r.startswith("erro"))
+    app.notify("buscas em lote", f"{ok}/{len(results)} buscas ok. {len(pending(app.conn, cfg))} pendentes.")
+    return 0
+
+
+def cmd_demo(app: App, args: argparse.Namespace) -> int:
+    from . import demo
+    s = app.settings
+    if args.acao == "publicar":
+        if not s.demo_repo_dir:
+            print("Configure DEMO_REPO_DIR (pasta de um repositório git publicado, ex.: GitHub Pages).",
+                  file=sys.stderr)
+            return 1
+        try:
+            print(demo.publish(s.demos_dir, s.demo_repo_dir))
+        except (ValueError, OSError) as exc:
+            print(f"Falhou: {exc}", file=sys.stderr)
+            return 1
+        return 0
+    if not args.lead:
+        print("Informe o id do lead: prospector demo gerar 12", file=sys.stderr)
+        return 1
+    try:
+        res = app.make_demo(args.lead, queue_message=not args.sem_fila)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    print(f"Exemplo gerado: {res.path}")
+    print(f"Prévia no painel: http://{s.web_host}:{s.web_port}/demos/{res.slug}/")
+    if res.url:
+        print(f"Link público (depois de 'prospector demo publicar'): {res.url}")
+        if not args.sem_fila:
+            print("Mensagem com o link está na fila, aguardando aprovação.")
+    else:
+        print("Sem DEMO_BASE_URL: o link público não foi gerado e nada entrou na fila.")
+    return 0
+
+
+def cmd_proposta(app: App, args: argparse.Namespace) -> int:
+    from . import finance as fin
+    proj = fin.project(app.conn, args.projeto)
+    if not proj:
+        print("Projeto não encontrado.", file=sys.stderr)
+        return 1
+    data = app.proposal_pdf(proj)
+    out = Path(args.saida) if args.saida else app.settings.data_dir / "propostas" / f"proposta-{proj['id']}.pdf"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    print(f"Proposta salva em {out}")
+    return 0
+
+
+def cmd_relatorio(app: App, args: argparse.Namespace) -> int:
+    from . import relatorio
+    s = app.settings
+    hoje = db.utcnow().astimezone(s.tz).date()
+    rel = relatorio.build(app.conn, hoje, s.tz, days=args.dias)
+    text = rel.markdown()
+    print(text)
+    folder = s.data_dir / "relatorios"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"relatorio-{hoje:%Y-%m-%d}.md"
+    path.write_text(text, encoding="utf-8")
+    print(f"Salvo em {path}")
+    if args.notificar:
+        app.notify("relatório da semana", rel.resumo_curto())
+    return 0
+
+
 def cmd_retomar(app: App, _args: argparse.Namespace) -> int:
     db.set_state(app.conn, db.PARADO, None)
     print("Envio liberado de novo.")
@@ -350,6 +472,39 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("financeiro", help="resumo financeiro, alertas e sugestões do gerenciador")
     a.add_argument("--notificar", action="store_true", help="manda notify-send dos alertas importantes (bom p/ cron)")
     a.set_defaults(fn=cmd_financeiro)
+
+    a = sub.add_parser("backup", help="copia o banco para BACKUP_DIR (mantém os últimos BACKUP_MANTER)")
+    a.add_argument("--destino")
+    a.add_argument("--manter", type=int)
+    a.add_argument("--listar", action="store_true")
+    a.set_defaults(fn=cmd_backup)
+
+    sub.add_parser("ab", help="resultado do teste A/B das primeiras mensagens").set_defaults(fn=cmd_ab)
+
+    a = sub.add_parser("checar-sites", help="checa os sites dos leads (fora do ar, sem HTTPS, lento, celular)")
+    a.add_argument("--limite", type=int, default=50)
+    a.set_defaults(fn=cmd_checar_sites)
+
+    a = sub.add_parser("lote", help="roda as buscas de buscas.yaml (nichos × cidades) ainda não feitas")
+    a.add_argument("--max", type=int, help="máximo de buscas nesta execução")
+    a.add_argument("--listar", action="store_true", help="só lista as pendentes")
+    a.set_defaults(fn=cmd_lote)
+
+    a = sub.add_parser("demo", help="site de exemplo: 'gerar <lead>' ou 'publicar'")
+    a.add_argument("acao", choices=("gerar", "publicar"))
+    a.add_argument("lead", type=int, nargs="?")
+    a.add_argument("--sem-fila", action="store_true", help="só gera o site, sem pôr mensagem na fila")
+    a.set_defaults(fn=cmd_demo)
+
+    a = sub.add_parser("proposta", help="gera a proposta em PDF de um projeto")
+    a.add_argument("projeto", type=int)
+    a.add_argument("--saida")
+    a.set_defaults(fn=cmd_proposta)
+
+    a = sub.add_parser("relatorio", help="relatório dos últimos dias (padrão: 7)")
+    a.add_argument("--dias", type=int, default=7)
+    a.add_argument("--notificar", action="store_true")
+    a.set_defaults(fn=cmd_relatorio)
 
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)
 

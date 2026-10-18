@@ -88,6 +88,33 @@
     </section>
   </div>
 
+  <div class="grid g-2">
+  <section class="card" aria-labelledby="ab-h">
+    <div class="card-head"><h2 id="ab-h">Textos que mais funcionam</h2><span class="muted">teste A/B automático</span></div>
+    {% if ab %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Variação</th><th class="r">Enviados</th><th class="r">Respostas positivas</th></tr></thead>
+      <tbody>{% for v in ab %}<tr>
+        <td><span class="tag plain">{{ v.oferta }}</span> <span class="ink2">{{ v.texto[:90] }}…</span></td>
+        <td class="r num">{{ v.enviados }}</td>
+        <td class="r num">{{ v.positivos }} <span class="muted">{{ '%.0f'|format(v.taxa * 100) }}%</span></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="sub">As melhores passam a ser sorteadas com mais frequência. Detalhes: <code>prospector ab</code>.</p>
+    {% else %}<p class="empty">Aparece depois dos primeiros envios. Cada variação do templates.yaml é medida sozinha.</p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="lote-h">
+    <div class="card-head"><h2 id="lote-h">Buscas em lote</h2><span class="muted">buscas.yaml</span></div>
+    {% if lote %}
+      {% set feitas = lote.total - lote.pendentes %}
+      <div class="meter-row"><span>{{ feitas }} de {{ lote.total }} buscas feitas</span><span class="num">{{ (feitas * 100 // lote.total) if lote.total else 0 }}%</span></div>
+      <div class="meter-track"><div class="meter-fill" style="width: {{ (feitas * 100 // lote.total) if lote.total else 0 }}%"></div></div>
+      <p class="sub">{{ lote.pendentes }} combinação(ões) nicho × cidade pendente(s). Rode <code>prospector lote</code> (ou deixe no cron de madrugada).</p>
+    {% else %}<p class="empty">Crie o buscas.yaml com nichos e cidades.</p>{% endif %}
+  </section>
+  </div>
+
   <section class="card" aria-labelledby="seg-h">
     <div class="card-head"><h2 id="seg-h">O que converte</h2><span class="muted">por busca e oferta, só leads já contatados</span></div>
     {% if painel.segmentos %}

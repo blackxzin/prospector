@@ -23,6 +23,8 @@
     <span class="tag plain">{{ i.tipo }}</span><span class="tag plain">{{ i.oferta }}</span>
     <span class="muted num">{{ pretty(i.telefone) }}{% if i.cidade %} · {{ i.cidade }}{% endif %}{% if i.nota %} · nota {{ i.nota }} ({{ i.avaliacoes or 0 }}){% endif %}</span>
   </div>
+  {% if i.tipo == 'exemplo' %}<p class="sub">Leva o link do site de exemplo: rode <code>prospector demo publicar</code> antes de aprovar, para o link abrir.</p>{% endif %}
+  {% if i.tipo == 'cobranca' %}<p class="sub">Cobrança de parcela vencida (no máximo 2 lembretes por parcela).</p>{% endif %}
   <form method="post" action="{{ url_for('aprovar_item', item_id=i.id) }}">
     {% if i.status == 'pendente' %}
       <textarea name="texto" aria-label="Mensagem para {{ i.nome }}">{{ i.texto }}</textarea>

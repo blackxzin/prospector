@@ -8,6 +8,7 @@ license = { text = "MIT" }
 dependencies = [
     "flask>=3.0",
     "pyyaml>=6.0",
+    "qrcode>=7.4",
     "tzdata>=2024.1",
 ]
 
@@ -25,7 +26,7 @@ build-backend = "setuptools.build_meta"
 include = ["prospector*"]
 
 [tool.setuptools.package-data]
-prospector = ["templates/*.html", "static/*"]
+prospector = ["templates/*.html", "templates/demo/*.html", "static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

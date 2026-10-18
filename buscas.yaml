@@ -1,0 +1,23 @@
+# Buscas em lote: `prospector lote` roda cada combinação nicho × cidade uma vez só
+# (as já feitas ficam registradas no banco e são puladas). Bom para deixar no cron de madrugada.
+
+nichos:
+  - pizzaria
+  - hamburgueria
+  - lanchonete
+  - academia
+  - barbearia
+  - salão de beleza
+  - açaiteria
+  - padaria
+
+cidades:
+  - Itaí SP
+  - Avaré SP
+  - Taquarituba SP
+  - Paranapanema SP
+  - Arandu SP
+  - Cerqueira César SP
+
+# Quantas buscas no máximo por execução (cada uma leva alguns minutos).
+max_por_execucao: 6

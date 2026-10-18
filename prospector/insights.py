@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from . import db
@@ -234,14 +234,26 @@ def suggestions(conn: sqlite3.Connection, resumo: Resumo, segs: list[dict[str, A
     return out
 
 
-def build(conn: sqlite3.Connection, cfg: fin.FinanceConfig, today: date) -> Painel:
+def backup_alert(last: datetime | None, now: datetime, max_days: int = 2) -> Alerta | None:
+    if last is None:
+        return Alerta(ATENCAO, "Nenhum backup do banco ainda",
+                      "Rode 'prospector backup' e coloque no cron (veja o README).")
+    days = (now - last).days
+    if days >= max_days:
+        return Alerta(ATENCAO, f"Último backup há {days} dias", "Rode 'prospector backup' (ou confira o cron).")
+    return None
+
+
+def build(conn: sqlite3.Connection, cfg: fin.FinanceConfig, today: date,
+          extra_alerts: list[Alerta] | None = None) -> Painel:
     fin.ensure_monthly_fees(conn, today)
     resumo = summary(conn, today, cfg.meta_mensal)
     segs = segments(conn)
     prices = {k: v.valor for k, v in cfg.precos.items()}
+    priority = {CRITICO: 0, BOM: 1, ATENCAO: 2, INFO: 3}
     return Painel(
         resumo=resumo,
-        alertas=alerts(conn, today),
+        alertas=sorted(alerts(conn, today) + list(extra_alerts or []), key=lambda a: priority[a.nivel]),
         sugestoes=suggestions(conn, resumo, segs, prices, today),
         segmentos=segs,
         serie=fin.monthly_series(conn, today),

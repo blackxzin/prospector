@@ -91,8 +91,15 @@ def _blocked_reason(conn: sqlite3.Connection, item: sqlite3.Row) -> str | None:
     numbers = variants(item["telefone"])
     if db.is_blocked(conn, numbers):
         return "número na lista de bloqueio"
-    if item["lead_status"] in (db.NAO_QUER, db.RESPONDEU, db.INTERESSADO):
+    if item["lead_status"] == db.NAO_QUER:
+        return "lead pediu para não receber mensagens"
+    prospecting = item["tipo"] in (db.PRIMEIRA, db.FOLLOWUP)
+    if prospecting and item["lead_status"] in (db.RESPONDEU, db.INTERESSADO, db.CLIENTE):
         return f"lead com status {item['lead_status']}"
+    if item["tipo"] == fq.COBRANCA:
+        paid = conn.execute("SELECT pago_em FROM pagamentos WHERE id = ?", (item["pagamento_id"],)).fetchone()
+        if not paid or paid["pago_em"]:
+            return "parcela já paga ou removida"
     if item["tipo"] == db.PRIMEIRA and db.first_message_already_sent(conn, numbers):
         return "primeira mensagem já enviada para este número"
     return None
@@ -125,9 +132,13 @@ def _record_success(conn: sqlite3.Connection, item: sqlite3.Row, text: str, jid:
         conn.execute("UPDATE fila SET status = ?, texto = ?, atualizado_em = ? WHERE id = ?",
                      (fq.ENVIADO, text, db.iso(when), item["id"]))
         if item["tipo"] == db.PRIMEIRA:
-            db.update_lead(conn, item["lead_id"], status=db.ENVIADO, enviado_em=db.iso(when), jid=jid)
-        else:
+            db.update_lead(conn, item["lead_id"], status=db.ENVIADO, enviado_em=db.iso(when), jid=jid,
+                           variante=item["variante"])
+        elif item["tipo"] == db.FOLLOWUP:
             db.update_lead(conn, item["lead_id"], status=db.FOLLOW_UP, followup_em=db.iso(when))
+        elif item["tipo"] == fq.COBRANCA and item["pagamento_id"]:
+            conn.execute("UPDATE pagamentos SET cobrancas = cobrancas + 1, ultima_cobranca = ? WHERE id = ?",
+                         (when.date().isoformat(), item["pagamento_id"]))
 
 
 def _record_failure(conn: sqlite3.Connection, item: sqlite3.Row, text: str, exc: WhatsAppError) -> None:
@@ -237,7 +248,10 @@ def run(
                     continue
             # Revalida depois da espera: o lead pode ter respondido/pedido para parar enquanto aguardávamos.
             fresh = conn.execute("SELECT status FROM leads WHERE id = ?", (item["lead_id"],)).fetchone()
-            if db.stop_reason(conn) or (fresh and fresh["status"] in (db.NAO_QUER, db.RESPONDEU, db.INTERESSADO)):
+            changed = fresh and (fresh["status"] == db.NAO_QUER or (
+                item["tipo"] in (db.PRIMEIRA, db.FOLLOWUP)
+                and fresh["status"] in (db.RESPONDEU, db.INTERESSADO, db.CLIENTE)))
+            if db.stop_reason(conn) or changed:
                 out(f"  #{item['id']}: situação mudou durante a espera, pulando")
                 report.pulados += 1
                 if db.stop_reason(conn):

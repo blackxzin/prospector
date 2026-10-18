@@ -267,3 +267,8 @@ label.f input, label.f select, label.f textarea { font-size: 14px; }
 @media (max-width: 480px) { .g-kpi { grid-template-columns: 1fr; } }
 .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .col-main { min-width: 220px; }
+
+details.pix summary { cursor: pointer; color: var(--accent); font-size: 12.5px; white-space: nowrap; }
+.pix-box { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 8px; max-width: 420px; }
+.pix-box svg { flex: none; border-radius: 6px; background: #fff; padding: 4px; }
+.pix-box textarea { min-height: 120px; font: 11px/1.4 ui-monospace, monospace; flex: 1; min-width: 200px; }

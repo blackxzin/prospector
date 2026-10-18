@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ nome }}{% if cidade %} · {{ cidade }}{% endif %}</title>
+<meta name="description" content="{{ categoria or 'Negócio local' }} em {{ cidade or 'sua cidade' }}. Peça pelo WhatsApp.">
+<style>
+:root {
+  --bg: {{ tema.bg }}; --surface: {{ tema.surface }}; --ink: {{ tema.ink }}; --muted: {{ tema.muted }};
+  --accent: {{ tema.accent }}; --accent-ink: {{ tema.accent_ink }}; --line: {{ tema.line }};
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+a { color: inherit; }
+.preview { background: #111; color: #f5f5f5; font-size: 12.5px; text-align: center; padding: 6px 16px; letter-spacing: .02em; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+header.hero { padding: 56px 0 40px; background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); border-bottom: 1px solid var(--line); }
+.kicker { text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; color: var(--accent); }
+h1 { font-size: clamp(34px, 7vw, 60px); line-height: 1.02; letter-spacing: -.025em; margin: 10px 0 14px; font-weight: 800; }
+.lead { font-size: 18px; color: var(--muted); max-width: 560px; margin: 0 0 24px; }
+.rating { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; margin-bottom: 26px; }
+.stars { color: #f5a623; letter-spacing: 1px; }
+.cta { display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; font-size: 17px; padding: 15px 24px; border-radius: 14px; box-shadow: 0 8px 24px -10px var(--accent); }
+.cta:hover { filter: brightness(1.06); }
+.cta svg { width: 22px; height: 22px; }
+.ghost { margin-left: 12px; color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+section { padding: 44px 0; border-bottom: 1px solid var(--line); }
+h2 { font-size: 26px; margin: 0 0 6px; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin: 0 0 22px; font-size: 14.5px; }
+.menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; justify-content: space-between; gap: 14px; }
+.item b { display: block; font-size: 16.5px; }
+.item span { color: var(--muted); font-size: 14px; }
+.price { font-weight: 800; white-space: nowrap; color: var(--accent); }
+.info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+.card small { display: block; text-transform: uppercase; letter-spacing: .1em; font-size: 11.5px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+footer { padding: 30px 0 110px; color: var(--muted); font-size: 13.5px; }
+.float { position: fixed; right: 18px; bottom: 18px; width: 60px; height: 60px; border-radius: 50%; background: #25d366; display: grid; place-items: center; box-shadow: 0 10px 30px -8px rgba(0,0,0,.45); }
+.float svg { width: 32px; height: 32px; }
+@media (max-width: 640px) {
+  header.hero { padding: 40px 0 30px; }
+  .menu, .info { grid-template-columns: 1fr; }
+  .ghost { display: block; margin: 16px 0 0; }
+  .cta { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div class="preview">Prévia de site · itens e valores ilustrativos</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">{{ categoria or 'Seja bem-vindo' }}{% if cidade %} · {{ cidade }}{% endif %}</div>
+    <h1>{{ nome }}</h1>
+    <p class="lead">{{ chamada }}</p>
+    {% if nota %}<div class="rating"><span class="stars" aria-hidden="true">★★★★★</span><b>{{ nota }}</b> · {{ avaliacoes }} avaliações no Google</div><br>{% endif %}
+    <a class="cta" href="{{ whatsapp }}" rel="noopener">{{ icone_whats|safe }} {{ botao }}</a>
+    {% if maps_link %}<a class="ghost" href="{{ maps_link }}" rel="noopener">Como chegar</a>{% endif %}
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <h2>{{ secao_titulo }}</h2>
+      <p class="sub">{{ secao_sub }}</p>
+      <div class="menu">
+        {% for it in itens %}
+        <div class="item"><div><b>{{ it[0] }}</b><span>{{ it[1] }}</span></div><div class="price">{{ it[2] }}</div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Onde estamos</h2>
+      <p class="sub">Atendimento rápido pelo WhatsApp.</p>
+      <div class="info">
+        <div class="card"><small>Endereço</small>{{ endereco or cidade or 'Consulte pelo WhatsApp' }}</div>
+        <div class="card"><small>WhatsApp</small>{{ telefone }}</div>
+        <div class="card"><small>Avaliação</small>{% if nota %}{{ nota }} de 5 · {{ avaliacoes }} avaliações{% else %}Seja o primeiro a avaliar{% endif %}</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">© {{ ano }} {{ nome }} · prévia feita por {{ autor }}</div></footer>
+<a class="float" href="{{ whatsapp }}" aria-label="Chamar no WhatsApp" rel="noopener">{{ icone_whats_branco|safe }}</a>
+</body>
+</html>

@@ -13,6 +13,7 @@ import yaml
 SEM_SITE = "sem_site"
 SO_SOCIAL = "so_social"
 TEM_SITE = "tem_site"
+SITE_PROBLEMA = "site_problema"  # tem site, mas fora do ar / sem HTTPS / lento / ruim no celular
 
 
 def fold(text: str) -> str:

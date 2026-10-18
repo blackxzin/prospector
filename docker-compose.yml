@@ -27,6 +27,7 @@ services:
         required: false
     environment:
       GMAPS_URL: http://localhost:8080
+      BACKUP_DIR: /backups
       # notify-send do container falando com o desktop do host
       DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/${UID:-1000}/bus
     user: "${UID:-1000}:${GID:-1000}"
@@ -35,6 +36,8 @@ services:
       - ./templates.yaml:/app/templates.yaml:ro
       - ./listas.yaml:/app/listas.yaml:ro
       - ./financeiro.yaml:/app/financeiro.yaml:ro
+      - ./buscas.yaml:/app/buscas.yaml:ro
+      - ${BACKUP_DIR_HOST:-~/prospector-backups}:/backups
       - /run/user/${UID:-1000}/bus:/run/user/${UID:-1000}/bus
     command: ["painel", "--host", "127.0.0.1"]
     depends_on:

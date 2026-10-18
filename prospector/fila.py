@@ -5,7 +5,8 @@ from __future__ import annotations
 import random
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, tzinfo
+from datetime import date, datetime, timedelta, tzinfo
+from typing import Callable
 
 from . import db
 from .messages import Templates
@@ -19,28 +20,76 @@ ENVIADO = "enviado"
 ERRO = "erro"
 CANCELADO = "cancelado"
 
+EXEMPLO = "exemplo"
+COBRANCA = "cobranca"
+MAX_COBRANCAS = 2          # no máximo 2 lembretes por parcela
+DIAS_ENTRE_COBRANCAS = 5
+
 
 @dataclass(frozen=True)
 class QueueResult:
     primeiras: int
     followups: int
     encerrados: int
+    cobrancas: int = 0
 
 
 def _today(now: datetime, tz: tzinfo) -> str:
     return now.astimezone(tz).date().isoformat()
 
 
-def _insert(conn: sqlite3.Connection, lead_id: int, tipo: str, texto: str, dia: str) -> None:
+def _insert(conn: sqlite3.Connection, lead_id: int, tipo: str, texto: str, dia: str, *,
+            variante: str | None = None, pagamento_id: int | None = None) -> None:
     now = db.iso(db.utcnow())
     conn.execute(
-        "INSERT INTO fila (lead_id, tipo, texto, dia, status, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (lead_id, tipo, texto, dia, PENDENTE, now, now),
+        "INSERT INTO fila (lead_id, tipo, texto, dia, status, variante, pagamento_id, criado_em, atualizado_em) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (lead_id, tipo, texto, dia, PENDENTE, variante, pagamento_id, now, now),
     )
 
 
-def open_items(conn: sqlite3.Connection) -> int:
-    return conn.execute("SELECT COUNT(*) FROM fila WHERE status IN ('pendente', 'aprovado')").fetchone()[0]
+def ab_stats(conn: sqlite3.Connection) -> dict[str, tuple[int, int]]:
+    """{variante: (enviados, respostas positivas)}. "nao_quer" conta como resposta negativa."""
+    rows = conn.execute(
+        "SELECT variante, COUNT(*) AS enviados, "
+        "SUM(respondeu_em IS NOT NULL AND status != 'nao_quer') AS positivos "
+        "FROM leads WHERE enviado_em IS NOT NULL AND variante IS NOT NULL GROUP BY variante"
+    ).fetchall()
+    return {r["variante"]: (r["enviados"], r["positivos"] or 0) for r in rows}
+
+
+def due_charges(conn: sqlite3.Connection, today: date) -> list[sqlite3.Row]:
+    """Parcelas vencidas de clientes com WhatsApp, ainda dentro do limite de lembretes."""
+    limite = (today - timedelta(days=DIAS_ENTRE_COBRANCAS)).isoformat()
+    return conn.execute(
+        "SELECT g.*, l.id AS lead_id FROM pagamentos g JOIN projetos p ON p.id = g.projeto_id "
+        "JOIN leads l ON l.id = p.lead_id "
+        "WHERE g.pago_em IS NULL AND g.vencimento < ? AND p.status != 'cancelado' AND l.telefone IS NOT NULL "
+        "AND g.cobrancas < ? AND (g.ultima_cobranca IS NULL OR g.ultima_cobranca <= ?) "
+        "AND g.id NOT IN (SELECT pagamento_id FROM fila WHERE pagamento_id IS NOT NULL "
+        "AND status IN ('pendente', 'aprovado'))",
+        (today.isoformat(), MAX_COBRANCAS, limite),
+    ).fetchall()
+
+
+def queue_demo(conn: sqlite3.Connection, lead_id: int, texto: str, now: datetime, tz: tzinfo) -> bool:
+    """Põe a mensagem com o link do exemplo na fila (pendente de aprovação). False se já houver uma aberta."""
+    with db.tx(conn):
+        exists = conn.execute("SELECT 1 FROM fila WHERE lead_id = ? AND tipo = ? AND status IN ('pendente', "
+                              "'aprovado')", (lead_id, EXEMPLO)).fetchone()
+        if exists:
+            return False
+        _insert(conn, lead_id, EXEMPLO, texto, _today(now, tz))
+    return True
+
+
+def open_items(conn: sqlite3.Connection, tipos: tuple[str, ...] | None = None) -> int:
+    sql = "SELECT COUNT(*) FROM fila WHERE status IN ('pendente', 'aprovado')"
+    params: tuple = ()
+    if tipos:
+        sql += f" AND tipo IN ({','.join('?' * len(tipos))})"
+        params = tipos
+    return conn.execute(sql, params).fetchone()[0]
 
 
 def close_stale_followups(conn: sqlite3.Connection, now: datetime, rules: Rules, business_days: int) -> int:
@@ -80,6 +129,7 @@ def build_queue(
     busca: str | None = None,
     cidade: str | None = None,
     rng: random.Random | None = None,
+    charge_text: Callable[[sqlite3.Row, sqlite3.Row], str] | None = None,
 ) -> QueueResult:
     """Gera a fila do dia: follow-ups vencidos primeiro, depois leads novos até `size` itens abertos."""
     rng = rng or random.Random()
@@ -93,7 +143,15 @@ def build_queue(
             _insert(conn, lead["id"], db.FOLLOWUP, templates.followup(dict(lead), now, rules.tz, rng), dia)
             followups += 1
 
-        slots = max(0, size - open_items(conn))
+        charges = 0
+        if charge_text:
+            for payment in due_charges(conn, now.astimezone(rules.tz).date()):
+                lead = db.get_lead(conn, payment["lead_id"])
+                _insert(conn, lead["id"], COBRANCA, charge_text(lead, payment), dia, pagamento_id=payment["id"])
+                charges += 1
+
+        slots = max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP)))
+        stats = ab_stats(conn)
         sql = "SELECT * FROM leads WHERE status = ? AND telefone IS NOT NULL"
         params: list[object] = [db.NOVO]
         if busca:
@@ -114,10 +172,11 @@ def build_queue(
             if db.first_message_already_sent(conn, numbers):
                 db.update_lead(conn, lead["id"], status=db.DESCARTADO, motivo="já contatado (outro cadastro)")
                 continue
-            _insert(conn, lead["id"], db.PRIMEIRA, templates.first_message(dict(lead), now, rules.tz, rng), dia)
+            texto, variante = templates.first_message_ab(dict(lead), now, rules.tz, rng, stats)
+            _insert(conn, lead["id"], db.PRIMEIRA, texto, dia, variante=variante)
             db.update_lead(conn, lead["id"], status=db.NA_FILA)
             firsts += 1
-    return QueueResult(primeiras=firsts, followups=followups, encerrados=closed)
+    return QueueResult(primeiras=firsts, followups=followups, encerrados=closed, cobrancas=charges)
 
 
 def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, APROVADO)) -> list[sqlite3.Row]:
@@ -164,8 +223,9 @@ def reject(conn: sqlite3.Connection, item_ids: list[int]) -> int:
             conn.execute("UPDATE fila SET status = ?, atualizado_em = ? WHERE id = ?", (REJEITADO, now, item_id))
             if row["tipo"] == db.PRIMEIRA:
                 db.update_lead(conn, row["lead_id"], status=db.REJEITADO, aprovado_em=None)
-            else:
+            elif row["tipo"] == db.FOLLOWUP:
                 db.update_lead(conn, row["lead_id"], status=db.SEM_RESPOSTA)
+            # exemplo / cobrança rejeitados: o lead fica como está
             n += 1
     return n
 

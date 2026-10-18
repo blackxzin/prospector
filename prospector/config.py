@@ -60,6 +60,12 @@ class Settings:
     templates_path: Path
     listas_path: Path
     financeiro_path: Path
+    buscas_path: Path
+    backup_dir: Path
+    backup_keep: int
+    demos_dir: Path
+    demo_base_url: str
+    demo_repo_dir: Path | None
     tz: ZoneInfo
     windows: tuple[tuple[time, time], ...]
     weekdays: frozenset[int]
@@ -77,6 +83,9 @@ class Settings:
     waakg_session: str
     waakg_api_key: str = field(repr=False)
     webhook_secret: str = field(repr=False)
+    pix_chave: str = ""
+    pix_nome: str = ""
+    pix_cidade: str = ""
     web_host: str = "127.0.0.1"
     web_port: int = 5050
     notify: bool = True
@@ -113,6 +122,15 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         templates_path=_path(env, "TEMPLATES_PATH", ROOT / "templates.yaml"),
         listas_path=_path(env, "LISTAS_PATH", ROOT / "listas.yaml"),
         financeiro_path=_path(env, "FINANCEIRO_PATH", ROOT / "financeiro.yaml"),
+        buscas_path=_path(env, "BUSCAS_PATH", ROOT / "buscas.yaml"),
+        backup_dir=_path(env, "BACKUP_DIR", Path.home() / "prospector-backups"),
+        backup_keep=_int(env, "BACKUP_MANTER", 30),
+        demos_dir=_path(env, "DEMOS_DIR", data_dir / "demos"),
+        demo_base_url=env.get("DEMO_BASE_URL", "").strip().rstrip("/"),
+        demo_repo_dir=_path(env, "DEMO_REPO_DIR", ROOT) if env.get("DEMO_REPO_DIR", "").strip() else None,
+        pix_chave=env.get("PIX_CHAVE", "").strip(),
+        pix_nome=env.get("PIX_NOME", "").strip(),
+        pix_cidade=env.get("PIX_CIDADE", "").strip(),
         tz=ZoneInfo(env.get("TZ_PROSPECTOR", "America/Sao_Paulo")),
         windows=parse_windows(env.get("JANELAS", "09:00-11:30,14:00-17:30")),
         weekdays=parse_weekdays(env.get("DIAS_UTEIS", "0,1,2,3,4")),
@@ -145,5 +163,9 @@ def _validate(s: Settings) -> None:
         raise ValueError("INTERVALO_MIN_SEG precisa ser > 0 e <= INTERVALO_MAX_SEG")
     if not 0 < s.typing_min_s <= s.typing_max_s:
         raise ValueError("DIGITANDO_MIN_SEG precisa ser > 0 e <= DIGITANDO_MAX_SEG")
+    if s.backup_keep < 1:
+        raise ValueError("BACKUP_MANTER precisa ser >= 1")
+    if s.demo_base_url and not s.demo_base_url.startswith(("http://", "https://")):
+        raise ValueError("DEMO_BASE_URL precisa começar com http:// ou https://")
     if s.gmaps_max_time_s < 180:
         raise ValueError("GMAPS_MAX_TIME_SEG precisa ser >= 180 (mínimo do scraper)")

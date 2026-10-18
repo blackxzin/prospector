@@ -13,18 +13,31 @@ precos:
     custo_estimado: 60      # domínio, hospedagem do 1º ano etc.
     mensalidade: 0          # manutenção mensal (0 = sem mensalidade)
     prazo_dias: 7
+    inclui:                 # vai na proposta em PDF
+      - "Site de uma página, rápido e feito para celular"
+      - "Cardápio, planos ou serviços com fotos e preços"
+      - "Botão que abre o WhatsApp de vocês com a mensagem pronta"
+      - "Mapa, endereço e horário de funcionamento"
+      - "Domínio .com.br e hospedagem do primeiro ano"
+      - "Ajustes de texto e fotos até a entrega"
   automacao:
     descricao: "Automação de atendimento no WhatsApp"
     valor: 900
     custo_estimado: 0
     mensalidade: 150
     prazo_dias: 10
+    inclui:
+      - "Mensagem de boas-vindas e menu automático no WhatsApp"
+      - "Respostas prontas para as dúvidas mais comuns (preço, horário, entrega)"
+      - "Encaminhamento do pedido para a equipe"
+      - "Ajustes durante o primeiro mês"
 
 # Qual serviço cada oferta vira quando fecha.
 oferta_para_tipo:
   sem_site: site
   so_social: site
   tem_site: automacao
+  site_problema: site
 
 # Como o valor é cobrado: entrada no fechamento e o resto na entrega (prazo).
 entrada_percentual: 50

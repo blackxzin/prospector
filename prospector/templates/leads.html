@@ -45,8 +45,13 @@
           <button class="btn-sm">Salvar</button>
         </form>
         {% if l.status in ('respondeu', 'interessado') %}
-          <a class="btn btn-sm" href="{{ url_for('projeto_novo', lead=l.id) }}" style="margin-top:6px">Fechou</a>
+          <div class="toolbar" style="margin-top:6px">
+            <a class="btn btn-sm" href="{{ url_for('projeto_novo', lead=l.id) }}">Fechou</a>
+            {% if not l.demo_url %}<form method="post" action="{{ url_for('gerar_demo', lead_id=l.id) }}"><button class="btn-sm">Gerar exemplo</button></form>{% endif %}
+          </div>
         {% endif %}
+        {% if l.demo_url %}<div class="sub" style="margin-top:6px"><a href="{{ url_for('demo_preview', slug=l.demo_url.rstrip('/').split('/')[-1].removeprefix('local:')) }}" target="_blank" rel="noopener">ver exemplo</a></div>{% endif %}
+        {% if l.site_problemas %}<div class="sub" style="margin-top:4px">site: {{ l.site_problemas }}</div>{% endif %}
       </td>
     </tr>
     {% endfor %}

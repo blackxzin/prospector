@@ -73,6 +73,13 @@ Outros comandos:
 | `prospector retomar` | libera o envio depois de uma parada de emergência |
 | `prospector desbloquear 14991234567` | tira um número da lista de bloqueio (correção manual) |
 | `prospector financeiro [--notificar]` | resumo do mês, alertas e sugestões do gerenciador |
+| `prospector lote [--listar] [--max N]` | buscas em lote de `buscas.yaml` |
+| `prospector checar-sites` | testa os sites dos leads (oferta `site_problema`) |
+| `prospector ab` | resultado do teste A/B dos textos |
+| `prospector demo gerar <lead>` / `demo publicar` | site de exemplo do lead / publica os exemplos |
+| `prospector proposta <projeto>` | proposta em PDF |
+| `prospector relatorio [--dias 7] [--notificar]` | relatório do período |
+| `prospector backup [--listar]` | backup do banco |
 | `prospector painel` | sobe o painel web e o receptor de webhook |
 
 ### Painel
@@ -118,6 +125,62 @@ As regras são explícitas e estão em `prospector/insights.py`: dá para ver de
 ```
 
 Edite o `financeiro.yaml` com os seus preços, custos, prazo, entrada e meta mensal. Os valores que vêm nele são só exemplos.
+
+## Extras
+
+### Site de exemplo automático
+
+Quando um lead responde com interesse ("pode mandar", "quero ver", "quanto custa"…), o prospector gera na hora um site de exemplo com a cara do negócio: nome, nota e avaliações do Google, cardápio, planos ou serviços de exemplo conforme a categoria, botão de WhatsApp com mensagem pronta e "como chegar". A mensagem com o link entra na **fila de aprovação** e você é notificado.
+
+- Prévia local: botão "ver exemplo" na lista de leads, ou `http://127.0.0.1:5050/demos/<slug>/`.
+- Gerar na mão: botão "Gerar exemplo" no painel ou `prospector demo gerar <id-do-lead>`.
+- Publicar: crie um repositório no GitHub com GitHub Pages ligado (ex.: `exemplos`), clone numa pasta e configure no `.env`:
+  `DEMO_BASE_URL=https://SEU-USUARIO.github.io/exemplos` e `DEMO_REPO_DIR=~/exemplos`. Depois rode `prospector demo publicar` antes de aprovar a mensagem do link. As páginas saem com `noindex` (não aparecem no Google) e o endereço tem um sufixo difícil de adivinhar.
+
+### Pix e cobrança automática
+
+Com `PIX_CHAVE`, `PIX_NOME` e `PIX_CIDADE` no `.env`, cada parcela em aberto mostra no painel o **QR Code e o Pix copia e cola** com o valor certo. O código segue o padrão BR Code do Banco Central e é gerado no seu PC, sem banco nem API no meio.
+
+Parcela vencida de um cliente vira uma mensagem de **cobrança educada** na fila (com o Pix), também esperando sua aprovação: no máximo 2 lembretes por parcela, com 5 dias entre eles. Se a parcela for marcada como paga antes do envio, a cobrança é cancelada sozinha. Cobranças e links de exemplo não contam no limite diário de prospecção, mas respeitam horário, intervalo e "digitando".
+
+### Teste A/B dos textos
+
+Cada variação da primeira mensagem (`templates.yaml`) tem um identificador. O sistema mede quantos responderam bem a cada uma ("não quero" conta como resposta negativa) e passa a sortear mais as que funcionam (amostragem de Thompson), sem abandonar as outras. Veja em `prospector ab` ou no card "Textos que mais funcionam". Se você editar um texto, ele vira uma variação nova e começa do zero.
+
+### Checagem de sites (oferta `site_problema`)
+
+Depois de cada busca, os sites dos leads com site próprio são testados: fora do ar, sem HTTPS ("não seguro"), lento (mais de 5 s) ou sem versão para celular. Com problema, a oferta vira `site_problema` e a mensagem cita o problema ("Fui abrir o site de vocês e reparei que o site está fora do ar…"). Para rodar na mão: `prospector checar-sites`. Por segurança, só acessa endereços públicos (nada de rede local), com timeout e limite de tamanho.
+
+### Buscas em lote
+
+Liste nichos e cidades no `buscas.yaml` e rode `prospector lote`: cada combinação nicho × cidade é buscada uma vez só (as já feitas são puladas, inclusive as manuais antigas), até `max_por_execucao` por vez. Uma busca com erro não para as outras e é tentada de novo depois. `prospector lote --listar` mostra o que falta.
+
+### Proposta em PDF
+
+Na página do projeto, o botão "Proposta (PDF)" gera uma proposta com o serviço, o que está incluído (lista `inclui` no `financeiro.yaml`), o valor, as condições (entrada e restante), o prazo, a mensalidade e, se o Pix estiver configurado, o QR Code da entrada. Pela CLI: `prospector proposta <id-do-projeto>`.
+
+### Relatório semanal
+
+`prospector relatorio` resume os últimos 7 dias (leads novos, enviados, respostas, interessados, fechamentos, recebido, despesas, lucro e a melhor busca) e salva em `data/relatorios/`. Com `--notificar`, manda o resumo para o desktop.
+
+### Backup
+
+`prospector backup` copia o banco (com a API de backup do SQLite, seguro mesmo com o painel aberto), confere a integridade, guarda junto os arquivos `.yaml` e mantém os últimos 30 em `~/prospector-backups` (`BACKUP_DIR`, `BACKUP_MANTER`). O `.env` não vai no backup, porque tem a sua API key. O painel avisa se o último backup tiver mais de 2 dias.
+
+### Cron sugerido
+
+```
+# backup todo dia às 23h
+0 23 * * *    cd ~/prospector && .venv/bin/prospector backup
+# buscas em lote de madrugada
+0 3 * * *     cd ~/prospector && .venv/bin/prospector lote
+# alertas do gerenciador às 9h (dias úteis)
+0 9 * * 1-5   cd ~/prospector && .venv/bin/prospector financeiro --notificar
+# relatório da semana na segunda às 8h
+0 8 * * 1     cd ~/prospector && .venv/bin/prospector relatorio --notificar
+```
+
+Para o `notify-send` funcionar no cron, acrescente `DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus` antes do comando.
 
 ## Regras de envio
 
@@ -213,10 +276,18 @@ prospector/
   finance.py      projetos, parcelas, despesas, mensalidades (centavos)
   insights.py     gerenciador: alertas, sugestões, previsão
   charts.py       gráficos SVG
+  backup.py       backup do SQLite com rotação
+  pix.py          Pix copia e cola (BR Code) e QR Code
+  sitecheck.py    checagem de sites (com proteção contra acesso à rede local)
+  lote.py         buscas em lote
+  demo.py         site de exemplo por lead (templates/demo/site.html)
+  pdf.py          gerador de PDF mínimo     proposta.py  proposta comercial
+  relatorio.py    relatório semanal
   templates/      HTML do painel     static/  CSS
 templates.yaml    textos das mensagens
 listas.yaml       franquias e domínios de redes sociais
-financeiro.yaml   preços, custos, entrada, meta mensal
+financeiro.yaml   preços, custos, entrada, meta mensal, itens incluídos
+buscas.yaml       nichos × cidades das buscas em lote
 ```
 
 ## Avisos

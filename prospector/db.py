@@ -152,6 +152,16 @@ CREATE TABLE IF NOT EXISTS despesas (
     criado_em TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS buscas (
+    id INTEGER PRIMARY KEY,
+    consulta TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL,            -- ok | erro
+    importados INTEGER NOT NULL DEFAULT 0,
+    validos INTEGER NOT NULL DEFAULT 0,
+    erro TEXT,
+    feita_em TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS estado (
     chave TEXT PRIMARY KEY,
     valor TEXT,
@@ -189,6 +199,14 @@ def connect(path: Path) -> sqlite3.Connection:
 # Colunas adicionadas depois da primeira versão: (tabela, coluna, definição).
 _MIGRATIONS = (
     ("leads", "sinal_fechamento", "INTEGER NOT NULL DEFAULT 0"),
+    ("leads", "variante", "TEXT"),            # hash do template da 1ª mensagem (teste A/B)
+    ("leads", "site_problemas", "TEXT"),      # resultado da checagem do site
+    ("leads", "site_checado_em", "TEXT"),
+    ("leads", "demo_url", "TEXT"),            # site de exemplo gerado para o lead
+    ("fila", "variante", "TEXT"),
+    ("fila", "pagamento_id", "INTEGER"),      # itens de cobrança
+    ("pagamentos", "cobrancas", "INTEGER NOT NULL DEFAULT 0"),
+    ("pagamentos", "ultima_cobranca", "TEXT"),
 )
 
 
@@ -256,7 +274,8 @@ def block(conn: sqlite3.Connection, number: str, reason: str) -> None:
 _LEAD_COLUMNS = frozenset({
     "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
     "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
-    "resposta", "auto_resposta_enviada", "sinal_fechamento", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+    "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
+    "demo_url", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
 })
 
 

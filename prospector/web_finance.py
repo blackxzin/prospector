@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from flask import Flask, Response, abort, flash, redirect, render_template, request, url_for
+import re
 
-from . import db
+from flask import Flask, Response, abort, flash, redirect, render_template, request, send_file, url_for
+
+from . import backup, db, lote, pix
 from . import finance as fin
+from . import fila as fq
 from . import insights
 from .app import App
+from .messages import variant_id
 from .charts import funnel_chart, revenue_chart
 
 
@@ -29,13 +33,42 @@ def _reais(cents: int) -> str:
     return f"{cents / 100:.2f}".replace(".", ",")
 
 
+_SLUG = re.compile(r"^[a-z0-9-]{3,60}$")
+
+
+def _extra_alerts(ctx: App) -> list[insights.Alerta]:
+    alert = insights.backup_alert(backup.last_backup_time(ctx.settings.backup_dir), datetime.now())
+    return [alert] if alert else []
+
+
+def _ab_rows(ctx: App) -> list[dict]:
+    stats = fq.ab_stats(ctx.conn)
+    rows = []
+    for oferta, options in ctx.templates.data["primeira"].items():
+        for text in options:
+            sent, pos = stats.get(variant_id(text), (0, 0))
+            if sent:
+                rows.append({"oferta": oferta, "texto": text, "enviados": sent, "positivos": pos,
+                             "taxa": pos / sent})
+    return sorted(rows, key=lambda r: (-r["taxa"], -r["enviados"]))
+
+
+def _batch_progress(ctx: App) -> dict | None:
+    try:
+        cfg = lote.BatchConfig.load(ctx.settings.buscas_path)
+    except ValueError:
+        return None
+    total = len(cfg.queries())
+    return {"total": total, "pendentes": len(lote.pending(ctx.conn, cfg))}
+
+
 def register_finance_routes(web: Flask, ctx: App) -> None:
     from .web import date_long, today_local
 
     @web.get("/")
     def dashboard() -> str:
         hoje = today_local(ctx)
-        painel = insights.build(ctx.conn, ctx.finance, hoje)
+        painel = insights.build(ctx.conn, ctx.finance, hoje, _extra_alerts(ctx))
         f = db.funnel(ctx.conn)
         clientes = ctx.conn.execute("SELECT COUNT(DISTINCT lead_id) FROM projetos "
                                     "WHERE lead_id IS NOT NULL AND status != 'cancelado'").fetchone()[0]
@@ -45,6 +78,7 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
         return render_template(
             "dashboard.html", page="dashboard", painel=painel, hoje_extenso=date_long(hoje),
             grafico_receita=revenue_chart(painel.serie), grafico_funil=funnel_chart(etapas),
+            ab=_ab_rows(ctx)[:6], lote=_batch_progress(ctx),
         )
 
     # ---------- projetos ----------
@@ -99,9 +133,48 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
         p = fin.project(ctx.conn, project_id)
         if not p:
             abort(404)
-        return render_template("projeto.html", page="projetos", p=p, pagamentos=fin.payments(ctx.conn, project_id),
-                               despesas=fin.expenses(ctx.conn, project_id), hoje=today_local(ctx).isoformat(),
-                               categorias=ctx.finance.categorias_despesa)
+        pagamentos = fin.payments(ctx.conn, project_id)
+        pix_codes = {}
+        for g in pagamentos:
+            if not g["pago_em"]:
+                code = ctx.pix_for(g["valor_centavos"], f"P{g['id']}")
+                if code:
+                    pix_codes[g["id"]] = {"code": code, "svg": pix.qr_svg(code, 150)}
+        return render_template("projeto.html", page="projetos", p=p, pagamentos=pagamentos, pix_codes=pix_codes,
+                               pix_ok=bool(ctx.settings.pix_chave), despesas=fin.expenses(ctx.conn, project_id),
+                               hoje=today_local(ctx).isoformat(), categorias=ctx.finance.categorias_despesa)
+
+    @web.get("/projetos/<int:project_id>/proposta.pdf")
+    def proposta_pdf(project_id: int) -> Response:
+        p = fin.project(ctx.conn, project_id)
+        if not p:
+            abort(404)
+        name = re.sub(r"[^a-z0-9]+", "-", p["cliente"].lower()).strip("-") or "cliente"
+        return Response(ctx.proposal_pdf(p), mimetype="application/pdf",
+                        headers={"Content-Disposition": f'inline; filename="proposta-{name}.pdf"'})
+
+    @web.post("/leads/<int:lead_id>/demo")
+    def gerar_demo(lead_id: int) -> Response:
+        try:
+            res = ctx.make_demo(lead_id)
+        except ValueError as exc:
+            flash(str(exc))
+            return redirect(request.referrer or url_for("leads"))
+        if res.url:
+            flash(f"Exemplo gerado e mensagem na fila. Publique com 'prospector demo publicar' antes de aprovar. "
+                  f"Link: {res.url}")
+        else:
+            flash("Exemplo gerado (prévia local). Configure DEMO_BASE_URL para gerar o link e a mensagem.")
+        return redirect(url_for("demo_preview", slug=res.slug))
+
+    @web.get("/demos/<slug>/")
+    def demo_preview(slug: str) -> Response:
+        if not _SLUG.match(slug):
+            abort(404)
+        path = (ctx.settings.demos_dir / slug / "index.html").resolve()
+        if not path.is_relative_to(ctx.settings.demos_dir.resolve()) or not path.exists():
+            abort(404)
+        return send_file(path, mimetype="text/html")
 
     @web.post("/projetos/<int:project_id>/status")
     def projeto_status(project_id: int) -> Response:
@@ -164,7 +237,7 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
     @web.get("/financeiro")
     def financeiro() -> str:
         hoje = today_local(ctx)
-        painel = insights.build(ctx.conn, ctx.finance, hoje)
+        painel = insights.build(ctx.conn, ctx.finance, hoje, _extra_alerts(ctx))
         abertos = [g for g in fin.payments(ctx.conn) if not g["pago_em"]]
         return render_template(
             "financeiro.html", page="financeiro", painel=painel, abertos=abertos,

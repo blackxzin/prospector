@@ -81,6 +81,7 @@ class Preco:
     custo_estimado: int
     mensalidade: int
     prazo_dias: int
+    inclui: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,7 @@ class FinanceConfig:
                 descricao=str(p.get("descricao") or tipo), valor=parse_money(p.get("valor", 0)),
                 custo_estimado=parse_money(p.get("custo_estimado", 0)),
                 mensalidade=parse_money(p.get("mensalidade", 0)), prazo_dias=int(p.get("prazo_dias", 7)),
+                inclui=tuple(str(x) for x in p.get("inclui") or ()),
             )
         entrada = int(data.get("entrada_percentual", 50))
         if not 0 <= entrada <= 100:
@@ -111,7 +113,8 @@ class FinanceConfig:
             meta_mensal=parse_money(data.get("meta_mensal", 0)),
             precos=precos,
             oferta_para_tipo=dict(data.get("oferta_para_tipo") or {"sem_site": "site", "so_social": "site",
-                                                                   "tem_site": "automacao"}),
+                                                                   "tem_site": "automacao",
+                                                                   "site_problema": "site"}),
             entrada_percentual=entrada,
             categorias_despesa=tuple(data.get("categorias_despesa") or ("outro",)),
         )

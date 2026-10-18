@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import random
 import re
 from dataclasses import dataclass
@@ -11,9 +12,14 @@ from typing import Any, Mapping
 
 import yaml
 
-from .classify import SEM_SITE, SO_SOCIAL, TEM_SITE, fold
+from .classify import SEM_SITE, SITE_PROBLEMA, SO_SOCIAL, TEM_SITE, fold
 
-OFFERS = (SEM_SITE, SO_SOCIAL, TEM_SITE)
+OFFERS = (SEM_SITE, SO_SOCIAL, TEM_SITE, SITE_PROBLEMA)
+# Listas simples obrigatórias (pelo menos uma variação cada).
+REQUIRED_LISTS = ("followup", "fora_do_horario", "elogios_com_nota", "elogios_sem_nota", "exemplo", "cobranca")
+# Valores fictícios para validar variáveis que só existem em alguns tipos de mensagem.
+EXTRA_SAMPLE = {"link": "https://exemplo.com/x/", "valor": "R$ 300,00", "vencimento": "20/10",
+                "descricao": "Entrada", "pix": "000201...", "problema": "o site está fora do ar"}
 MIN_VARIANTS = 3
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
 _PARENS = re.compile(r"\s*\([^)]*\)\s*")
@@ -41,7 +47,7 @@ class Templates:
         for offer in OFFERS:
             if len(primeira.get(offer) or []) < MIN_VARIANTS:
                 raise TemplateError(f"templates.yaml: 'primeira.{offer}' precisa de pelo menos {MIN_VARIANTS} variações")
-        for key in ("followup", "fora_do_horario", "elogios_com_nota", "elogios_sem_nota"):
+        for key in REQUIRED_LISTS:
             if not self.data.get(key):
                 raise TemplateError(f"templates.yaml: '{key}' está vazio")
         if not self.data.get("remetente"):
@@ -50,13 +56,13 @@ class Templates:
         sample = {"nome": "Teste", "nota": 4.8, "avaliacoes": 50, "categoria": "Pizzaria", "oferta": SEM_SITE}
         for text in self._all_texts():
             try:
-                text.format(**self._context(sample, datetime(2026, 1, 5, 10), random.Random(0)))
+                text.format(**self._context(sample, datetime(2026, 1, 5, 10), random.Random(0)), **EXTRA_SAMPLE)
             except (KeyError, IndexError, ValueError) as exc:
                 raise TemplateError(f"templates.yaml: variável inválida em {text[:60]!r}: {exc}") from exc
 
     def _all_texts(self) -> list[str]:
         texts = [t for offer in OFFERS for t in self.data["primeira"][offer]]
-        for key in ("followup", "fora_do_horario", "elogios_com_nota", "elogios_sem_nota"):
+        for key in REQUIRED_LISTS:
             texts.extend(self.data[key])
         return texts
 
@@ -95,17 +101,38 @@ class Templates:
     # ---------- render ----------
 
     def _render(self, options: list[str], lead: Mapping[str, Any], now: datetime, tz: tzinfo,
-                rng: random.Random | None) -> str:
+                rng: random.Random | None, chosen: str | None = None, **extra: str) -> str:
         rng = rng or random.Random()
         ctx = self._context(lead, now.astimezone(tz), rng)
-        return tidy(rng.choice(options).format(**ctx))
+        template = chosen if chosen is not None else rng.choice(options)
+        return tidy(template.format(**ctx, **extra))
 
     def first_message(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
                       rng: random.Random | None = None) -> str:
+        return self.first_message_ab(lead, now, tz, rng)[0]
+
+    def first_message_ab(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
+                         rng: random.Random | None = None,
+                         stats: Mapping[str, tuple[int, int]] | None = None) -> tuple[str, str]:
+        """(texto, variante). Com `stats` {variante: (enviados, positivos)}, escolhe por Thompson sampling:
+        variações que geram mais respostas positivas são sorteadas com mais frequência, sem abandonar as outras."""
+        rng = rng or random.Random()
         offer = lead.get("oferta") or SEM_SITE
         if offer not in OFFERS:
             raise TemplateError(f"Oferta desconhecida: {offer}")
-        return self._render(self.data["primeira"][offer], lead, now, tz, rng)
+        options = list(self.data["primeira"][offer])
+        chosen = choose_variant(options, stats or {}, rng)
+        extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
+        return self._render(options, lead, now, tz, rng, chosen=chosen, **extra), variant_id(chosen)
+
+    def demo_message(self, lead: Mapping[str, Any], link: str, now: datetime, tz: tzinfo,
+                     rng: random.Random | None = None) -> str:
+        return self._render(self.data["exemplo"], lead, now, tz, rng, link=link)
+
+    def charge_message(self, lead: Mapping[str, Any], *, valor: str, vencimento: str, descricao: str, pix: str,
+                       now: datetime, tz: tzinfo, rng: random.Random | None = None) -> str:
+        return self._render(self.data["cobranca"], lead, now, tz, rng, valor=valor, vencimento=vencimento,
+                            descricao=descricao, pix=pix)
 
     def followup(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo, rng: random.Random | None = None) -> str:
         return self._render(self.data["followup"], lead, now, tz, rng)
@@ -113,6 +140,25 @@ class Templates:
     def out_of_hours(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
                      rng: random.Random | None = None) -> str:
         return self._render(self.data["fora_do_horario"], lead, now, tz, rng)
+
+
+def variant_id(template: str) -> str:
+    """Identificador estável de uma variação (muda se o texto do template mudar)."""
+    return hashlib.sha1(template.strip().encode("utf-8")).hexdigest()[:8]
+
+
+def choose_variant(options: list[str], stats: Mapping[str, tuple[int, int]], rng: random.Random) -> str:
+    """Thompson sampling com Beta(positivos + 1, negativos + 1) por variação."""
+    if not options:
+        raise TemplateError("Sem variações")
+    best, best_score = options[0], -1.0
+    for option in options:
+        sent, positive = stats.get(variant_id(option), (0, 0))
+        positive = max(0, min(positive, sent))
+        score = rng.betavariate(positive + 1, sent - positive + 1)
+        if score > best_score:
+            best, best_score = option, score
+    return best
 
 
 def greeting(now_local: datetime) -> str:

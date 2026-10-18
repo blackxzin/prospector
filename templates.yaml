@@ -7,6 +7,12 @@
 #   {elogio}     frase sobre a nota no Google (ou frase neutra, se não houver nota boa)
 #   {nota}       ex.: 4,7          {avaliacoes}  ex.: 132
 #   {vitrine}    "o cardápio" / "os planos e horários" / "os serviços" (pela categoria)
+#   {problema}   (só em site_problema) ex.: "o site está fora do ar"
+#   {link}       (só em exemplo) link do site de exemplo gerado para o lead
+#   {valor} {vencimento} {descricao} {pix}   (só em cobranca)
+#
+# Teste A/B: cada variação de "primeira" é medida (taxa de resposta positiva) e as que
+# funcionam melhor passam a ser sorteadas com mais frequência. Ver em `prospector ab`.
 #
 # Dica: evite artigo antes de {nome} ("o {nome}", "a {nome}"): não dá para saber o gênero.
 # Use o nome no vocativo ("{saudacao}, {nome}!") ou sem artigo.
@@ -53,6 +59,11 @@ primeira:
     - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Trabalho com automação de atendimento no WhatsApp, pra ninguém ficar sem resposta no horário de pico. Posso te mandar um exemplo, sem compromisso?"
     - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Faço automação do WhatsApp: mensagem de boas-vindas, respostas prontas e encaminhamento pra vocês. Posso te mandar um exemplo, sem compromisso?"
 
+  site_problema:
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Fui abrir o site de vocês e reparei que {problema}. Isso faz cliente desistir antes de pedir. Eu arrumo isso ou faço um novo, simples e rápido, com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Tentei acessar o site de vocês e {problema}. Como muita gente procura pelo Google antes, vale a pena resolver. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Um aviso rápido: {problema}. Faço um site novo, leve, com {vitrine} e botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+
 followup:
   - "Oi, {nome}! Passando só pra saber se viu minha mensagem. Se não fizer sentido agora, tudo bem, é só me falar. Posso te mandar o exemplo?"
   - "{saudacao}! Sei que a rotina é corrida, por isso volto só mais esta vez. Quer que eu te mande o exemplo, sem compromisso?"
@@ -62,3 +73,15 @@ fora_do_horario:
   - "Oi! Obrigado pela resposta. Agora estou fora do horário, mas te respondo no próximo horário útil, combinado?"
   - "Opa, valeu por responder! Já encerrei por hoje, mas te retorno no próximo horário útil, tudo bem?"
   - "Recebi sua mensagem, obrigado! Estou fora do horário agora, mas retorno no próximo horário comercial."
+
+# Quando o lead pede o exemplo: link do site de exemplo gerado para ele.
+exemplo:
+  - "Opa, que bom! Fiz um exemplo rapidinho com as informações de vocês:\n{link}\nÉ só uma prévia, dá pra mudar tudo (cores, fotos, {vitrine}). O que achou?"
+  - "Montei uma prévia pra vocês verem como ficaria:\n{link}\nOs itens são de exemplo, a gente coloca os de vocês. Me diz o que achou!"
+  - "Aqui está um exemplo feito pra {nome}:\n{link}\nDá uma olhada no celular, que é onde a maioria dos clientes vai ver. Qualquer ajuste, é só falar."
+
+# Cobrança educada de parcela vencida (vai para a fila de aprovação).
+cobranca:
+  - "Oi, tudo bem? Passando pra lembrar da parcela \"{descricao}\" de {valor}, que venceu em {vencimento}. Segue o Pix copia e cola:\n{pix}\nSe já pagou, desconsidera, tá? Obrigado!"
+  - "{saudacao}! Só um lembrete da parcela \"{descricao}\" ({valor}, vencimento {vencimento}). O Pix copia e cola é este:\n{pix}\nQualquer coisa me avisa."
+  - "Oi! Tudo certo por aí? Ficou em aberto a parcela \"{descricao}\" de {valor} (venceu {vencimento}). Pra facilitar, o Pix:\n{pix}\nSe tiver algum imprevisto, me fala que a gente combina."
