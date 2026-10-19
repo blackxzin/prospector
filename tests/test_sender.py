@@ -181,3 +181,15 @@ def test_wa_client_status_false_is_error():
     client, _ = _client([HttpResponse(200, b'{"status":false,"message":"falhou"}')])
     with pytest.raises(WhatsAppError):
         client.send_text("x@s.whatsapp.net", "oi")
+
+
+@pytest.mark.parametrize("payload, expected", [
+    # formato real do WA-AKG v1.7: resultado dentro de "data"
+    (b'{"status":true,"data":{"results":[{"number":"5514996112048","exists":true,'
+     b'"jid":"5514996112048@s.whatsapp.net"}]}}', "5514996112048@s.whatsapp.net"),
+    (b'{"results":[{"exists":true,"jid":"5514996112048@s.whatsapp.net"}]}', "5514996112048@s.whatsapp.net"),
+    (b'{"status":true,"data":{"results":[{"number":"5514996112048","exists":false}]}}', None),
+])
+def test_check_number_reads_api_envelope(payload, expected):
+    client = WaClient("http://wa", "s", "k", request=lambda *a, **kw: HttpResponse(200, payload))
+    assert client.check_number("5514996112048") == expected

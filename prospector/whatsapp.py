@@ -77,6 +77,8 @@ class WaClient:
         """JID oficial do número no WhatsApp, ou None se não existir."""
         resp = self._call("POST", f"/chat/{quote(self.session, safe='')}/check", {"numbers": [number]})
         data = resp.json() or {}
+        if isinstance(data.get("data"), dict):  # WA-AKG embrulha a resposta em "data"
+            data = data["data"]
         for result in data.get("results") or []:
             if result.get("exists"):
                 return result.get("jid") or f"{number}@s.whatsapp.net"
