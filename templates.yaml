@@ -30,7 +30,7 @@ elogios_com_nota:
 elogios_sem_nota:
   - "Achei vocês no Google Maps."
   - "Encontrei vocês pelo Google Maps."
-  - "Dei uma olhada no perfil de vocês no Google Maps."
+  - "Vi o perfil de vocês no Google Maps."
 
 vitrine:
   padrao: "os serviços"
@@ -46,13 +46,13 @@ vitrine:
 
 primeira:
   sem_site:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Reparei que vocês ainda não têm site. Eu faço um site simples, com {vitrine} e um botão que abre direto o WhatsApp de vocês. Posso te mandar um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Não achei um site de vocês, e muita gente procura no Google antes de pedir. Monto uma página rápida com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Notei que falta um site para vocês aparecerem melhor no Google. Faço um bem simples, com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Dei uma olhada e não encontrei um site de vocês. Eu faço sites simples, com {vitrine} e um botão que abre direto o WhatsApp. Se ainda não tiverem, teriam interesse em ver um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Procurei um site de vocês e não achei. Monto páginas rápidas com {vitrine} e botão de WhatsApp. Caso ainda não tenham, posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Não encontrei um site de vocês no Google. Faço um bem simples, com {vitrine} e um botão pro WhatsApp. Se não tiverem, teriam interesse em ver um exemplo?"
   so_social:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Reparei que vocês usam o Instagram como site. Dá para ter uma página própria, simples, com {vitrine} e um botão que abre o WhatsApp. Posso te mandar um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Hoje o link de vocês leva só para rede social. Eu faço um site simples com {vitrine} e botão de WhatsApp, que ajuda a aparecer no Google. Posso te mandar um exemplo, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Reparei que não tem um site próprio, só rede social. Monto uma página rápida com {vitrine} e um botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Dei uma olhada e só encontrei a rede social de vocês, não um site próprio. Faço páginas simples, com {vitrine} e um botão que abre o WhatsApp. Se ainda não tiverem, teriam interesse em ver um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Procurei um site de vocês e só achei o Instagram. Faço um site simples com {vitrine} e botão de WhatsApp, que ajuda a aparecer no Google. Caso não tenham, posso te mandar um exemplo?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {elogio} Não encontrei um site próprio de vocês, só rede social. Monto uma página rápida com {vitrine} e um botão pro WhatsApp. Se não tiverem, teriam interesse em ver um exemplo?"
   tem_site:
     - "{saudacao}, {nome}! Meu nome é {remetente}. {elogio} Vi que vocês já têm site, legal! Eu configuro atendimento automático no WhatsApp: responde as dúvidas comuns e passa os pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
     - "{saudacao}! Tudo bem? Sou o {remetente}. {elogio} Trabalho com automação de atendimento no WhatsApp, pra ninguém ficar sem resposta no horário de pico. Posso te mandar um exemplo, sem compromisso?"
