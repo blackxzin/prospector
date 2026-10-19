@@ -33,6 +33,22 @@ class BatchConfig:
     def queries(self) -> list[str]:
         return [f"{n} em {c}" for c in self.cidades for n in self.nichos]
 
+    def save(self, path: Path) -> None:
+        """Regrava o buscas.yaml (usado pelo painel e pelo comando 'regiao')."""
+        header = ("# Buscas em lote: `prospector lote` roda cada combinação nicho × cidade uma vez só\n"
+                  "# (as já feitas ficam registradas no banco e são puladas). Edite aqui ou pelo painel (Buscas).\n"
+                  "# Para trocar as cidades por todas num raio: prospector regiao \"Itaí\" --uf SP --raio 60 --salvar\n\n")
+        body = yaml.safe_dump({"nichos": list(self.nichos), "cidades": list(self.cidades),
+                               "max_por_execucao": self.max_por_execucao}, allow_unicode=True, sort_keys=False)
+        path.write_text(header + body, encoding="utf-8")
+
+    def with_lists(self, nichos: list[str], cidades: list[str], max_por_execucao: int | None = None) -> BatchConfig:
+        clean = lambda xs: tuple(dict.fromkeys(x.strip() for x in xs if x and x.strip()))  # noqa: E731
+        n, c = clean(nichos), clean(cidades)
+        if not n or not c:
+            raise ValueError("Informe pelo menos um nicho e uma cidade")
+        return BatchConfig(n, c, max(1, max_por_execucao or self.max_por_execucao))
+
 
 def done_queries(conn: sqlite3.Connection) -> set[str]:
     """Buscas já feitas: registradas no lote ou que já trouxeram leads (buscas manuais antigas)."""
@@ -57,11 +73,15 @@ def record(conn: sqlite3.Connection, query: str, result: ImportResult | None, er
 
 
 def run_batch(conn: sqlite3.Connection, cfg: BatchConfig, search: Callable[[str], ImportResult], *,
-              limit: int | None = None, out: Callable[[str], None] = print) -> list[tuple[str, str]]:
+              limit: int | None = None, out: Callable[[str], None] = print,
+              should_stop: Callable[[], bool] = lambda: False) -> list[tuple[str, str]]:
     """Roda as buscas pendentes (até `limit`). Erro numa busca não para as outras."""
     todo = pending(conn, cfg)[: limit or cfg.max_por_execucao]
     results = []
     for i, query in enumerate(todo, 1):
+        if should_stop():
+            out("Pausado por você.")
+            break
         out(f"[{i}/{len(todo)}] {query}")
         try:
             res = search(query)

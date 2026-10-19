@@ -14,6 +14,23 @@ Google Maps ──► gosom/google-maps-scraper ──► CSV ──► SQLite (
 
 Tudo roda no seu PC. O WA-AKG (com a sua sessão do WhatsApp) continua rodando à parte; o prospector só usa a API dele.
 
+## Primeiro dia: passo a passo
+
+1. **Confira o que falta:** `prospector checar`. Ele testa o `.env`, o scraper, o WA-AKG (sessão conectada), o webhook, o Pix, o backup e se há leads, e diz como resolver cada item.
+2. **Suba o WA-AKG** com a sua sessão conectada e preencha no `.env`: `WAAKG_URL` (se não for `http://localhost:3000`), `WAAKG_SESSION` e `WAAKG_API_KEY`.
+3. **Cadastre o webhook** (para receber as respostas): `prospector webhook http://localhost:5050/webhook`.
+4. **Teste no seu número:** `prospector teste 14999999999`.
+5. **Abra o painel:** `prospector painel` e depois `http://127.0.0.1:5050` (ou instale como serviço, veja abaixo).
+6. **Encha o estoque de leads:** em **Buscas**, ajuste nichos e cidades (o botão "Cidades por raio" puxa todas as cidades num raio a partir de Itaí) e clique em **Rodar buscas**.
+7. **Gere a fila:** em **Fila e envio** (ou na Visão geral), clique em **Gerar fila do dia**, revise cada mensagem e aprove.
+8. **Envie:** clique em **Enviar aprovados**. O envio respeita horário, limites, intervalo e "digitando", e pode ser pausado a qualquer momento. Com "esperar próximas janelas" marcado, ele continua sozinho no próximo horário útil.
+9. **Acompanhe:** as respostas chegam como notificação; a Visão geral mostra o funil, as respostas por dia, cidade, nicho e horário.
+
+### Deixar rodando sozinho (opcional)
+
+- **Painel sempre ligado:** `scripts/prospector-painel.service` é um serviço de usuário do systemd (instruções dentro do arquivo).
+- **Rotina diária:** `scripts/crontab.exemplo` faz backup às 23h, buscas de madrugada, gera a fila às 8h e manda os alertas às 8h30. Você continua aprovando tudo antes do envio.
+
 ## Requisitos
 
 - Linux com Docker e Docker Compose
@@ -73,6 +90,8 @@ Outros comandos:
 | `prospector retomar` | libera o envio depois de uma parada de emergência |
 | `prospector desbloquear 14991234567` | tira um número da lista de bloqueio (correção manual) |
 | `prospector financeiro [--notificar]` | resumo do mês, alertas e sugestões do gerenciador |
+| `prospector checar` | confere se está tudo pronto para rodar e diz como resolver o que falta |
+| `prospector regiao "Itaí" --uf SP --raio 60 [--salvar]` | cidades num raio, para as buscas |
 | `prospector lote [--listar] [--max N]` | buscas em lote de `buscas.yaml` |
 | `prospector checar-sites` | testa os sites dos leads (oferta `site_problema`) |
 | `prospector ab` | resultado do teste A/B dos textos |
@@ -85,7 +104,9 @@ Outros comandos:
 
 `http://127.0.0.1:5050` (tema claro/escuro automático, funciona no celular):
 
-- **Visão geral**: lucro do mês, meta, a receber, alertas do que fazer agora, sugestões, gráficos de receita × despesas e do funil (encontrados → aprovados → enviados → responderam → interessados → fecharam) e conversão por busca;
+- **Visão geral**: faixa "Agora" com o status ao vivo (dentro/fora do horário, envios do dia num anel, limite da hora, próxima janela) e os botões do dia (rodar buscas, gerar fila, enviar/pausar); avisos do que falta configurar; envios × respostas por dia (30 dias), funil completo, mapa de calor de quando os clientes respondem (dia × hora), taxa de resposta por cidade e por nicho, leads por cidade, alertas, sugestões e o teste A/B dos textos;
+- **Buscas**: nichos × cidades, cidades por raio, progresso, botão para rodar (em segundo plano, com pausa);
+- **Fila e envio**: revisar, editar e aprovar mensagens; barra com aprovadas, envios de hoje e da última hora, e o botão Enviar/Pausar com o registro ao vivo do que está acontecendo;
 - **Leads**: filtro por busca, cidade e status, troca manual de status, botão "Fechou" e exportação de CSV (respeita os filtros);
 - **Fila de aprovação**: dá para editar o texto, aprovar um a um ou todos de uma vez;
 - **Projetos**: possíveis fechamentos, projetos com recebido, a receber, despesas e lucro;
@@ -140,6 +161,12 @@ Cada variação da primeira mensagem (`templates.yaml`) tem um identificador. O 
 ### Checagem de sites (oferta `site_problema`)
 
 Depois de cada busca, os sites dos leads com site próprio são testados: fora do ar, sem HTTPS ("não seguro"), lento (mais de 5 s) ou sem versão para celular. Com problema, a oferta vira `site_problema` e a mensagem cita o problema ("Fui abrir o site de vocês e reparei que o site está fora do ar…"). Para rodar na mão: `prospector checar-sites`. Por segurança, só acessa endereços públicos (nada de rede local), com timeout e limite de tamanho.
+
+### Buscas em várias cidades
+
+`prospector regiao "Itaí" --uf SP --raio 60` lista todas as cidades até 60 km (base do IBGE com coordenadas e DDD; baixada uma vez e guardada em `data/municipios.csv`). Com `--salvar`, elas vão para o `buscas.yaml`. O `buscas.yaml` já vem com as 21 cidades num raio de 60 km de Itaí e 14 nichos (294 buscas).
+
+Tudo isso também está no painel, em **Buscas**: editar nichos e cidades, ver as cidades por raio antes de salvar (adicionar ou substituir), acompanhar o progresso, ver as próximas buscas e o resultado das últimas.
 
 ### Buscas em lote
 
@@ -271,6 +298,11 @@ prospector/
   pix.py          Pix copia e cola (BR Code) e QR Code
   sitecheck.py    checagem de sites (com proteção contra acesso à rede local)
   lote.py         buscas em lote
+  regiao.py       cidades num raio (base do IBGE)
+  jobs.py         tarefas em segundo plano do painel (buscas e envio, com pausa)
+  checagem.py     "está tudo pronto para rodar?"
+  metrics.py      métricas por dia, cidade, nicho e horário
+  web_ops.py      painel: visão geral, buscas, tarefas
   pdf.py          gerador de PDF mínimo     proposta.py  proposta comercial
   relatorio.py    relatório semanal
   templates/      HTML do painel     static/  CSS

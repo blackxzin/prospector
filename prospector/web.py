@@ -242,5 +242,7 @@ def create_app(app_ctx: App | None = None) -> Flask:
         return {"ok": True, "parado": db.stop_reason(ctx.conn)}
 
     from .web_finance import register_finance_routes
+    from .web_ops import register_ops_routes
     register_finance_routes(web, ctx)
+    register_ops_routes(web, ctx)
     return web

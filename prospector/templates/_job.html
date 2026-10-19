@@ -1,0 +1,15 @@
+{% macro job_log(kind) %}
+{%- set j = jobs[kind] -%}
+{% if j.status and j.status != 'parado' %}
+<div class="job job-{{ j.status }}">
+  <div class="job-head">
+    {% if job_rodando[kind] %}<span class="spinner"></span>{% endif %}
+    <b>{{ j.titulo or ('Buscas' if kind == 'busca' else 'Envio') }}</b>
+    <span class="tag {{ {'rodando': 'blue', 'concluido': 'green', 'pausado': 'amber', 'erro': 'red', 'interrompido': 'amber'}.get(j.status, '') }}">{{ j.status }}</span>
+    {% if j.resumo %}<span class="ink2">{{ j.resumo }}</span>{% endif %}
+  </div>
+  {% if j.linhas %}<pre class="job-log">{% for l in j.linhas[-8:] %}{{ l }}
+{% endfor %}</pre>{% endif %}
+</div>
+{% endif %}
+{% endmacro %}

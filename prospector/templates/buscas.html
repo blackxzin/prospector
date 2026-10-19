@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% from '_job.html' import job_log with context %}
+{% block title %}Buscas{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Buscas</h1>
+    <p>Cada combinação nicho × cidade é buscada uma vez no Google Maps. As já feitas são puladas.</p></div>
+  {% if job_rodando.busca %}
+    <form method="post" action="{{ url_for('tarefa_parar', kind='busca') }}"><button class="btn-danger">Pausar buscas</button></form>
+  {% else %}
+    <form method="post" action="{{ url_for('tarefa_busca') }}" class="toolbar">
+      <label class="inline-form muted">Rodar <input name="quantas" type="number" min="1" max="{{ max_run }}" value="{{ cfg.max_por_execucao if cfg else 8 }}" style="width:72px"> agora</label>
+      <button class="btn-primary" {{ 'disabled' if not pendentes }}>Rodar buscas</button>
+    </form>
+  {% endif %}
+</div>
+
+{{ job_log('busca') }}
+
+{% set feitas_n = total - (pendentes|length) %}
+<section class="card progress-card">
+  <div class="meter-row"><span><b class="num">{{ feitas_n }}</b> de <b class="num">{{ total }}</b> buscas feitas</span>
+    <span class="num">{{ (feitas_n * 100 // total) if total else 0 }}%</span></div>
+  <div class="meter-track"><div class="meter-fill" style="width: {{ (feitas_n * 100 // total) if total else 0 }}%"></div></div>
+  <p class="sub">{{ cfg.nichos|length if cfg else 0 }} nichos × {{ cfg.cidades|length if cfg else 0 }} cidades.
+    Cada busca leva de 1 a 5 minutos. Dica: deixe <code>prospector lote</code> no cron de madrugada.</p>
+</section>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="listas-h">
+    <div class="card-head"><h2 id="listas-h">Nichos e cidades</h2><span class="muted">um por linha</span></div>
+    <form method="post" action="{{ url_for('buscas_salvar') }}">
+      <div class="form-grid">
+        <label class="f">Nichos<textarea name="nichos" rows="12">{{ cfg.nichos|join('\n') if cfg }}</textarea></label>
+        <label class="f">Cidades (nome + UF)<textarea name="cidades" rows="12">{{ cfg.cidades|join('\n') if cfg }}</textarea></label>
+        <label class="f">Buscas por execução (cron)<input name="max" type="number" min="1" max="{{ max_run }}" value="{{ cfg.max_por_execucao if cfg else 8 }}"></label>
+      </div>
+      <div class="toolbar" style="margin-top:12px"><button class="btn-primary">Salvar listas</button></div>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="raio-h">
+    <div class="card-head"><h2 id="raio-h">Cidades por raio</h2><span class="muted">base do IBGE</span></div>
+    <form method="post" action="{{ url_for('buscas_regiao') }}">
+      <div class="form-grid">
+        <label class="f">Cidade-base<input name="cidade" required value="{{ regiao_preview.cidade if regiao_preview else 'Itaí' }}"></label>
+        <label class="f">UF<input name="uf" required maxlength="2" value="{{ regiao_preview.uf if regiao_preview else 'SP' }}"></label>
+        <label class="f">Raio (km)<input name="raio" inputmode="decimal" value="{{ '%g'|format(regiao_preview.raio) if regiao_preview else 50 }}"></label>
+        <label class="f">Ao salvar<select name="modo"><option value="adicionar">adicionar às cidades atuais</option><option value="substituir">substituir as cidades</option></select></label>
+      </div>
+      <div class="toolbar" style="margin-top:12px">
+        <button name="acao" value="ver">Ver cidades</button>
+        <button name="acao" value="salvar" class="btn-primary">Salvar nas buscas</button>
+      </div>
+    </form>
+    {% if regiao_preview %}
+    <div class="table-wrap" style="margin-top:14px"><table>
+      <thead><tr><th>Cidade</th><th class="r">Distância</th><th>DDD</th></tr></thead>
+      <tbody>{% for c in regiao_preview.cidades %}<tr><td>{{ c.consulta }}</td><td class="r num">{{ c.distancia_km }} km</td><td class="num">{{ c.ddd }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="sub">{{ regiao_preview.cidades|length }} cidade(s) até {{ '%g'|format(regiao_preview.raio) }} km de {{ regiao_preview.base.consulta }}.</p>
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="pend-h">
+    <div class="card-head"><h2 id="pend-h">Próximas buscas</h2><span class="muted">{{ pendentes|length }} pendente(s)</span></div>
+    {% if pendentes %}
+    <ol class="queue-list">{% for q in pendentes[:25] %}<li>{{ q }}</li>{% endfor %}</ol>
+    {% if pendentes|length > 25 %}<p class="sub">e mais {{ pendentes|length - 25 }}…</p>{% endif %}
+    {% else %}<p class="empty">Nada pendente. Adicione nichos ou cidades.</p>{% endif %}
+  </section>
+  <section class="card" aria-labelledby="feitas-h">
+    <div class="card-head"><h2 id="feitas-h">Últimas feitas</h2></div>
+    {% if feitas %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Busca</th><th class="r">Novos</th><th class="r">Válidos</th><th>Quando</th></tr></thead>
+      <tbody>{% for b in feitas %}<tr>
+        <td>{{ b.consulta }}{% if b.erro %}<div class="sub" style="color:var(--critical-ink)">{{ b.erro[:120] }}</div>{% endif %}</td>
+        <td class="r num">{{ b.importados }}</td><td class="r num">{{ b.validos }}</td>
+        <td class="num">{{ quando(b.feita_em) }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="empty">Nenhuma busca em lote ainda.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,135 +1,140 @@
 {% extends 'base.html' %}
+{% from '_job.html' import job_log with context %}
 {% block title %}Visão geral{% endblock %}
 {% block body %}
-{% set r = painel.resumo %}
 <div class="page-head">
-  <div>
-    <h1>Visão geral</h1>
-    <p>{{ hoje_extenso }}</p>
-  </div>
-  <div class="toolbar">
-    <a class="btn" href="{{ url_for('fila') }}">Revisar fila</a>
-    <a class="btn btn-primary" href="{{ url_for('projeto_novo') }}">Registrar projeto</a>
-  </div>
+  <div><h1>Visão geral</h1><p>{{ hoje_extenso }}</p></div>
 </div>
 
-<div class="stack">
-  <section class="card" aria-labelledby="hero-l">
-    <div class="hero">
-      <div>
-        <div class="hero-label" id="hero-l">Lucro do mês</div>
-        <div class="hero-value">{{ brl(r.lucro_mes) }}</div>
-        <div class="hero-sub">recebido <b>{{ brl(r.recebido_mes) }}</b> · despesas <b>{{ brl(r.despesas_mes) }}</b>
-          {% if r.margem_pct is not none %} · margem <b>{{ r.margem_pct }}%</b>{% endif %}</div>
-      </div>
-      {% if r.meta %}
-      <div class="meter" aria-label="Meta do mês">
-        <div class="meter-row"><span>Meta do mês</span><span class="num">{{ r.meta_pct }}%</span></div>
-        <div class="meter-track"><div class="meter-fill" style="width: {{ r.meta_pct }}%"></div></div>
-        <div class="meter-row"><span class="num">{{ brl(r.recebido_mes) }}</span><span class="num">{{ brl(r.meta) }}</span></div>
-      </div>
-      {% endif %}
-    </div>
+{# ---------- Agora: status ao vivo + ações do dia ---------- #}
+<section class="now" aria-labelledby="now-h">
+  <div class="now-ring" style="--p: {{ ops.pct_dia }}" role="img" aria-label="{{ ops.enviados_hoje }} de {{ ops.limite_dia }} envios hoje">
+    <div><b class="num">{{ ops.enviados_hoje }}</b><span>de {{ ops.limite_dia }}</span></div>
+  </div>
+  <div class="now-text">
+    <h2 id="now-h">
+      {% if parado %}Envio parado por segurança
+      {% elif job_rodando.envio %}Enviando agora, no ritmo humano
+      {% elif ops.na_janela %}Dentro do horário de envio
+      {% else %}Fora do horário · próxima janela {{ ops.proxima_janela }}{% endif %}
+    </h2>
+    <p class="ink2">
+      Hoje: <b>{{ ops.enviados_hoje }}</b> enviada(s) · última hora <b>{{ ops.ultima_hora }}/{{ ops.limite_hora }}</b>
+      · <b>{{ ops.aprovados }}</b> aprovada(s) esperando · <b>{{ ops.pendentes }}</b> para revisar
+      · <b>{{ ops.novos }}</b> lead(s) novos · <b>{{ ops.respostas_hoje }}</b> resposta(s) hoje
+    </p>
+  </div>
+  <div class="now-actions">
+    {% if job_rodando.busca %}
+      <form method="post" action="{{ url_for('tarefa_parar', kind='busca') }}"><button>Pausar buscas</button></form>
+    {% else %}
+      <form method="post" action="{{ url_for('tarefa_busca') }}"><input type="hidden" name="quantas" value="8"><button>Rodar buscas</button></form>
+    {% endif %}
+    <form method="post" action="{{ url_for('gerar_fila_dashboard') }}"><button>Gerar fila do dia</button></form>
+    {% if job_rodando.envio %}
+      <form method="post" action="{{ url_for('tarefa_parar', kind='envio') }}"><button class="btn-danger">Pausar envio</button></form>
+    {% else %}
+      <form method="post" action="{{ url_for('tarefa_envio') }}"><button class="btn-primary" {{ 'disabled' if not ops.aprovados }}>Enviar aprovados{% if ops.aprovados %} ({{ ops.aprovados }}){% endif %}</button></form>
+    {% endif %}
+  </div>
+</section>
+{{ job_log('envio') }}{{ job_log('busca') }}
+
+{% if checks_erros %}
+<section class="card readiness" aria-labelledby="ready-h">
+  <div class="card-head"><h2 id="ready-h">Antes de rodar: {{ checks_resumo }}</h2>
+    <form method="post" action="{{ url_for('recheck') }}"><button class="btn-sm">Checar de novo</button></form></div>
+  <ul class="checks">
+    {% for c in checks if c.nivel != 'ok' %}
+    <li class="ck-{{ c.nivel }}"><span class="ico" aria-hidden="true">{{ '!' if c.nivel == 'erro' else '•' }}</span>
+      <div><b>{{ c.nome }}</b> <span class="ink2">{{ c.detalhe }}</span>
+        {% if c.como_resolver %}<div class="sub">Como resolver: <code>{{ c.como_resolver }}</code></div>{% endif %}</div></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="grid g-kpi kpis">
+  <div class="card kpi"><div class="label">Leads prontos</div><div class="value">{{ ops.novos }}</div>
+    <div class="sub">{{ lote.total - lote.pendentes if lote else 0 }} de {{ lote.total if lote else 0 }} buscas feitas</div></div>
+  <div class="card kpi"><div class="label">Enviadas · 30 dias</div><div class="value">{{ kpi.env30 }}</div>
+    <div class="sub">{{ kpi.resp30 }} resposta(s)</div></div>
+  <div class="card kpi"><div class="label">Taxa de resposta · 30 dias</div>
+    <div class="value">{% if kpi.taxa30 is not none %}{{ '%.0f'|format(kpi.taxa30 * 100) }}%{% else %}—{% endif %}</div>
+    <div class="sub">{{ ops.sem_retorno }} conversa(s) esperando você</div></div>
+  <div class="card kpi"><div class="label">Lucro do mês</div><div class="value {{ 'bad' if kpi.lucro_mes < 0 }}">{{ brl(kpi.lucro_mes) }}</div>
+    <div class="sub">{{ kpi.clientes }} cliente(s) fechado(s) no total</div></div>
+</div>
+
+<div class="grid g-3">
+  <section class="card" aria-labelledby="dia-h">
+    <div class="card-head"><h2 id="dia-h">Envios e respostas por dia</h2>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>Enviadas</span><span><i style="background:var(--series-2)"></i>Respostas</span></div></div>
+    {{ grafico_diario|safe }}
+    <p class="sub">Últimos 30 dias. Passe o mouse sobre um dia para ver os números.</p>
   </section>
-
-  <div class="grid g-kpi">
-    <div class="card kpi"><div class="label">A receber</div><div class="value">{{ brl(r.a_receber) }}</div>
-      <div class="sub">{% if r.vencido %}<span class="tag red">{{ brl(r.vencido) }} vencido</span>{% else %}nada vencido{% endif %}</div></div>
-    <div class="card kpi"><div class="label">Previsto em 30 dias</div><div class="value">{{ brl(r.previsao_30d) }}</div>
-      <div class="sub">parcelas + mensalidades</div></div>
-    <div class="card kpi"><div class="label">Receita recorrente</div><div class="value">{{ brl(r.mrr) }}<span class="muted" style="font-size:14px">/mês</span></div>
-      <div class="sub">mensalidades ativas</div></div>
-    <div class="card kpi"><div class="label">Projetos</div><div class="value">{{ r.projetos_ativos }} <span class="muted" style="font-size:14px">em andamento</span></div>
-      <div class="sub">{{ r.projetos_total }} no total · ticket médio {{ brl(r.ticket_medio) }}</div></div>
-  </div>
-
-  <div class="grid g-3">
-    <section class="card" aria-labelledby="alertas-h">
-      <div class="card-head"><h2 id="alertas-h">O que fazer agora</h2><span class="muted">{{ painel.alertas|length }} item(ns)</span></div>
-      {% if painel.alertas %}
-      <ul class="alerts">
-        {% for a in painel.alertas %}
-        <li class="lv-{{ a.nivel }}">
-          <span class="ico" aria-hidden="true">{{ {'critico': '!', 'atencao': '•', 'bom': '✓', 'info': 'i'}[a.nivel] }}</span>
-          <div>
-            <div class="t">{% if a.link %}<a href="{{ a.link }}">{{ a.titulo }}</a>{% else %}{{ a.titulo }}{% endif %}
-              <span class="sr">({{ {'critico': 'urgente', 'atencao': 'atenção', 'bom': 'oportunidade', 'info': 'informativo'}[a.nivel] }})</span></div>
-            <div class="d">{{ a.detalhe }}</div>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}<p class="empty">Tudo em dia. Nenhuma cobrança, prazo ou resposta pendente.</p>{% endif %}
-    </section>
-
-    <section class="card" aria-labelledby="sug-h">
-      <div class="card-head"><h2 id="sug-h">Sugestões</h2></div>
-      {% if painel.sugestoes %}
-      <ol class="tips">{% for s in painel.sugestoes %}<li>{{ s }}</li>{% endfor %}</ol>
-      {% else %}<p class="empty">Sem sugestões por enquanto.</p>{% endif %}
-    </section>
-  </div>
-
-  <div class="grid g-2">
-    <section class="card" aria-labelledby="rec-h">
-      <div class="card-head"><h2 id="rec-h">Receita x despesas</h2>
-        <div class="legend"><span><i style="background:var(--series-1)"></i>Receita</span><span><i style="background:var(--series-2)"></i>Despesas</span></div></div>
-      {{ grafico_receita|safe }}
-      <details class="table-view"><summary>Ver como tabela</summary>
-        <table><thead><tr><th>Mês</th><th class="r">Receita</th><th class="r">Despesas</th><th class="r">Lucro</th></tr></thead><tbody>
-        {% for m in painel.serie %}<tr><td>{{ mes_nome(m.mes) }}</td><td class="r num">{{ brl(m.receita) }}</td>
-          <td class="r num">{{ brl(m.despesas) }}</td><td class="r num">{{ brl(m.lucro) }}</td></tr>{% endfor %}
-        </tbody></table></details>
-    </section>
-
-    <section class="card" aria-labelledby="fun-h">
-      <div class="card-head"><h2 id="fun-h">Funil de prospecção</h2><a href="{{ url_for('leads') }}">ver leads</a></div>
-      {{ grafico_funil|safe }}
-    </section>
-  </div>
-
-  <div class="grid g-2">
-  <section class="card" aria-labelledby="ab-h">
-    <div class="card-head"><h2 id="ab-h">Textos que mais funcionam</h2><span class="muted">teste A/B automático</span></div>
-    {% if ab %}
-    <div class="table-wrap"><table>
-      <thead><tr><th>Variação</th><th class="r">Enviados</th><th class="r">Respostas positivas</th></tr></thead>
-      <tbody>{% for v in ab %}<tr>
-        <td><span class="tag plain">{{ v.oferta }}</span> <span class="ink2">{{ v.texto[:90] }}…</span></td>
-        <td class="r num">{{ v.enviados }}</td>
-        <td class="r num">{{ v.positivos }} <span class="muted">{{ '%.0f'|format(v.taxa * 100) }}%</span></td>
-      </tr>{% endfor %}</tbody>
-    </table></div>
-    <p class="sub">As melhores passam a ser sorteadas com mais frequência. Detalhes: <code>prospector ab</code>.</p>
-    {% else %}<p class="empty">Aparece depois dos primeiros envios. Cada variação do templates.yaml é medida sozinha.</p>{% endif %}
-  </section>
-
-  <section class="card" aria-labelledby="lote-h">
-    <div class="card-head"><h2 id="lote-h">Buscas em lote</h2><span class="muted">buscas.yaml</span></div>
-    {% if lote %}
-      {% set feitas = lote.total - lote.pendentes %}
-      <div class="meter-row"><span>{{ feitas }} de {{ lote.total }} buscas feitas</span><span class="num">{{ (feitas * 100 // lote.total) if lote.total else 0 }}%</span></div>
-      <div class="meter-track"><div class="meter-fill" style="width: {{ (feitas * 100 // lote.total) if lote.total else 0 }}%"></div></div>
-      <p class="sub">{{ lote.pendentes }} combinação(ões) nicho × cidade pendente(s). Rode <code>prospector lote</code> (ou deixe no cron de madrugada).</p>
-    {% else %}<p class="empty">Crie o buscas.yaml com nichos e cidades.</p>{% endif %}
-  </section>
-  </div>
-
-  <section class="card" aria-labelledby="seg-h">
-    <div class="card-head"><h2 id="seg-h">O que converte</h2><span class="muted">por busca e oferta, só leads já contatados</span></div>
-    {% if painel.segmentos %}
-    <div class="table-wrap"><table>
-      <thead><tr><th>Busca</th><th>Oferta</th><th class="r">Contatados</th><th class="r">Responderam</th>
-        <th class="r">Fecharam</th><th class="r">Recusaram</th><th class="r">Faturado</th></tr></thead>
-      <tbody>{% for s in painel.segmentos %}<tr>
-        <td class="name">{{ s.busca }}</td><td><span class="tag plain">{{ s.oferta }}</span></td>
-        <td class="r num">{{ s.contatados }}</td>
-        <td class="r num">{{ s.responderam }} <span class="muted">{{ '%.0f'|format(s.taxa_resposta * 100) }}%</span></td>
-        <td class="r num">{{ s.clientes }} <span class="muted">{{ '%.0f'|format(s.taxa_fechamento * 100) }}%</span></td>
-        <td class="r num">{{ s.recusaram }}</td><td class="r num">{{ brl(s.faturado) }}</td>
-      </tr>{% endfor %}</tbody>
-    </table></div>
-    {% else %}<p class="empty">Aparece aqui depois dos primeiros envios.</p>{% endif %}
+  <section class="card" aria-labelledby="alertas-h">
+    <div class="card-head"><h2 id="alertas-h">O que fazer agora</h2><span class="muted">{{ painel.alertas|length }}</span></div>
+    {% if painel.alertas %}
+    <ul class="alerts">
+      {% for a in painel.alertas[:7] %}
+      <li class="lv-{{ a.nivel }}">
+        <span class="ico" aria-hidden="true">{{ {'critico': '!', 'atencao': '•', 'bom': '✓', 'info': 'i'}[a.nivel] }}</span>
+        <div><div class="t">{% if a.link %}<a href="{{ a.link }}">{{ a.titulo }}</a>{% else %}{{ a.titulo }}{% endif %}</div>
+          <div class="d">{{ a.detalhe }}</div></div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="empty">Tudo em dia.</p>{% endif %}
   </section>
 </div>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="fun-h">
+    <div class="card-head"><h2 id="fun-h">Funil</h2><a href="{{ url_for('leads') }}">ver leads</a></div>
+    {{ grafico_funil|safe }}
+  </section>
+  <section class="card" aria-labelledby="heat-h">
+    <div class="card-head"><h2 id="heat-h">Quando os clientes respondem</h2><span class="muted">dia × hora</span></div>
+    {{ grafico_heat|safe }}
+    {% if not tem_respostas %}<p class="sub">Vai se preenchendo com as respostas. Use para ajustar as JANELAS de envio no .env.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="cid-h">
+    <div class="card-head"><h2 id="cid-h">Resposta por cidade</h2><span class="muted">entre os contatados</span></div>
+    {% if grafico_cidades %}{{ grafico_cidades|safe }}{% else %}<p class="empty">Aparece depois dos primeiros envios.</p>{% endif %}
+  </section>
+  <section class="card" aria-labelledby="nic-h">
+    <div class="card-head"><h2 id="nic-h">Resposta por nicho</h2><span class="muted">entre os contatados</span></div>
+    {% if grafico_nichos %}{{ grafico_nichos|safe }}{% else %}<p class="empty">Aparece depois dos primeiros envios.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid g-2">
+  <section class="card" aria-labelledby="est-h">
+    <div class="card-head"><h2 id="est-h">Leads por cidade</h2><a href="{{ url_for('buscas') }}">buscar mais</a></div>
+    {% if grafico_estoque %}{{ grafico_estoque|safe }}{% else %}<p class="empty">Rode as buscas para encher o estoque.</p>{% endif %}
+  </section>
+  <section class="card" aria-labelledby="sug-h">
+    <div class="card-head"><h2 id="sug-h">Sugestões</h2></div>
+    {% if painel.sugestoes %}<ol class="tips">{% for s in painel.sugestoes %}<li>{{ s }}</li>{% endfor %}</ol>
+    {% else %}<p class="empty">Sem sugestões por enquanto.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card" aria-labelledby="ab-h">
+  <div class="card-head"><h2 id="ab-h">Textos que mais funcionam</h2><span class="muted">teste A/B automático</span></div>
+  {% if ab %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Variação</th><th class="r">Enviadas</th><th class="r">Respostas positivas</th></tr></thead>
+    <tbody>{% for v in ab %}<tr>
+      <td><span class="tag plain">{{ v.oferta }}</span> <span class="ink2">{{ v.texto[:110] }}…</span></td>
+      <td class="r num">{{ v.enviados }}</td>
+      <td class="r num">{{ v.positivos }} <span class="muted">{{ '%.0f'|format(v.taxa * 100) }}%</span></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty">Cada variação do templates.yaml é medida sozinha depois dos primeiros envios.</p>{% endif %}
+</section>
 {% endblock %}

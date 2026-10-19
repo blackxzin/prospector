@@ -14,7 +14,7 @@ from . import fila as fq
 from . import insights
 from .app import App
 from .messages import variant_id
-from .charts import funnel_chart, revenue_chart
+from .charts import revenue_chart
 
 
 def _money_field(name: str, default: str = "0") -> int:
@@ -60,23 +60,7 @@ def _batch_progress(ctx: App) -> dict | None:
 
 
 def register_finance_routes(web: Flask, ctx: App) -> None:
-    from .web import date_long, today_local
-
-    @web.get("/")
-    def dashboard() -> str:
-        hoje = today_local(ctx)
-        painel = insights.build(ctx.conn, ctx.finance, hoje, _extra_alerts(ctx))
-        f = db.funnel(ctx.conn)
-        clientes = ctx.conn.execute("SELECT COUNT(DISTINCT lead_id) FROM projetos "
-                                    "WHERE lead_id IS NOT NULL AND status != 'cancelado'").fetchone()[0]
-        etapas = [("Encontrados", f["encontrados"]), ("Válidos", f["validos"]), ("Aprovados", f["aprovados"]),
-                  ("Enviados", f["enviados"]), ("Responderam", f["responderam"]),
-                  ("Interessados", f["interessados"] + clientes), ("Fecharam", clientes)]
-        return render_template(
-            "dashboard.html", page="dashboard", painel=painel, hoje_extenso=date_long(hoje),
-            grafico_receita=revenue_chart(painel.serie), grafico_funil=funnel_chart(etapas),
-            ab=_ab_rows(ctx)[:6], lote=_batch_progress(ctx),
-        )
+    from .web import today_local
 
     # ---------- projetos ----------
 

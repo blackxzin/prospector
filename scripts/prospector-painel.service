@@ -1,0 +1,17 @@
+# Painel + webhook sempre ligado (serviço de usuário do systemd).
+# Instale com:
+#   mkdir -p ~/.config/systemd/user
+#   cp scripts/prospector-painel.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now prospector-painel
+[Unit]
+Description=Prospector: painel e webhook
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/polar/workproject/prospector
+ExecStart=/home/polar/workproject/prospector/.venv/bin/prospector painel
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

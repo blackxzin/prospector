@@ -1,14 +1,35 @@
 {% extends 'base.html' %}
-{% block title %}Fila de aprovação{% endblock %}
+{% block title %}Fila e envio{% endblock %}
 {% block body %}
+{% from '_job.html' import job_log with context %}
 <div class="page-head">
-  <div><h1>Fila de aprovação</h1>
-    <p>Aprovar não envia: o envio só acontece com <code>prospector enviar</code>, dentro do horário e dos limites.</p></div>
+  <div><h1>Fila e envio</h1>
+    <p>Revise cada mensagem. Só o que você aprovar é enviado, dentro do horário e dos limites.</p></div>
   <div class="toolbar">
     <form method="post" action="{{ url_for('gerar_fila') }}"><button>Gerar fila do dia</button></form>
-    {% if pendentes %}<form method="post" action="{{ url_for('aprovar_todos') }}"><button class="btn-primary">Aprovar {{ pendentes }} pendente(s)</button></form>{% endif %}
+    {% if pendentes %}<form method="post" action="{{ url_for('aprovar_todos') }}"><button>Aprovar {{ pendentes }} pendente(s)</button></form>{% endif %}
   </div>
 </div>
+
+<section class="sendbar">
+  <div class="sendbar-stats">
+    <div><span>Aprovadas</span><b class="num">{{ ops.aprovados }}</b></div>
+    <div><span>Hoje</span><b class="num">{{ ops.enviados_hoje }}/{{ ops.limite_dia }}</b></div>
+    <div><span>Última hora</span><b class="num">{{ ops.ultima_hora }}/{{ ops.limite_hora }}</b></div>
+    <div><span>{{ 'Agora' if ops.na_janela else 'Próxima janela' }}</span><b>{{ 'no horário' if ops.na_janela else ops.proxima_janela }}</b></div>
+  </div>
+  <div class="toolbar">
+    {% if job_rodando.envio %}
+      <form method="post" action="{{ url_for('tarefa_parar', kind='envio') }}"><button class="btn-danger">Pausar envio</button></form>
+    {% else %}
+      <form method="post" action="{{ url_for('tarefa_envio') }}" class="toolbar">
+        <label class="inline-form muted"><input type="checkbox" name="aguardar" value="1"> esperar próximas janelas</label>
+        <button class="btn-primary" {{ 'disabled' if not ops.aprovados }}>Enviar aprovados</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+{{ job_log('envio') }}
 
 {% if not itens %}
 <section class="card"><p class="empty">Fila vazia. Clique em "Gerar fila do dia" ou rode <code>prospector fila</code>.</p></section>

@@ -258,6 +258,44 @@ def cmd_financeiro(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_checar(app: App, _args: argparse.Namespace) -> int:
+    from . import checagem
+    checks = checagem.run_checks(app)
+    marks = {checagem.OK: "OK   ", checagem.AVISO: "AVISO", checagem.ERRO: "ERRO "}
+    for c in checks:
+        print(f"[{marks[c.nivel]}] {c.nome}: {c.detalhe}")
+        if c.nivel != checagem.OK and c.como_resolver:
+            print(f"         -> {c.como_resolver}")
+    print(f"\nResultado: {checagem.summary(checks)}.")
+    return 1 if any(c.nivel == checagem.ERRO for c in checks) else 0
+
+
+def cmd_regiao(app: App, args: argparse.Namespace) -> int:
+    """Lista (e opcionalmente salva no buscas.yaml) as cidades num raio a partir de uma cidade-base."""
+    from . import regiao
+    from .lote import BatchConfig
+    try:
+        cidades = regiao.load_dataset(app.settings.data_dir / "municipios.csv")
+        base = regiao.find_city(cidades, args.cidade, args.uf)
+        perto = regiao.nearby(cidades, base, args.raio, args.max, mesma_uf=args.mesma_uf)
+    except regiao.RegiaoError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    for c in perto:
+        print(f"  {c.consulta:<32} {c.distancia_km:>5.1f} km  DDD {c.ddd}")
+    print(f"{len(perto)} cidade(s) até {args.raio:g} km de {base.consulta}.")
+    if args.salvar:
+        try:
+            atual = BatchConfig.load(app.settings.buscas_path)
+        except ValueError:
+            atual = BatchConfig(("pizzaria",), ("x",), 8)
+        novo = atual.with_lists(list(atual.nichos), [c.consulta for c in perto])
+        novo.save(app.settings.buscas_path)
+        print(f"buscas.yaml atualizado: {len(novo.nichos)} nichos × {len(novo.cidades)} cidades = "
+              f"{len(novo.queries())} buscas.")
+    return 0
+
+
 def cmd_backup(app: App, args: argparse.Namespace) -> int:
     from .backup import BackupError, list_backups, make_backup
     from .config import ROOT
@@ -439,6 +477,18 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("financeiro", help="resumo financeiro, alertas e sugestões do gerenciador")
     a.add_argument("--notificar", action="store_true", help="manda notify-send dos alertas importantes (bom p/ cron)")
     a.set_defaults(fn=cmd_financeiro)
+
+    sub.add_parser("checar", help="confere se está tudo pronto para rodar (WhatsApp, scraper, .env...)").set_defaults(
+        fn=cmd_checar)
+
+    a = sub.add_parser("regiao", help="cidades num raio (ex.: regiao Itaí --uf SP --raio 60 --salvar)")
+    a.add_argument("cidade")
+    a.add_argument("--uf", required=True)
+    a.add_argument("--raio", type=float, default=50, help="km (padrão 50)")
+    a.add_argument("--max", type=int, help="no máximo N cidades (as mais perto)")
+    a.add_argument("--mesma-uf", action="store_true", help="só cidades do mesmo estado")
+    a.add_argument("--salvar", action="store_true", help="grava as cidades no buscas.yaml")
+    a.set_defaults(fn=cmd_regiao)
 
     a = sub.add_parser("backup", help="copia o banco para BACKUP_DIR (mantém os últimos BACKUP_MANTER)")
     a.add_argument("--destino")

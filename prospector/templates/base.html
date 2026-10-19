@@ -3,18 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{% if auto_refresh %}<meta http-equiv="refresh" content="15">{% endif %}
 <title>{% block title %}Prospector{% endblock %} · Prospector</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
 <div class="shell">
   <aside class="side">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">P</span>prospector</div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">P</span><span>prospector</span></div>
     <nav class="nav" aria-label="Navegação principal">
       {% set nav = [
         ('dashboard', 'Visão geral', nav_counts.alertas),
+        ('buscas', 'Buscas', none),
+        ('fila', 'Fila e envio', nav_counts.fila),
         ('leads', 'Leads', none),
-        ('fila', 'Fila de aprovação', nav_counts.fila),
         ('projetos', 'Projetos', nav_counts.projetos),
         ('financeiro', 'Financeiro', none),
         ('envios', 'Log de envios', none),
@@ -26,13 +28,20 @@
         </a>
       {% endfor %}
     </nav>
-    <div class="side-foot">
-      {% if parado %}<span class="dot off"></span>envio parado{% else %}<span class="dot"></span>envio liberado{% endif %}
+    <div class="side-status">
+      <div class="side-row"><span class="dot {{ 'off' if parado else ('live' if ops.na_janela else 'idle') }}"></span>
+        {% if parado %}envio parado{% elif ops.na_janela %}no horário de envio{% else %}fora do horário{% endif %}</div>
+      <div class="side-meter" title="Envios hoje">
+        <div class="side-meter-row"><span>Hoje</span><b class="num">{{ ops.enviados_hoje }}/{{ ops.limite_dia }}</b></div>
+        <div class="bar"><i style="width: {{ ops.pct_dia }}%"></i></div>
+      </div>
+      {% if job_rodando.envio %}<div class="side-row"><span class="spinner"></span>enviando…</div>{% endif %}
+      {% if job_rodando.busca %}<div class="side-row"><span class="spinner"></span>buscando…</div>{% endif %}
     </div>
   </aside>
   <main>
     {% if parado %}
-      <div class="banner critico" role="alert"><b>Envio parado.</b>&nbsp;{{ parado }} — confira a sessão no WA-AKG e rode <code>prospector retomar</code>.</div>
+      <div class="banner critico" role="alert"><b>Envio parado.</b>&nbsp;{{ parado }} Confira a sessão no WA-AKG e rode <code>prospector retomar</code>.</div>
     {% endif %}
     {% for m in get_flashed_messages() %}<div class="banner info flash" role="status">{{ m }}</div>{% endfor %}
     {% block body %}{% endblock %}

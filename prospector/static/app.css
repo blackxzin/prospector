@@ -272,3 +272,94 @@ details.pix summary { cursor: pointer; color: var(--accent); font-size: 12.5px; 
 .pix-box { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 8px; max-width: 420px; }
 .pix-box svg { flex: none; border-radius: 6px; background: #fff; padding: 4px; }
 .pix-box textarea { min-height: 120px; font: 11px/1.4 ui-monospace, monospace; flex: 1; min-width: 200px; }
+
+/* =================== v3: cabine de operação =================== */
+:root { --series-1-wash: rgba(42, 120, 214, .10); --live: #0ca30c;
+  --h0: #f0efec; --h1: #cde2fb; --h2: #9ec5f4; --h3: #6da7ec; --h4: #3987e5; --h5: #1c5cab; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --series-1-wash: rgba(57, 135, 229, .14);
+    --h0: #232321; --h1: #17304f; --h2: #1f4f8a; --h3: #2a78d6; --h4: #5598e7; --h5: #9ec5f4; }
+}
+:root[data-theme="dark"] { --series-1-wash: rgba(57, 135, 229, .14);
+  --h0: #232321; --h1: #17304f; --h2: #1f4f8a; --h3: #2a78d6; --h4: #5598e7; --h5: #9ec5f4; }
+
+body { font-size: 14px; }
+h1 { font-size: 26px; letter-spacing: -.02em; }
+main > .grid, main > section, main > .now, main > .job, main > .kpis { margin-bottom: 16px; }
+.card h2 { font-size: 14.5px; }
+button[disabled] { opacity: .45; cursor: not-allowed; }
+button:active:not([disabled]) { transform: translateY(1px); }
+
+/* barra lateral: status ao vivo */
+.side-status { margin-top: auto; padding: 12px 10px 4px; border-top: 1px solid var(--line); display: grid; gap: 10px; font-size: 12.5px; color: var(--ink-2); }
+.side-row { display: flex; align-items: center; gap: 6px; }
+.side-meter-row { display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--muted); }
+.side-meter-row b { color: var(--ink); }
+.bar { height: 6px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.dot.idle { background: var(--muted); }
+.dot.live { background: var(--live); box-shadow: 0 0 0 0 rgba(12, 163, 12, .5); animation: live 2s infinite; }
+@keyframes live { 0% { box-shadow: 0 0 0 0 rgba(12, 163, 12, .45); } 80%, 100% { box-shadow: 0 0 0 7px rgba(12, 163, 12, 0); } }
+.spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-soft); border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* faixa "Agora" */
+.now { display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center; padding: 18px 22px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.now::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--accent); }
+.now-ring { --p: 0; width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--accent-soft) 0); }
+.now-ring > div { width: 60px; height: 60px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; align-content: center; line-height: 1.05; }
+.now-ring b { font-size: 22px; } .now-ring span { font-size: 11px; color: var(--muted); }
+.now h2 { font-size: 18px; margin: 0 0 4px; letter-spacing: -.01em; }
+.now p { margin: 0; font-size: 13.5px; line-height: 1.6; }
+.now-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* tarefas em segundo plano */
+.job { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 16px; }
+.job-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+.job-log { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); font: 12px/1.55 ui-monospace, "SFMono-Regular", monospace;
+  color: var(--ink-2); white-space: pre-wrap; max-height: 190px; overflow: auto; }
+.job-erro { border-color: var(--critical); }
+
+/* prontidão */
+.readiness { border-color: color-mix(in srgb, var(--critical) 45%, var(--line)); }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; }
+.checks .ico { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+.ck-erro .ico { background: var(--critical-soft); color: var(--critical-ink); }
+.ck-aviso .ico { background: var(--warning-soft); color: var(--warning-ink); }
+
+/* KPIs */
+.kpi .value { font-size: 26px; }
+
+/* barra de envio (fila) */
+.sendbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.sendbar-stats { display: flex; gap: 26px; flex-wrap: wrap; }
+.sendbar-stats div { display: grid; }
+.sendbar-stats span { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.sendbar-stats b { font-size: 17px; }
+.stack { display: grid; gap: 12px; }
+
+/* buscas */
+.progress-card .meter-track { margin: 10px 0 8px; }
+.queue-list { margin: 0; padding-left: 22px; display: grid; gap: 4px; color: var(--ink-2); columns: 2; column-gap: 28px; }
+.queue-list li { break-inside: avoid; }
+textarea { font-size: 13.5px; }
+
+/* gráficos novos */
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .s1-line { stroke: var(--series-1); } .chart .s2-line { stroke: var(--series-2); }
+.chart .s1-wash { fill: var(--series-1-wash); }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart.heat rect { transition: opacity .15s; } .chart.heat rect:hover { opacity: .75; }
+.chart .h0 { fill: var(--h0); } .chart .h1 { fill: var(--h1); } .chart .h2 { fill: var(--h2); }
+.chart .h3 { fill: var(--h3); } .chart .h4 { fill: var(--h4); } .chart .h5 { fill: var(--h5); }
+
+@media (max-width: 1100px) { .now { grid-template-columns: auto 1fr; } .now-actions { grid-column: 1 / -1; justify-content: flex-start; } }
+@media (max-width: 820px) {
+  .side-status { display: none; }
+  .queue-list { columns: 1; }
+  .now { grid-template-columns: 1fr; } .now-ring { display: none; }
+}

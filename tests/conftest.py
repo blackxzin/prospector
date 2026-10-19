@@ -23,7 +23,8 @@ def local_dt(*args: int) -> datetime:
 def settings(tmp_path: Path):
     return load_settings(env_file=tmp_path / "nao-existe.env", overrides={
         "DATA_DIR": str(tmp_path / "data"), "WAAKG_SESSION": "", "WAAKG_API_KEY": "", "WEBHOOK_SECRET": "",
-        "NOTIFICAR": "0", "MAX_POR_DIA": "8", "MAX_POR_HORA": "3",
+        "NOTIFICAR": "0", "MAX_POR_DIA": "8", "MAX_POR_HORA": "3", "GMAPS_URL": "http://127.0.0.1:9",
+        "BACKUP_DIR": str(tmp_path / "bk"), "BUSCAS_PATH": str(tmp_path / "buscas.yaml"),
         "JANELAS": "09:00-11:30,14:00-17:30", "DIAS_UTEIS": "0,1,2,3,4",
     })
 

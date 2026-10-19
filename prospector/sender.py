@@ -43,6 +43,17 @@ class RealClock:
             time.sleep(seconds)
 
 
+class StoppableClock(RealClock):
+    """Relógio real cuja espera pode ser interrompida (botão Pausar do painel)."""
+
+    def __init__(self, stop_event):
+        self._stop = stop_event
+
+    def sleep(self, seconds: float) -> None:
+        if seconds > 0:
+            self._stop.wait(seconds)
+
+
 class VirtualClock:
     """Relógio simulado para --dry-run: 'dorme' sem esperar de verdade."""
 
@@ -164,6 +175,7 @@ def run(
     notify_enabled: bool = True,
     rng: random.Random | None = None,
     out: Callable[[str], None] = print,
+    should_stop: Callable[[], bool] = lambda: False,
 ) -> SendReport:
     """Envia os itens aprovados respeitando todas as regras. Em dry-run simula o relógio e não envia nada."""
     rng = rng or random.Random()
@@ -187,6 +199,9 @@ def run(
     gap = random_gap(rules, rng)
 
     for item in _approved(conn):
+        if should_stop():
+            report.motivo_fim = "Pausado por você."
+            break
         reason = _blocked_reason(conn, item)
         if reason:
             out(f"  pulando #{item['id']} {item['nome']}: {reason}")
@@ -214,6 +229,9 @@ def run(
         if wait_s > 0:
             out(f"  aguardando {wait_s / 60:.1f} min (até {when.astimezone(rules.tz):%H:%M})")
             clock.sleep(wait_s)
+            if should_stop():
+                report.motivo_fim = "Pausado por você."
+                break
 
         now_local = clock.now().astimezone(rules.tz)
         text = fix_greeting(item["texto"], now_local)

@@ -1,23 +1,42 @@
 # Buscas em lote: `prospector lote` roda cada combinação nicho × cidade uma vez só
-# (as já feitas ficam registradas no banco e são puladas). Bom para deixar no cron de madrugada.
+# (as já feitas ficam registradas no banco e são puladas). Edite aqui ou pelo painel (Buscas).
+# Para trocar as cidades por todas num raio: prospector regiao "Itaí" --uf SP --raio 60 --salvar
 
 nichos:
-  - pizzaria
-  - hamburgueria
-  - lanchonete
-  - academia
-  - barbearia
-  - salão de beleza
-  - açaiteria
-  - padaria
-
+- pizzaria
+- hamburgueria
+- lanchonete
+- restaurante
+- açaiteria
+- padaria
+- confeitaria
+- academia
+- barbearia
+- salão de beleza
+- estética
+- pet shop
+- oficina mecânica
+- loja de roupas
 cidades:
-  - Itaí SP
-  - Avaré SP
-  - Taquarituba SP
-  - Paranapanema SP
-  - Arandu SP
-  - Cerqueira César SP
-
-# Quantas buscas no máximo por execução (cada uma leva alguns minutos).
-max_por_execucao: 6
+- Itaí SP
+- Taquarituba SP
+- Tejupá SP
+- Arandu SP
+- Coronel Macedo SP
+- Taguaí SP
+- Paranapanema SP
+- Piraju SP
+- Avaré SP
+- Sarutaiá SP
+- Fartura SP
+- Cerqueira César SP
+- Itaberá SP
+- Itaporanga SP
+- Manduri SP
+- Barão de Antonina SP
+- Riversul SP
+- Timburi SP
+- Óleo SP
+- Salto do Itararé PR
+- Bernardino de Campos SP
+max_por_execucao: 8

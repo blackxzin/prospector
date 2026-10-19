@@ -1,0 +1,17 @@
+# Agenda sugerida do prospector (edite o caminho se clonou em outro lugar).
+# Instale com:  crontab -l | cat - scripts/crontab.exemplo | crontab -
+# Para notificações no desktop funcionarem pelo cron:
+DISPLAY=:0
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+P=/home/polar/workproject/prospector
+
+# backup do banco todo dia às 23h
+0 23 * * *    cd $P && .venv/bin/prospector backup >> data/cron.log 2>&1
+# buscas em lote de madrugada (max_por_execucao do buscas.yaml)
+0 3 * * *     cd $P && .venv/bin/prospector lote >> data/cron.log 2>&1
+# gera a fila do dia às 8h (você revisa e aprova no painel)
+0 8 * * 1-5   cd $P && .venv/bin/prospector fila >> data/cron.log 2>&1
+# alertas do gerenciador às 8h30
+30 8 * * 1-5  cd $P && .venv/bin/prospector financeiro --notificar >> data/cron.log 2>&1
+# relatório da semana na segunda às 8h
+0 8 * * 1     cd $P && .venv/bin/prospector relatorio --notificar >> data/cron.log 2>&1
