@@ -90,6 +90,7 @@ class Templates:
         base = {
             "nome": clean_name(str(lead.get("nome") or "")),
             "remetente": str(self.data["remetente"]),
+            "apresentacao": str(self.data.get("apresentacao") or ""),
             "saudacao": hello,
             "saudacao_minuscula": hello.lower(),
             "nota": format_rating(nota),

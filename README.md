@@ -244,7 +244,7 @@ O `prospector fila` também cuida do follow-up:
 
 ## Personalização
 
-- **`templates.yaml`**: os textos. Cada oferta (`sem_site`, `so_social`, `tem_site`) tem pelo menos 3 variações, sorteadas por lead. Variáveis: `{nome}`, `{nota}`, `{avaliacoes}`, `{elogio}`, `{saudacao}`, `{vitrine}` (cardápio / planos / serviços, pela categoria), `{remetente}`. O arquivo é validado ao carregar: uma variável errada dá erro antes de qualquer envio.
+- **`templates.yaml`**: os textos. Cada oferta (`sem_site`, `so_social`, `tem_site`) tem pelo menos 3 variações, sorteadas por lead. Variáveis: `{nome}`, `{nota}`, `{avaliacoes}`, `{elogio}`, `{saudacao}`, `{vitrine}` (cardápio / planos / serviços, pela categoria), `{remetente}`, `{apresentacao}`. O arquivo é validado ao carregar: uma variável errada dá erro antes de qualquer envio.
 - **`listas.yaml`**: franquias descartadas (Smart Fit, Skyfit, Bluefit, McDonald's, Subway…) e domínios que contam como "só rede social/guia" (Instagram, Facebook, Linktree, wa.me, iFood…). Depois de editar, rode `prospector reclassificar`.
 
 ## Classificação

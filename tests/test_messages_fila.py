@@ -24,7 +24,7 @@ def test_first_message_is_personal_and_ends_with_question(templates, offer):
     for seed in range(10):
         text = templates.first_message(lead, NOW, TZ, random.Random(seed))
         assert text.endswith("?") and "exemplo" in text.rsplit(".", 1)[-1]
-        assert "Lucas, desenvolvedor aqui da região" in text
+        assert "Lucas" in text and "desenvolvedores aqui da região" in text
         assert "{" not in text and "  " not in text
         assert "Delivery" not in text
 
