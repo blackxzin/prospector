@@ -167,6 +167,15 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
             flash("Exemplo gerado (prévia local). Configure DEMO_BASE_URL para gerar o link e a mensagem.")
         return redirect(url_for("demo_preview", slug=res.slug))
 
+    @web.get("/demos/<slug>/assets/<name>")
+    def demo_asset(slug: str, name: str) -> Response:
+        if not _SLUG.match(slug) or not re.fullmatch(r"[a-z0-9-]+\.(jpg|jpeg|png|webp)", name):
+            abort(404)
+        path = (ctx.settings.demos_dir / slug / "assets" / name).resolve()
+        if not path.is_relative_to(ctx.settings.demos_dir.resolve()) or not path.exists():
+            abort(404)
+        return send_file(path)
+
     @web.get("/demos/<slug>/")
     def demo_preview(slug: str) -> Response:
         if not _SLUG.match(slug):

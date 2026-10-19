@@ -66,6 +66,46 @@ def extract_city(row: dict[str, str]) -> str | None:
     return m.group(1).strip() if m else None
 
 
+MAX_REVIEWS = 5
+_SAFE_PHOTO_HOSTS = (".googleusercontent.com", ".ggpht.com")
+
+
+def _json(raw: str | None) -> object:
+    try:
+        return json.loads(raw) if raw else None
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def extract_details(row: dict[str, str]) -> dict[str, object]:
+    """Foto de capa, avaliações reais, horário e comodidades do CSV do scraper."""
+    photo = (row.get("thumbnail") or "").strip()
+    host = photo.split("/")[2] if photo.startswith("https://") and photo.count("/") >= 3 else ""
+    if not host.endswith(_SAFE_PHOTO_HOSTS):
+        photo = ""
+    reviews = []
+    for r in _json(row.get("user_reviews")) or []:
+        if not isinstance(r, dict) or not (r.get("Description") or "").strip():
+            continue
+        reviews.append({"nome": str(r.get("Name") or "Cliente")[:60], "nota": int(r.get("Rating") or 0),
+                        "texto": str(r["Description"]).strip()[:400], "quando": str(r.get("When") or "")[:30]})
+    reviews.sort(key=lambda r: (-r["nota"], -len(r["texto"])))
+    hours = _json(row.get("open_hours"))
+    attrs = []
+    for group in _json(row.get("about")) or []:
+        for opt in (group or {}).get("options") or []:
+            if opt.get("enabled") and opt.get("name"):
+                attrs.append(str(opt["name"]))
+    return {
+        "foto_url": photo or None,
+        "avaliacoes_json": json.dumps(reviews[:MAX_REVIEWS], ensure_ascii=False) if reviews else None,
+        "horarios_json": json.dumps(hours, ensure_ascii=False) if isinstance(hours, dict) and hours else None,
+        "atributos_json": json.dumps(attrs[:20], ensure_ascii=False) if attrs else None,
+        "latitude": _float(row.get("latitude")),
+        "longitude": _float(row.get("longitude")),
+    }
+
+
 def dedup_key(row: dict[str, str]) -> str | None:
     """Telefone normalizado; sem telefone, o link do Maps."""
     phone = normalize_any(row.get("phone"))
@@ -97,7 +137,14 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
             if not key or not name:
                 counts["ignorados"] += 1
                 continue
-            if conn.execute("SELECT 1 FROM leads WHERE chave = ?", (key,)).fetchone():
+            existing = conn.execute("SELECT id FROM leads WHERE chave = ?", (key,)).fetchone()
+            if existing:
+                # já existe: só completa os detalhes (foto, avaliações, horário) que estiverem faltando
+                details = {k: v for k, v in extract_details(row).items() if v is not None}
+                current = db.get_lead(conn, existing["id"])
+                missing = {k: v for k, v in details.items() if current[k] is None}
+                if missing:
+                    db.update_lead(conn, existing["id"], **missing)
                 counts["duplicados"] += 1
                 continue
             mobile, status, motivo = _evaluate(row, listas)
@@ -115,6 +162,10 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
                     classify_offer(row.get("website"), listas.dominios_social), status, motivo, now, now,
                 ),
             )
+            new_id = conn.execute("SELECT id FROM leads WHERE chave = ?", (key,)).fetchone()["id"]
+            details = {k: v for k, v in extract_details(row).items() if v is not None}
+            if details:
+                db.update_lead(conn, new_id, **details)
             counts["novos"] += 1
             counts["validos" if status == db.NOVO else "descartados"] += 1
     return ImportResult(**counts)

@@ -207,6 +207,12 @@ _MIGRATIONS = (
     ("fila", "pagamento_id", "INTEGER"),      # itens de cobrança
     ("pagamentos", "cobrancas", "INTEGER NOT NULL DEFAULT 0"),
     ("pagamentos", "ultima_cobranca", "TEXT"),
+    ("leads", "foto_url", "TEXT"),            # capa do Google Maps
+    ("leads", "avaliacoes_json", "TEXT"),     # até 5 avaliações reais [{nome, nota, texto, quando}]
+    ("leads", "horarios_json", "TEXT"),       # {"segunda-feira": ["18:00–23:30"], ...}
+    ("leads", "atributos_json", "TEXT"),      # comodidades marcadas no Google ["Entrega", ...]
+    ("leads", "latitude", "REAL"),
+    ("leads", "longitude", "REAL"),
 )
 
 
@@ -275,7 +281,8 @@ _LEAD_COLUMNS = frozenset({
     "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
     "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
-    "demo_url", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+    "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
+    "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
 })
 
 

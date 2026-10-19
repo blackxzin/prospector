@@ -399,3 +399,46 @@ def test_load_nichos_validates(tmp_path):
     bad.write_text("pizzaria: {match: [pizza]}\n", encoding="utf-8")
     with pytest.raises(ValueError):
         demo.load_nichos(bad)
+
+
+# ---------- protótipo v2 (pizzaria com dados reais) ----------
+
+def test_v2_helpers():
+    rows = demo.hours_rows('{"segunda-feira": ["Fechado"], "terça-feira": ["18:00–23:30"], '
+                           '"quarta-feira": ["18:00–00:00"], "quinta-feira": ["18:00–00:00"], '
+                           '"sexta-feira": ["18:00–00:00"], "sábado": ["18:00–00:00"], "domingo": ["18:00–23:30"]}')
+    assert rows[0] == ("segunda", "Fechado") and rows[2] == ("quarta", "18h à meia-noite")
+    assert demo.hours_summary(rows) == "Ter a dom · a partir das 18h"
+    assert demo._clean_display_name("Pizzaria Antônia a") == "Pizzaria Antônia"
+    assert demo._short_name("Pizzaria Antônia") == "Antônia"
+    attrs = demo.short_attributes('["Entrada com acessibilidade para pessoas em cadeira de rodas", "Aceita Pix"]')
+    assert attrs == ["Acessível para cadeirantes", "Aceita Pix"]
+    reviews = demo.good_reviews('[{"nome": "A", "nota": 5, "texto": "Pizza maravilhosa!", "quando": "2 meses atrás"},'
+                                ' {"nome": "B", "nota": 2, "texto": "Demorou muito a entrega", "quando": "1 mês"},'
+                                ' {"nome": "C", "nota": 5, "texto": "Muito boa sempre", "quando": "8 anos atrás"}]')
+    assert [r["nome"] for r in reviews] == ["A", "C"] and reviews[0]["recente"] and not reviews[1]["recente"]
+
+
+def test_v2_fetch_photo_only_google_hosts(tmp_path):
+    called = []
+    def opener(req, timeout):
+        called.append(req.full_url)
+        raise OSError("sem rede no teste")
+    assert not demo.fetch_photo("https://evil.example.com/x.jpg", tmp_path / "a.jpg", opener=opener)
+    assert not demo.fetch_photo("http://lh3.googleusercontent.com/x", tmp_path / "a.jpg", opener=opener)
+    assert called == []
+    assert not demo.fetch_photo("https://lh3.googleusercontent.com/abc=w408-h544", tmp_path / "a.jpg", opener=opener)
+    assert called == ["https://lh3.googleusercontent.com/abc=w1200"]
+
+
+def test_v2_render_uses_real_data():
+    lead = {"nome": "Pizzaria Antônia a", "categoria": "Pizzaria", "telefone": "5514998733941", "chave": "k",
+            "cidade": "Itaí", "endereco": "Pizzaria Antônia a - R. Paulo, 65 - Centro, Itaí - SP", "nota": 4.5,
+            "avaliacoes": 237, "latitude": -23.42, "longitude": -49.09,
+            "avaliacoes_json": '[{"nome": "Edileusa", "nota": 5, "texto": "Melhor pizza da cidade!", "quando": "1 mês atrás"}]',
+            "horarios_json": '{"terça-feira": ["18:00–23:30"]}', "atributos_json": "[]"}
+    html = demo.render_pizzaria_v2(lead, "Lucas", foto_real="assets/fachada.jpg")
+    assert "Melhor pizza da cidade!" in html and "Edileusa" in html and "(14) 99873-3941" in html
+    assert "R. Paulo, 65 - Centro" in html and "Pizzaria Antônia a -" not in html
+    assert "maps?q=-23.42%2C-49.09&amp;z=16" in html and "assets/fachada.jpg" in html
+    assert "<script" not in html
