@@ -4,6 +4,7 @@
 # A comparação ignora maiúsculas, acentos, espaços e pontuação
 # ("Smart Fit", "SmartFit" e "smart-fit" batem igual).
 franquias:
+  - graal
   - Smart Fit
   - Skyfit
   - Bluefit
