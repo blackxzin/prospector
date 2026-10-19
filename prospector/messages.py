@@ -87,10 +87,12 @@ class Templates:
         nota = lead.get("nota")
         avaliacoes = lead.get("avaliacoes")
         hello = greeting(now_local)
+        portfolio = str(self.data.get("portfolio") or "")
         base = {
             "nome": clean_name(str(lead.get("nome") or "")),
             "remetente": str(self.data["remetente"]),
-            "apresentacao": str(self.data.get("apresentacao") or ""),
+            "portfolio": portfolio,
+            "apresentacao": str(self.data.get("apresentacao") or "").format(portfolio=portfolio),
             "saudacao": hello,
             "saudacao_minuscula": hello.lower(),
             "nota": format_rating(nota),

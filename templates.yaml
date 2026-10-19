@@ -5,6 +5,7 @@
 #   {nome}       nome do negócio, limpo (sem " - Delivery", " | Centro" etc.)
 #   {remetente}  seu nome (definido abaixo; também assina a proposta em PDF)
 #   {apresentacao} frase que apresenta vocês (definida abaixo)
+#   {portfolio}  link do portfólio (definido abaixo)
 #   {elogio}     frase sobre a nota no Google (ou frase neutra, se não houver nota boa)
 #   {nota}       ex.: 4,7          {avaliacoes}  ex.: 132
 #   {vitrine}    "o cardápio" / "os planos e horários" / "os serviços" (pela categoria)
@@ -18,7 +19,8 @@
 # Use o nome no vocativo ("{saudacao}, {nome}!") ou sem artigo.
 
 remetente: "Lucas"
-apresentacao: "Eu e um amigo somos desenvolvedores aqui da região e fazemos sites, automações e bots de atendimento para WhatsApp."
+portfolio: "https://portifolio-dupla.vercel.app"
+apresentacao: "Eu e o Felipe somos desenvolvedores aqui da região e fazemos sites, automações e bots de atendimento para WhatsApp. Dá pra ver nossos trabalhos em {portfolio}."
 
 # Nota mínima e número mínimo de avaliações para elogiar a nota.
 elogio_nota_minima: 4.0
@@ -66,7 +68,7 @@ primeira:
     - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Um aviso rápido: {problema}. Fazemos um site novo, leve, com {vitrine} e botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
 
 followup:
-  - "Oi, {nome}! Passando só pra saber se viu minha mensagem. Se não fizer sentido agora, tudo bem, é só me falar. Posso te mandar o exemplo?"
+  - "Oi, {nome}! Passando só pra saber se viu minha mensagem. Se quiser conhecer nosso trabalho antes, está em {portfolio}. Se não fizer sentido agora, tudo bem, é só me falar. Posso te mandar o exemplo?"
   - "{saudacao}! Sei que a rotina é corrida, por isso volto só mais esta vez. Quer que eu te mande o exemplo, sem compromisso?"
   - "Oi de novo, {nome}! Não quero incomodar, é o último recado. Se tiver interesse em ver o exemplo, me avisa por aqui?"
 
