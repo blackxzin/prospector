@@ -139,3 +139,11 @@ def test_no_followup_for_who_replied(conn, listas, templates, rules):
         db.update_lead(conn, lead["id"], status=db.RESPONDEU, enviado_em=db.iso(local_dt(2026, 10, 1, 10)),
                        respondeu_em=db.iso(local_dt(2026, 10, 2, 10)))
     assert fq.build_queue(conn, templates, rules, NOW, size=5, followup_days=3).followups == 0
+
+
+def test_clean_name_drops_trailing_city():
+    assert clean_name("Yaki Burguer Itai", "Itaí") == "Yaki Burguer"
+    assert clean_name("Restaurante Zacota Avare", "Avaré") == "Restaurante Zacota"
+    assert clean_name("Pizzaria Itaí", "Itaí") == "Pizzaria Itaí"  # sobraria uma palavra só
+    assert clean_name("Bar do Zé", "Itaí") == "Bar do Zé"
+    assert clean_name("Lanches Salto do Itararé", "Salto do Itararé") == "Lanches Salto do Itararé"

@@ -88,11 +88,12 @@ def test_robot_menu_without_city_only_annotates(conn, listas):
     assert "whatsmenu.com.br/armandolanches1" in row["motivo"]
 
 
-def test_ifood_delivery_path_counts_as_robot(conn, listas):
+def test_ifood_listing_does_not_discard(conn, listas):
     lead = _lead(conn, listas, title="Pizzaria Antônia")
     ifood = Resultado("https://www.ifood.com.br/delivery/itai-sp/pizzaria-antonia-centro/abc", "Pizzaria Antônia")
     _verificador(listas, _fixo(ifood))(conn, lead)
-    assert db.get_lead(conn, lead["id"])["status"] == db.DESCARTADO
+    row = db.get_lead(conn, lead["id"])
+    assert row["status"] == db.NOVO and row["oferta"] == "sem_site"
 
 
 def test_directory_is_ignored(conn, listas):

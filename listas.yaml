@@ -109,14 +109,16 @@ dominios_social:
 # Checagem de presença online (prospector checar-presenca e geração da fila).
 # Busca "nome + cidade" no DuckDuckGo e olha os links achados.
 # Cardápio/pedido online com robô de WhatsApp: lead descartado (já tem o que oferecemos).
-# Pode ter caminho: "ifood.com.br/delivery" só vale para links que começam assim.
+# Pode ter caminho (ex.: "exemplo.com/loja" só vale para links que começam assim).
+# iFood não entra aqui: é marketplace, não robô de WhatsApp, e quase todo restaurante está nele.
 dominios_robo:
   - anota.ai
   - whatsmenu.com.br
+  - ola.click
+  - brendi.com.br
   - goomer.app
   - goomer.com.br
   - cardapioweb.com
-  - ifood.com.br/delivery
 
 # Guias e diretórios: ignorados (não provam que o negócio tem site ou rede social).
 dominios_diretorio:
@@ -125,6 +127,9 @@ dominios_diretorio:
   - solutudo.com.br
   - todosnegocios.com
   - cardapio.menu
+  - ifood.com.br
+  - wheree.com
+  - wherevi.com
   - menuweb.menu
   - tripadvisor.com
   - tripadvisor.com.br

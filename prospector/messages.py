@@ -89,7 +89,7 @@ class Templates:
         hello = greeting(now_local)
         portfolio = str(self.data.get("portfolio") or "")
         base = {
-            "nome": clean_name(str(lead.get("nome") or "")),
+            "nome": clean_name(str(lead.get("nome") or ""), lead.get("cidade")),
             "remetente": str(self.data["remetente"]),
             "portfolio": portfolio,
             "apresentacao": str(self.data.get("apresentacao") or "").format(portfolio=portfolio),
@@ -174,13 +174,20 @@ def format_rating(nota: float | None) -> str:
     return f"{nota:.1f}".replace(".", ",")
 
 
-def clean_name(name: str) -> str:
-    """'Pizzaria Bella Itaí - Delivery | Centro' -> 'Pizzaria Bella Itaí'."""
+def clean_name(name: str, cidade: str | None = None) -> str:
+    """'Pizzaria Bella Itaí - Delivery | Centro' -> 'Pizzaria Bella Itaí'.
+
+    Com `cidade`, tira a cidade do fim do nome ('Yaki Burguer Itai' -> 'Yaki Burguer'),
+    desde que sobrem pelo menos duas palavras ('Pizzaria Itaí' fica como está)."""
     out = _NAME_SUFFIX.sub("", name.strip())
     out = _PARENS.sub(" ", out)
     out = _SPACES.sub(" ", out).strip(" -|,")
     if out.isupper() and len(out) > 3:
         out = " ".join(w.lower() if w.lower() in _CONNECTORS else w.capitalize() for w in out.split())
+    if cidade and cidade.strip():
+        words, n = out.split(), len(cidade.split())
+        if len(words) > n + 1 and fold(" ".join(words[-n:])) == fold(cidade):
+            out = " ".join(words[:-n])
     return out or name.strip()
 
 
