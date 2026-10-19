@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from prospector import backup, db, demo, lote, pix, proposta, relatorio, sitecheck
+from prospector import backup, db, lote, pix, proposta, relatorio, sitecheck
 from prospector import fila as fq
 from prospector import finance as fin
 from prospector.app import App
@@ -225,76 +225,6 @@ def test_batch_counts_old_manual_searches_as_done(conn, listas, tmp_path):
     assert lote.pending(conn, lote.BatchConfig.load(cfg_path)) == []
 
 
-# ---------- 1. site de exemplo ----------
-
-def test_demo_render_personalized_and_escaped(conn, listas):
-    import_rows(conn, [csv_row(title="Pizzaria <b>Bella</b> - Delivery")], "q", listas)
-    lead = dict(conn.execute("SELECT * FROM leads").fetchone())
-    html = demo.render(lead, "Lucas")
-    assert "Pizzaria &lt;b&gt;Bella&lt;/b&gt;" in html and "<b>Bella</b>" not in html
-    assert "https://wa.me/5514991234567?text=" in html and "Calabresa" in html and "noindex" in html
-    assert "4,7" in html and "120 avaliações" in html
-
-
-def test_demo_theme_by_category():
-    gym = demo.render({"nome": "Studio Força", "categoria": "Academia", "telefone": "5514991234567", "chave": "k"},
-                      "Lucas")
-    assert "Planos" in gym and "Mensal" in gym
-
-
-def test_demo_generate_and_queue(settings, conn, listas, tmp_path):
-    app = App(replace(settings, demos_dir=tmp_path / "demos", demo_base_url="https://lucas.github.io/exemplos"))
-    app.__dict__["conn"] = conn
-    import_rows(conn, [csv_row()], "q", listas)
-    res = app.make_demo(1)
-    assert res.path.exists() and res.url == f"https://lucas.github.io/exemplos/{res.slug}/"
-    items = fq.list_items(conn)
-    assert len(items) == 1 and items[0]["tipo"] == fq.EXEMPLO and res.url in items[0]["texto"]
-    app.make_demo(1)
-    assert len(fq.list_items(conn)) == 1  # não duplica
-
-
-def test_interested_reply_triggers_demo(settings, conn, listas, tmp_path):
-    from prospector.replies import parse_inbound
-    app = App(replace(settings, demos_dir=tmp_path / "demos", demo_base_url="https://x.github.io/e"))
-    app.__dict__["conn"] = conn
-    import_rows(conn, [csv_row()], "q", listas)
-    with db.tx(conn):
-        db.update_lead(conn, 1, status=db.ENVIADO, enviado_em=db.iso(local_dt(2026, 10, 19, 9)))
-    payload = {"event": "message.received", "data": {"from": "5514991234567@s.whatsapp.net",
-                                                     "content": "Pode mandar sim!", "key": {"fromMe": False}}}
-    app.handle_inbound(parse_inbound(payload), now=local_dt(2026, 10, 19, 10), background=False)
-    assert db.get_lead(conn, 1)["demo_url"].startswith("https://x.github.io/e/")
-    assert fq.list_items(conn)[0]["tipo"] == fq.EXEMPLO
-
-
-def test_reject_demo_item_keeps_lead_status(conn, listas):
-    import_rows(conn, [csv_row()], "q", listas)
-    with db.tx(conn):
-        db.update_lead(conn, 1, status=db.INTERESSADO)
-    fq.queue_demo(conn, 1, "link", local_dt(2026, 10, 19, 10), TZ)
-    fq.reject(conn, fq.pending_ids(conn))
-    assert db.get_lead(conn, 1)["status"] == db.INTERESSADO
-
-
-def test_demo_publish(tmp_path):
-    demos = tmp_path / "demos"
-    (demos / "bella-abc123").mkdir(parents=True)
-    (demos / "bella-abc123" / "index.html").write_text("<html></html>")
-    repo = tmp_path / "repo"
-    (repo / ".git").mkdir(parents=True)
-    calls = []
-
-    def fake_run(cmd, **kw):
-        calls.append(cmd)
-        return type("R", (), {"stdout": " M x" if "status" in cmd else ""})()
-    msg = demo.publish(demos, repo, run=fake_run)
-    assert (repo / "bella-abc123" / "index.html").exists() and (repo / "robots.txt").exists()
-    assert "1 exemplo(s) publicados" in msg and any("push" in c for c in calls)
-    with pytest.raises(ValueError):
-        demo.publish(demos, tmp_path / "nao-e-repo", run=fake_run)
-
-
 # ---------- 7. proposta PDF ----------
 
 def test_proposal_pdf_is_valid(tmp_path):
@@ -336,109 +266,21 @@ def test_weekly_report(conn, listas):
 @pytest.fixture
 def web(settings, conn, tmp_path):
     from prospector.web import create_app
-    app = App(replace(settings, demos_dir=tmp_path / "demos", backup_dir=tmp_path / "bk",
+    app = App(replace(settings, backup_dir=tmp_path / "bk",
                       pix_chave="lucas@x.com", pix_nome="Lucas", pix_cidade="Itai"))
     app.__dict__["conn"] = conn
     flask_app = create_app(app)
     return flask_app.test_client(), app
 
 
-def test_panel_pix_proposal_and_demo_preview(web, listas):
+def test_panel_pix_and_proposal(web, listas):
     client, app = web
     lead, pid = _client_with_overdue(app.conn, listas)
     page = client.get(f"/projetos/{pid}").get_data(as_text=True)
     assert "br.gov.bcb.pix" in page and "<svg" in page and "Proposta (PDF)" in page
     pdf = client.get(f"/projetos/{pid}/proposta.pdf")
     assert pdf.status_code == 200 and pdf.mimetype == "application/pdf" and pdf.data.startswith(b"%PDF")
-    resp = client.post(f"/leads/{lead['id']}/demo")
-    assert resp.status_code == 302 and "/demos/" in resp.headers["Location"]
-    preview = client.get(resp.headers["Location"])
-    assert preview.status_code == 200 and b"wa.me" in preview.data
-    assert client.get("/demos/..%2F..%2Fetc/").status_code == 404
-    assert client.get("/demos/nao-existe-123/").status_code == 404
+    assert client.get("/demos/x/").status_code == 404  # recurso removido
     dash = client.get("/").get_data(as_text=True)
     assert "Nenhum backup do banco ainda" in dash and "Textos que mais funcionam" in dash
 
-
-# ---------- sites de exemplo por nicho ----------
-
-@pytest.mark.parametrize("categoria,nome,esperado", [
-    ("Pizzaria", "Bella", "pizzaria"), ("Lanchonete", "Gilmar Lanches Pizzaria", "hamburgueria"),
-    ("Hamburgueria", "Brutus", "hamburgueria"), ("Esfiharia", "Nossa Massa", "esfiharia"),
-    ("Loja de açaí", "Açaí da Praça", "acaiteria"), ("Padaria", "Pão Dourado", "padaria"),
-    ("Restaurante", "Sabor Caseiro", "restaurante"), ("Academia", "Força Total", "academia"),
-    ("Barbearia", "Do Léo", "barbearia"), ("Salão de beleza", "Studio Bella", "salao"),
-    ("Pet shop", "Pet Amigo", "petshop"), ("Ótica", "Visão", "geral"),
-    ("", "Pizzaria do Zé", "pizzaria"),            # sem categoria: usa o nome
-    ("Barbearia", "Bar do Zé", "barbearia"),       # "bar" não confunde
-])
-def test_pick_niche(categoria, nome, esperado):
-    assert demo.pick_niche(demo.load_nichos(), categoria, nome) == esperado
-
-
-def test_every_niche_renders_complete_page():
-    nichos = demo.load_nichos()
-    for key, n in nichos.items():
-        cat = {"geral": "Ótica"}.get(key, n["match"][0] if n["match"] else "")
-        html = demo.render({"nome": "Negócio Teste", "categoria": cat, "telefone": "5514991234567", "chave": key,
-                            "cidade": "Itaí", "endereco": "Rua A, 1", "nota": 4.5, "avaliacoes": 30}, "Lucas",
-                           nichos=nichos)
-        assert html.count("wa.me/5514991234567") >= 4, key
-        assert n["fontes"]["display"].split()[0] in html and n["tema"]["accent"] in html
-        assert "<svg" in html and "@keyframes" in html and "prefers-reduced-motion" in html
-        assert "maps?q=Rua%20A%2C%201%2C%20It" in html
-
-
-def test_demo_without_phone_or_rating_still_renders():
-    html = demo.render({"nome": "Sem Dados", "categoria": "Pizzaria", "chave": "x"}, "Lucas")
-    assert "wa.me" not in html and "#contato" in html and "avaliações no Google" not in html
-
-
-def test_load_nichos_validates(tmp_path):
-    bad = tmp_path / "n.yaml"
-    bad.write_text("pizzaria: {match: [pizza]}\n", encoding="utf-8")
-    with pytest.raises(ValueError):
-        demo.load_nichos(bad)
-
-
-# ---------- protótipo v2 (pizzaria com dados reais) ----------
-
-def test_v2_helpers():
-    rows = demo.hours_rows('{"segunda-feira": ["Fechado"], "terça-feira": ["18:00–23:30"], '
-                           '"quarta-feira": ["18:00–00:00"], "quinta-feira": ["18:00–00:00"], '
-                           '"sexta-feira": ["18:00–00:00"], "sábado": ["18:00–00:00"], "domingo": ["18:00–23:30"]}')
-    assert rows[0] == ("segunda", "Fechado") and rows[2] == ("quarta", "18h à meia-noite")
-    assert demo.hours_summary(rows) == "Ter a dom · a partir das 18h"
-    assert demo._clean_display_name("Pizzaria Antônia a") == "Pizzaria Antônia"
-    assert demo._short_name("Pizzaria Antônia") == "Antônia"
-    attrs = demo.short_attributes('["Entrada com acessibilidade para pessoas em cadeira de rodas", "Aceita Pix"]')
-    assert attrs == ["Acessível para cadeirantes", "Aceita Pix"]
-    reviews = demo.good_reviews('[{"nome": "A", "nota": 5, "texto": "Pizza maravilhosa!", "quando": "2 meses atrás"},'
-                                ' {"nome": "B", "nota": 2, "texto": "Demorou muito a entrega", "quando": "1 mês"},'
-                                ' {"nome": "C", "nota": 5, "texto": "Muito boa sempre", "quando": "8 anos atrás"}]')
-    assert [r["nome"] for r in reviews] == ["A", "C"] and reviews[0]["recente"] and not reviews[1]["recente"]
-
-
-def test_v2_fetch_photo_only_google_hosts(tmp_path):
-    called = []
-    def opener(req, timeout):
-        called.append(req.full_url)
-        raise OSError("sem rede no teste")
-    assert not demo.fetch_photo("https://evil.example.com/x.jpg", tmp_path / "a.jpg", opener=opener)
-    assert not demo.fetch_photo("http://lh3.googleusercontent.com/x", tmp_path / "a.jpg", opener=opener)
-    assert called == []
-    assert not demo.fetch_photo("https://lh3.googleusercontent.com/abc=w408-h544", tmp_path / "a.jpg", opener=opener)
-    assert called == ["https://lh3.googleusercontent.com/abc=w1200"]
-
-
-def test_v2_render_uses_real_data():
-    lead = {"nome": "Pizzaria Antônia a", "categoria": "Pizzaria", "telefone": "5514998733941", "chave": "k",
-            "cidade": "Itaí", "endereco": "Pizzaria Antônia a - R. Paulo, 65 - Centro, Itaí - SP", "nota": 4.5,
-            "avaliacoes": 237, "latitude": -23.42, "longitude": -49.09,
-            "avaliacoes_json": '[{"nome": "Edileusa", "nota": 5, "texto": "Melhor pizza da cidade!", "quando": "1 mês atrás"}]',
-            "horarios_json": '{"terça-feira": ["18:00–23:30"]}', "atributos_json": "[]"}
-    html = demo.render_pizzaria_v2(lead, "Lucas", foto_real="assets/fachada.jpg")
-    assert "Melhor pizza da cidade!" in html and "Edileusa" in html and "(14) 99873-3941" in html
-    assert "R. Paulo, 65 - Centro" in html and "Pizzaria Antônia a -" not in html
-    assert "maps?q=-23.42%2C-49.09&amp;z=16" in html and "assets/fachada.jpg" in html
-    assert "<script" not in html

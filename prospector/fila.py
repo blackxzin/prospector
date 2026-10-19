@@ -20,7 +20,6 @@ ENVIADO = "enviado"
 ERRO = "erro"
 CANCELADO = "cancelado"
 
-EXEMPLO = "exemplo"
 COBRANCA = "cobranca"
 MAX_COBRANCAS = 2          # no máximo 2 lembretes por parcela
 DIAS_ENTRE_COBRANCAS = 5
@@ -70,17 +69,6 @@ def due_charges(conn: sqlite3.Connection, today: date) -> list[sqlite3.Row]:
         "AND status IN ('pendente', 'aprovado'))",
         (today.isoformat(), MAX_COBRANCAS, limite),
     ).fetchall()
-
-
-def queue_demo(conn: sqlite3.Connection, lead_id: int, texto: str, now: datetime, tz: tzinfo) -> bool:
-    """Põe a mensagem com o link do exemplo na fila (pendente de aprovação). False se já houver uma aberta."""
-    with db.tx(conn):
-        exists = conn.execute("SELECT 1 FROM fila WHERE lead_id = ? AND tipo = ? AND status IN ('pendente', "
-                              "'aprovado')", (lead_id, EXEMPLO)).fetchone()
-        if exists:
-            return False
-        _insert(conn, lead_id, EXEMPLO, texto, _today(now, tz))
-    return True
 
 
 def open_items(conn: sqlite3.Connection, tipos: tuple[str, ...] | None = None) -> int:
@@ -225,7 +213,7 @@ def reject(conn: sqlite3.Connection, item_ids: list[int]) -> int:
                 db.update_lead(conn, row["lead_id"], status=db.REJEITADO, aprovado_em=None)
             elif row["tipo"] == db.FOLLOWUP:
                 db.update_lead(conn, row["lead_id"], status=db.SEM_RESPOSTA)
-            # exemplo / cobrança rejeitados: o lead fica como está
+            # cobrança rejeitada: o lead fica como está
             n += 1
     return n
 

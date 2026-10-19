@@ -61,12 +61,8 @@ class Settings:
     listas_path: Path
     financeiro_path: Path
     buscas_path: Path
-    nichos_path: Path
     backup_dir: Path
     backup_keep: int
-    demos_dir: Path
-    demo_base_url: str
-    demo_repo_dir: Path | None
     tz: ZoneInfo
     windows: tuple[tuple[time, time], ...]
     weekdays: frozenset[int]
@@ -124,12 +120,8 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         listas_path=_path(env, "LISTAS_PATH", ROOT / "listas.yaml"),
         financeiro_path=_path(env, "FINANCEIRO_PATH", ROOT / "financeiro.yaml"),
         buscas_path=_path(env, "BUSCAS_PATH", ROOT / "buscas.yaml"),
-        nichos_path=_path(env, "NICHOS_PATH", ROOT / "nichos.yaml"),
         backup_dir=_path(env, "BACKUP_DIR", Path.home() / "prospector-backups"),
         backup_keep=_int(env, "BACKUP_MANTER", 30),
-        demos_dir=_path(env, "DEMOS_DIR", data_dir / "demos"),
-        demo_base_url=env.get("DEMO_BASE_URL", "").strip().rstrip("/"),
-        demo_repo_dir=_path(env, "DEMO_REPO_DIR", ROOT) if env.get("DEMO_REPO_DIR", "").strip() else None,
         pix_chave=env.get("PIX_CHAVE", "").strip(),
         pix_nome=env.get("PIX_NOME", "").strip(),
         pix_cidade=env.get("PIX_CIDADE", "").strip(),
@@ -167,7 +159,5 @@ def _validate(s: Settings) -> None:
         raise ValueError("DIGITANDO_MIN_SEG precisa ser > 0 e <= DIGITANDO_MAX_SEG")
     if s.backup_keep < 1:
         raise ValueError("BACKUP_MANTER precisa ser >= 1")
-    if s.demo_base_url and not s.demo_base_url.startswith(("http://", "https://")):
-        raise ValueError("DEMO_BASE_URL precisa começar com http:// ou https://")
     if s.gmaps_max_time_s < 180:
         raise ValueError("GMAPS_MAX_TIME_SEG precisa ser >= 180 (mínimo do scraper)")

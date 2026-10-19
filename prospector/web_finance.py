@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import re
 
-from flask import Flask, Response, abort, flash, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, abort, flash, redirect, render_template, request, url_for
 
 from . import backup, db, lote, pix
 from . import finance as fin
@@ -31,9 +31,6 @@ def _back(default: str) -> Response:
 
 def _reais(cents: int) -> str:
     return f"{cents / 100:.2f}".replace(".", ",")
-
-
-_SLUG = re.compile(r"^[a-z0-9-]{3,60}$")
 
 
 def _extra_alerts(ctx: App) -> list[insights.Alerta]:
@@ -152,44 +149,6 @@ def register_finance_routes(web: Flask, ctx: App) -> None:
         name = re.sub(r"[^a-z0-9]+", "-", p["cliente"].lower()).strip("-") or "cliente"
         return Response(ctx.proposal_pdf(p), mimetype="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="proposta-{name}.pdf"'})
-
-    @web.post("/leads/<int:lead_id>/demo")
-    def gerar_demo(lead_id: int) -> Response:
-        try:
-            res = ctx.make_demo(lead_id)
-        except ValueError as exc:
-            flash(str(exc))
-            return redirect(request.referrer or url_for("leads"))
-        if res.url:
-            flash(f"Exemplo gerado e mensagem na fila. Publique com 'prospector demo publicar' antes de aprovar. "
-                  f"Link: {res.url}")
-        else:
-            flash("Exemplo gerado (prévia local). Configure DEMO_BASE_URL para gerar o link e a mensagem.")
-        return redirect(url_for("demo_preview", slug=res.slug))
-
-    @web.get("/demos/<slug>/assets/<name>")
-    def demo_asset(slug: str, name: str) -> Response:
-        if not _SLUG.match(slug) or not re.fullmatch(r"[a-z0-9-]+\.(jpg|jpeg|png|webp)", name):
-            abort(404)
-        path = (ctx.settings.demos_dir / slug / "assets" / name).resolve()
-        if not path.is_relative_to(ctx.settings.demos_dir.resolve()) or not path.exists():
-            abort(404)
-        return send_file(path)
-
-    @web.get("/demos/<slug>/")
-    def demo_preview(slug: str) -> Response:
-        if not _SLUG.match(slug):
-            abort(404)
-        path = (ctx.settings.demos_dir / slug / "index.html").resolve()
-        if not path.is_relative_to(ctx.settings.demos_dir.resolve()) or not path.exists():
-            abort(404)
-        resp = send_file(path, mimetype="text/html")
-        # a prévia usa Google Fonts e o mapa do Google, como no site publicado
-        resp.headers["Content-Security-Policy"] = (
-            "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.google.com; "
-            "script-src 'none'; base-uri 'none'")
-        return resp
 
     @web.post("/projetos/<int:project_id>/status")
     def projeto_status(project_id: int) -> Response:

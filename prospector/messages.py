@@ -16,9 +16,9 @@ from .classify import SEM_SITE, SITE_PROBLEMA, SO_SOCIAL, TEM_SITE, fold
 
 OFFERS = (SEM_SITE, SO_SOCIAL, TEM_SITE, SITE_PROBLEMA)
 # Listas simples obrigatórias (pelo menos uma variação cada).
-REQUIRED_LISTS = ("followup", "fora_do_horario", "elogios_com_nota", "elogios_sem_nota", "exemplo", "cobranca")
+REQUIRED_LISTS = ("followup", "fora_do_horario", "elogios_com_nota", "elogios_sem_nota", "cobranca")
 # Valores fictícios para validar variáveis que só existem em alguns tipos de mensagem.
-EXTRA_SAMPLE = {"link": "https://exemplo.com/x/", "valor": "R$ 300,00", "vencimento": "20/10",
+EXTRA_SAMPLE = {"valor": "R$ 300,00", "vencimento": "20/10",
                 "descricao": "Entrada", "pix": "000201...", "problema": "o site está fora do ar"}
 MIN_VARIANTS = 3
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
@@ -124,10 +124,6 @@ class Templates:
         chosen = choose_variant(options, stats or {}, rng)
         extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
         return self._render(options, lead, now, tz, rng, chosen=chosen, **extra), variant_id(chosen)
-
-    def demo_message(self, lead: Mapping[str, Any], link: str, now: datetime, tz: tzinfo,
-                     rng: random.Random | None = None) -> str:
-        return self._render(self.data["exemplo"], lead, now, tz, rng, link=link)
 
     def charge_message(self, lead: Mapping[str, Any], *, valor: str, vencimento: str, descricao: str, pix: str,
                        now: datetime, tz: tzinfo, rng: random.Random | None = None) -> str:

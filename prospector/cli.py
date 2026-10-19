@@ -316,39 +316,6 @@ def cmd_lote(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_demo(app: App, args: argparse.Namespace) -> int:
-    from . import demo
-    s = app.settings
-    if args.acao == "publicar":
-        if not s.demo_repo_dir:
-            print("Configure DEMO_REPO_DIR (pasta de um repositório git publicado, ex.: GitHub Pages).",
-                  file=sys.stderr)
-            return 1
-        try:
-            print(demo.publish(s.demos_dir, s.demo_repo_dir))
-        except (ValueError, OSError) as exc:
-            print(f"Falhou: {exc}", file=sys.stderr)
-            return 1
-        return 0
-    if not args.lead:
-        print("Informe o id do lead: prospector demo gerar 12", file=sys.stderr)
-        return 1
-    try:
-        res = app.make_demo(args.lead, queue_message=not args.sem_fila)
-    except ValueError as exc:
-        print(exc, file=sys.stderr)
-        return 1
-    print(f"Exemplo gerado: {res.path}")
-    print(f"Prévia no painel: http://{s.web_host}:{s.web_port}/demos/{res.slug}/")
-    if res.url:
-        print(f"Link público (depois de 'prospector demo publicar'): {res.url}")
-        if not args.sem_fila:
-            print("Mensagem com o link está na fila, aguardando aprovação.")
-    else:
-        print("Sem DEMO_BASE_URL: o link público não foi gerado e nada entrou na fila.")
-    return 0
-
-
 def cmd_proposta(app: App, args: argparse.Namespace) -> int:
     from . import finance as fin
     proj = fin.project(app.conn, args.projeto)
@@ -489,12 +456,6 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--max", type=int, help="máximo de buscas nesta execução")
     a.add_argument("--listar", action="store_true", help="só lista as pendentes")
     a.set_defaults(fn=cmd_lote)
-
-    a = sub.add_parser("demo", help="site de exemplo: 'gerar <lead>' ou 'publicar'")
-    a.add_argument("acao", choices=("gerar", "publicar"))
-    a.add_argument("lead", type=int, nargs="?")
-    a.add_argument("--sem-fila", action="store_true", help="só gera o site, sem pôr mensagem na fila")
-    a.set_defaults(fn=cmd_demo)
 
     a = sub.add_parser("proposta", help="gera a proposta em PDF de um projeto")
     a.add_argument("projeto", type=int)

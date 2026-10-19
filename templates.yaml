@@ -8,7 +8,6 @@
 #   {nota}       ex.: 4,7          {avaliacoes}  ex.: 132
 #   {vitrine}    "o cardápio" / "os planos e horários" / "os serviços" (pela categoria)
 #   {problema}   (só em site_problema) ex.: "o site está fora do ar"
-#   {link}       (só em exemplo) link do site de exemplo gerado para o lead
 #   {valor} {vencimento} {descricao} {pix}   (só em cobranca)
 #
 # Teste A/B: cada variação de "primeira" é medida (taxa de resposta positiva) e as que
@@ -73,12 +72,6 @@ fora_do_horario:
   - "Oi! Obrigado pela resposta. Agora estou fora do horário, mas te respondo no próximo horário útil, combinado?"
   - "Opa, valeu por responder! Já encerrei por hoje, mas te retorno no próximo horário útil, tudo bem?"
   - "Recebi sua mensagem, obrigado! Estou fora do horário agora, mas retorno no próximo horário comercial."
-
-# Quando o lead pede o exemplo: link do site de exemplo gerado para ele.
-exemplo:
-  - "Opa, que bom! Fiz um exemplo rapidinho com as informações de vocês:\n{link}\nÉ só uma prévia, dá pra mudar tudo (cores, fotos, {vitrine}). O que achou?"
-  - "Montei uma prévia pra vocês verem como ficaria:\n{link}\nOs itens são de exemplo, a gente coloca os de vocês. Me diz o que achou!"
-  - "Aqui está um exemplo feito pra {nome}:\n{link}\nDá uma olhada no celular, que é onde a maioria dos clientes vai ver. Qualquer ajuste, é só falar."
 
 # Cobrança educada de parcela vencida (vai para a fila de aprovação).
 cobranca:

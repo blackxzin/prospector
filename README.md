@@ -76,7 +76,6 @@ Outros comandos:
 | `prospector lote [--listar] [--max N]` | buscas em lote de `buscas.yaml` |
 | `prospector checar-sites` | testa os sites dos leads (oferta `site_problema`) |
 | `prospector ab` | resultado do teste A/B dos textos |
-| `prospector demo gerar <lead>` / `demo publicar` | site de exemplo do lead / publica os exemplos |
 | `prospector proposta <projeto>` | proposta em PDF |
 | `prospector relatorio [--dias 7] [--notificar]` | relatório do período |
 | `prospector backup [--listar]` | backup do banco |
@@ -128,30 +127,11 @@ Edite o `financeiro.yaml` com os seus preços, custos, prazo, entrada e meta men
 
 ## Extras
 
-### Site de exemplo automático
-
-Quando um lead responde com interesse ("pode mandar", "quero ver", "quanto custa"…), o prospector gera na hora um site de exemplo com a cara do negócio, e a mensagem com o link entra na **fila de aprovação** (você é notificado).
-
-O site muda conforme o **nicho** detectado pela categoria do Google Maps. São 11 nichos prontos: pizzaria, hamburgueria/lanchonete, esfiharia, açaí/sorveteria, padaria/confeitaria, restaurante, academia, barbearia, salão de beleza, pet shop e um geral. Cada um tem paleta, tipografia (Google Fonts), ilustração animada própria (pizza girando, hambúrguer flutuando, poste de barbearia rodando, halter levantando…) e o formato certo de conteúdo:
-
-- **cardápio** em grupos (tradicionais, especiais, doces…) para comida;
-- **planos** com cartões de preço e "mais escolhido" para academia e açaí;
-- **serviços** com duração e preço para barbearia, salão e pet shop.
-
-Todas as páginas têm menu fixo, abertura animada, faixa rolando com os itens, diferenciais, "como pedir" em 3 passos, nota do Google com estrelas, endereço com mapa, chamada final e botão flutuante do WhatsApp. Cada item do cardápio ou serviço abre o WhatsApp com a mensagem já escrita ("Olá! Quero pedir: Calabresa."). As animações são só CSS: abrem rápido, aparecem conforme a página rola e desligam sozinhas para quem prefere menos movimento. Tudo funciona no celular.
-
-Para mudar textos, cores, fontes, itens e preços de cada nicho, edite o `nichos.yaml`. A página avisa no topo que itens e valores são ilustrativos.
-
-- Prévia local: botão "ver exemplo" na lista de leads, ou `http://127.0.0.1:5050/demos/<slug>/`.
-- Gerar na mão: botão "Gerar exemplo" no painel ou `prospector demo gerar <id-do-lead>`.
-- Publicar: crie um repositório no GitHub com GitHub Pages ligado (ex.: `exemplos`), clone numa pasta e configure no `.env`:
-  `DEMO_BASE_URL=https://SEU-USUARIO.github.io/exemplos` e `DEMO_REPO_DIR=~/exemplos`. Depois rode `prospector demo publicar` antes de aprovar a mensagem do link. As páginas saem com `noindex` (não aparecem no Google) e o endereço tem um sufixo difícil de adivinhar.
-
 ### Pix e cobrança automática
 
 Com `PIX_CHAVE`, `PIX_NOME` e `PIX_CIDADE` no `.env`, cada parcela em aberto mostra no painel o **QR Code e o Pix copia e cola** com o valor certo. O código segue o padrão BR Code do Banco Central e é gerado no seu PC, sem banco nem API no meio.
 
-Parcela vencida de um cliente vira uma mensagem de **cobrança educada** na fila (com o Pix), também esperando sua aprovação: no máximo 2 lembretes por parcela, com 5 dias entre eles. Se a parcela for marcada como paga antes do envio, a cobrança é cancelada sozinha. Cobranças e links de exemplo não contam no limite diário de prospecção, mas respeitam horário, intervalo e "digitando".
+Parcela vencida de um cliente vira uma mensagem de **cobrança educada** na fila (com o Pix), também esperando sua aprovação: no máximo 2 lembretes por parcela, com 5 dias entre eles. Se a parcela for marcada como paga antes do envio, a cobrança é cancelada sozinha. Cobranças não contam no limite diário de prospecção, mas respeitam horário, intervalo e "digitando".
 
 ### Teste A/B dos textos
 
@@ -222,6 +202,7 @@ Garantias:
 Quando um lead responde:
 
 - o status vira `respondeu` (ou `interessado`, se a resposta parecer positiva), a resposta fica gravada e chega uma notificação no desktop;
+  o exemplo de site para quem pediu você faz por conta própria e manda pela conversa;
 - se a resposta tiver "não", "pare", "sair", "não tenho interesse", "me remove", "spam" ou algo parecido, o status vira `nao_quer` e o número entra na **lista de bloqueio permanente**. Nada mais é enviado para ele, nem se ele for encontrado de novo numa busca futura. A regra é conservadora de propósito: qualquer "não" conta. Se marcar alguém por engano, use `prospector desbloquear`;
 - fora do horário comercial sai uma resposta automática curta (`fora_do_horario` no `templates.yaml`), **no máximo uma vez por contato**.
 
@@ -290,7 +271,6 @@ prospector/
   pix.py          Pix copia e cola (BR Code) e QR Code
   sitecheck.py    checagem de sites (com proteção contra acesso à rede local)
   lote.py         buscas em lote
-  demo.py         site de exemplo por lead (templates/demo/site.html)
   pdf.py          gerador de PDF mínimo     proposta.py  proposta comercial
   relatorio.py    relatório semanal
   templates/      HTML do painel     static/  CSS
@@ -298,7 +278,6 @@ templates.yaml    textos das mensagens
 listas.yaml       franquias e domínios de redes sociais
 financeiro.yaml   preços, custos, entrada, meta mensal, itens incluídos
 buscas.yaml       nichos × cidades das buscas em lote
-nichos.yaml       visual e conteúdo dos sites de exemplo por nicho
 ```
 
 ## Avisos

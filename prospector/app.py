@@ -12,7 +12,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Callable
 
-from . import db, demo, fila, lote, pix, sitecheck
+from . import db, lote, pix, sitecheck
 from .classify import Listas
 from .finance import FinanceConfig, brl
 from .config import Settings, load_settings
@@ -48,10 +48,6 @@ class App:
     @cached_property
     def finance(self) -> FinanceConfig:
         return FinanceConfig.load(self.settings.financeiro_path)
-
-    @cached_property
-    def nichos(self) -> dict:
-        return demo.load_nichos(self.settings.nichos_path)
 
     @cached_property
     def templates(self) -> Templates:
@@ -93,19 +89,6 @@ class App:
             out(f"Sites checados: {checked}, com problema: {bad} (viram oferta site_problema)")
         return result
 
-    # ---------- site de exemplo ----------
-
-    def make_demo(self, lead_id: int, *, queue_message: bool = True) -> demo.DemoResult:
-        """Gera o site de exemplo do lead e, se houver DEMO_BASE_URL, põe a mensagem com o link na fila."""
-        s = self.settings
-        result = demo.generate(self.conn, lead_id, s.demos_dir, s.demo_base_url, str(self.templates.data["remetente"]),
-                               nichos=self.nichos)
-        if queue_message and result.url:
-            lead = db.get_lead(self.conn, lead_id)
-            text = self.templates.demo_message(dict(lead), result.url, db.utcnow(), s.tz)
-            fila.queue_demo(self.conn, lead_id, text, db.utcnow(), s.tz)
-        return result
-
     def proposal_pdf(self, proj: dict) -> bytes:
         from . import proposta
         s = self.settings
@@ -145,32 +128,12 @@ class App:
             self.conn, msg, now=now, in_business_hours=in_window(now, self.rules),
             notify_fn=lambda t, b, urgent: self.notify(t, b, urgent),
         )
-        if outcome.status == db.INTERESSADO and not outcome.closing and outcome.lead_id is not None:
-            self._demo_for_interested(outcome.lead_id)
         if outcome.auto_reply and outcome.lead_id is not None:
             if background:
                 threading.Thread(target=self._auto_reply, args=(outcome.lead_id,), daemon=True).start()
             else:
                 self._auto_reply(outcome.lead_id)
         return outcome
-
-    def _demo_for_interested(self, lead_id: int) -> None:
-        """Lead interessado sem exemplo ainda: gera o site e deixa a mensagem na fila para aprovação."""
-        lead = db.get_lead(self.conn, lead_id)
-        if not lead or lead["demo_url"]:
-            return
-        try:
-            result = self.make_demo(lead_id)
-        except Exception as exc:  # noqa: BLE001 - falha aqui não pode derrubar o webhook
-            log.exception("falha ao gerar exemplo do lead %s", lead_id)
-            self.notify("erro ao gerar exemplo", str(exc))
-            return
-        if result.url:
-            self.notify(f"exemplo pronto para {lead['nome']}",
-                        "Mensagem com o link está na fila. Publique (prospector demo publicar) e aprove.")
-        else:
-            self.notify(f"exemplo gerado para {lead['nome']}",
-                        "Configure DEMO_BASE_URL para o link ir na mensagem automaticamente.")
 
     def _auto_reply(self, lead_id: int) -> None:
         """Resposta curta fora do horário (uma vez por contato; já reservada em handle_inbound)."""
