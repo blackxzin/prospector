@@ -39,12 +39,13 @@ elogios_sem_nota:
 vitrine:
   padrao: "os serviços"
   por_categoria:
+    # barbearia antes da comida: "bar" da lista de comida casaria com "barbearia"
+    - palavras: [salão, salao, barbearia, beleza, estética, estetica, manicure, cabeleireiro, sobrancelha]
+      texto: "os serviços e preços"
     - palavras: [pizza, restaurante, lanch, hamburg, esfih, burger, açaí, acai, sorvete, padaria, confeitaria, doceria, bar, café, cafe, marmita, comida, delivery, esfiha, sushi, japon, churrasc, pastel]
       texto: "o cardápio"
     - palavras: [academia, fitness, crossfit, pilates, musculação, musculacao, studio, estúdio, funcional, natação, natacao, luta, jiu, muay]
       texto: "os planos e horários"
-    - palavras: [salão, salao, barbearia, beleza, estética, estetica, manicure, cabeleireiro, sobrancelha]
-      texto: "os serviços e preços"
     - palavras: [loja, cosmético, cosmetico, roupa, moda, calçado, calcado, presente, papelaria, ótica, otica, pet shop]
       texto: "os produtos"
 

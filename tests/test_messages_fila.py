@@ -147,3 +147,9 @@ def test_clean_name_drops_trailing_city():
     assert clean_name("Pizzaria Itaí", "Itaí") == "Pizzaria Itaí"  # sobraria uma palavra só
     assert clean_name("Bar do Zé", "Itaí") == "Bar do Zé"
     assert clean_name("Lanches Salto do Itararé", "Salto do Itararé") == "Lanches Salto do Itararé"
+
+
+def test_barbershop_is_not_food(templates):
+    lead = {"nome": "Barbearia Arte", "nota": 4.9, "avaliacoes": 50, "categoria": "Barbearia", "oferta": "so_social"}
+    text = templates.first_message(lead, NOW, TZ, random.Random(0))
+    assert "cardápio" not in text and "serviços e preços" in text
