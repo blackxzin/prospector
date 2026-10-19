@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Any
@@ -38,6 +39,7 @@ def request(
     url: str,
     *,
     json_body: Any = None,
+    form: dict[str, str] | None = None,
     headers: dict[str, str] | None = None,
     timeout: float = 30,
 ) -> HttpResponse:
@@ -46,6 +48,9 @@ def request(
     if json_body is not None:
         data = json.dumps(json_body).encode("utf-8")
         hdrs["Content-Type"] = "application/json"
+    elif form is not None:
+        data = urllib.parse.urlencode(form).encode("utf-8")
+        hdrs["Content-Type"] = "application/x-www-form-urlencoded"
     req = urllib.request.Request(url, data=data, method=method, headers=hdrs)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 (URL vem do .env)

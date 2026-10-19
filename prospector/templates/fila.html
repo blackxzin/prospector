@@ -44,6 +44,7 @@
     <span class="tag plain">{{ i.tipo }}</span><span class="tag plain">{{ i.oferta }}</span>
     <span class="muted num">{{ pretty(i.telefone) }}{% if i.cidade %} · {{ i.cidade }}{% endif %}{% if i.nota %} · nota {{ i.nota }} ({{ i.avaliacoes or 0 }}){% endif %}</span>
   </div>
+  {% if i.motivo and i.tipo == 'primeira' %}<p class="sub">Obs.: {{ i.motivo }}</p>{% endif %}
   {% if i.tipo == 'cobranca' %}<p class="sub">Cobrança de parcela vencida (no máximo 2 lembretes por parcela).</p>{% endif %}
   <form method="post" action="{{ url_for('aprovar_item', item_id=i.id) }}">
     {% if i.status == 'pendente' %}

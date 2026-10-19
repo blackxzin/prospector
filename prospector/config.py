@@ -86,6 +86,7 @@ class Settings:
     web_host: str = "127.0.0.1"
     web_port: int = 5050
     notify: bool = True
+    checar_presenca: bool = True  # busca site/Instagram/cardápio online antes da 1ª mensagem
 
     @property
     def has_whatsapp(self) -> bool:
@@ -100,6 +101,10 @@ def _int(env: dict[str, str], key: str, default: int) -> int:
         return int(raw)
     except ValueError as exc:
         raise ValueError(f"{key} precisa ser inteiro, veio {raw!r}") from exc
+
+
+def _flag(env: dict[str, str], key: str, default: str = "1") -> bool:
+    return env.get(key, default).strip().lower() not in ("0", "false", "nao", "não")
 
 
 def _path(env: dict[str, str], key: str, default: Path) -> Path:
@@ -144,7 +149,8 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         webhook_secret=env.get("WEBHOOK_SECRET", "").strip(),
         web_host=env.get("WEB_HOST", "127.0.0.1"),
         web_port=_int(env, "WEB_PORT", 5050),
-        notify=env.get("NOTIFICAR", "1").strip() not in ("0", "false", "nao", "não"),
+        notify=_flag(env, "NOTIFICAR"),
+        checar_presenca=_flag(env, "CHECAR_PRESENCA"),
     )
     _validate(settings)
     return settings

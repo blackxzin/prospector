@@ -94,6 +94,7 @@ Outros comandos:
 | `prospector regiao "Itaí" --uf SP --raio 60 [--salvar]` | cidades num raio, para as buscas |
 | `prospector lote [--listar] [--max N]` | buscas em lote de `buscas.yaml` |
 | `prospector checar-sites` | testa os sites dos leads (oferta `site_problema`) |
+| `prospector checar-presenca [--limite N]` | busca Instagram/site/cardápio online dos leads novos no DuckDuckGo |
 | `prospector ab` | resultado do teste A/B dos textos |
 | `prospector proposta <projeto>` | proposta em PDF |
 | `prospector relatorio [--dias 7] [--notificar]` | relatório do período |
@@ -161,6 +162,8 @@ Cada variação da primeira mensagem (`templates.yaml`) tem um identificador. O 
 ### Checagem de sites (oferta `site_problema`)
 
 Depois de cada busca, os sites dos leads com site próprio são testados: fora do ar, sem HTTPS ("não seguro"), lento (mais de 5 s) ou sem versão para celular. Com problema, a oferta vira `site_problema` e a mensagem cita o problema ("Fui abrir o site de vocês e reparei que o site está fora do ar…"). Para rodar na mão: `prospector checar-sites`. Por segurança, só acessa endereços públicos (nada de rede local), com timeout e limite de tamanho.
+
+Antes de um lead entrar na fila da 1ª mensagem, o prospector busca "nome + cidade" no DuckDuckGo (o Google Maps muitas vezes não traz o site nem o Instagram). Achou Instagram/Facebook com o nome do negócio no endereço: oferta `so_social` e o link vai para `site`. Achou site próprio (nome no domínio): `tem_site`. Achou cardápio online com robô de WhatsApp (anota.ai, whatsmenu, goomer, cardapioweb, iFood) com o nome e a cidade batendo: lead descartado. Se só o nome bate, nada muda e fica uma observação no lead (aparece na fila). Guias/diretórios (restaurantguru, tripadvisor...) são ignorados. As listas ficam em `listas.yaml` (`dominios_robo`, `dominios_diretorio`). Cada lead é buscado uma vez só (`presenca_checada_em`); se o DuckDuckGo bloquear, o lead segue como está e a busca fica para a próxima. Desligue com `CHECAR_PRESENCA=0` no `.env`; para rodar na mão: `prospector checar-presenca`.
 
 ### Buscas em várias cidades
 

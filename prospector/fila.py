@@ -6,7 +6,7 @@ import random
 import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, tzinfo
-from typing import Callable
+from typing import Callable, Mapping
 
 from . import db
 from .messages import Templates
@@ -21,6 +21,7 @@ ERRO = "erro"
 CANCELADO = "cancelado"
 
 COBRANCA = "cobranca"
+MAX_CHECAGENS_POR_VAGA = 3  # teto de buscas de presença: 3x as vagas da fila
 MAX_COBRANCAS = 2          # no máximo 2 lembretes por parcela
 DIAS_ENTRE_COBRANCAS = 5
 
@@ -106,6 +107,39 @@ def due_followups(conn: sqlite3.Connection, now: datetime, rules: Rules, busines
     return out
 
 
+def _new_leads_query(busca: str | None, cidade: str | None) -> tuple[str, list[object]]:
+    sql = "SELECT * FROM leads WHERE status = ? AND telefone IS NOT NULL"
+    params: list[object] = [db.NOVO]
+    if busca:
+        sql += " AND busca = ?"
+        params.append(busca)
+    if cidade:
+        sql += " AND cidade = ?"
+        params.append(cidade)
+    return sql + " ORDER BY COALESCE(avaliacoes, 0) DESC, id", params
+
+
+Checker = Callable[[sqlite3.Connection, Mapping], bool]
+
+
+def check_presence(conn: sqlite3.Connection, checker: Checker, slots: int,
+                   busca: str | None = None, cidade: str | None = None) -> int:
+    """Checa a presença online dos próximos leads novos até sobrarem `slots` válidos. Fora da transação
+    da fila: a busca demora e não pode segurar o banco. Devolve quantos foram buscados."""
+    sql, params = _new_leads_query(busca, cidade)
+    kept = searched = 0
+    for lead in conn.execute(sql, params).fetchall():
+        if kept >= slots or searched >= slots * MAX_CHECAGENS_POR_VAGA:
+            break
+        if not lead["presenca_checada_em"]:
+            searched += 1
+            checker(conn, lead)
+            if db.get_lead(conn, lead["id"])["status"] != db.NOVO:
+                continue
+        kept += 1
+    return searched
+
+
 def build_queue(
     conn: sqlite3.Connection,
     templates: Templates,
@@ -118,10 +152,17 @@ def build_queue(
     cidade: str | None = None,
     rng: random.Random | None = None,
     charge_text: Callable[[sqlite3.Row, sqlite3.Row], str] | None = None,
+    checar_presenca: Checker | None = None,
 ) -> QueueResult:
-    """Gera a fila do dia: follow-ups vencidos primeiro, depois leads novos até `size` itens abertos."""
+    """Gera a fila do dia: follow-ups vencidos primeiro, depois leads novos até `size` itens abertos.
+
+    Com `checar_presenca`, os leads novos ainda não checados passam antes pela busca de presença online
+    (presenca.py): quem já usa cardápio online com robô é descartado e não entra na fila."""
     rng = rng or random.Random()
     dia = _today(now, rules.tz)
+    if checar_presenca:
+        check_presence(conn, checar_presenca, max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP))),
+                       busca, cidade)
     with db.tx(conn):
         closed = close_stale_followups(conn, now, rules, followup_days)
         followups = 0
@@ -140,15 +181,7 @@ def build_queue(
 
         slots = max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP)))
         stats = ab_stats(conn)
-        sql = "SELECT * FROM leads WHERE status = ? AND telefone IS NOT NULL"
-        params: list[object] = [db.NOVO]
-        if busca:
-            sql += " AND busca = ?"
-            params.append(busca)
-        if cidade:
-            sql += " AND cidade = ?"
-            params.append(cidade)
-        sql += " ORDER BY COALESCE(avaliacoes, 0) DESC, id"
+        sql, params = _new_leads_query(busca, cidade)
         firsts = 0
         for lead in conn.execute(sql, params).fetchall():
             if firsts >= slots:
@@ -170,7 +203,7 @@ def build_queue(
 def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, APROVADO)) -> list[sqlite3.Row]:
     marks = ",".join("?" * len(statuses))
     return conn.execute(
-        "SELECT f.*, l.nome, l.telefone, l.cidade, l.oferta, l.nota, l.avaliacoes, l.categoria, l.site "
+        "SELECT f.*, l.nome, l.telefone, l.cidade, l.oferta, l.nota, l.avaliacoes, l.categoria, l.site, l.motivo "
         f"FROM fila f JOIN leads l ON l.id = f.lead_id WHERE f.status IN ({marks}) ORDER BY f.id",
         statuses,
     ).fetchall()

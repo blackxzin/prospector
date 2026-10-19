@@ -37,6 +37,8 @@ def _print_item(item) -> None:
     extra = f" · nota {item['nota']} ({item['avaliacoes'] or 0})" if item["nota"] else ""
     print(f"    {pretty(item['telefone'])} · {item['cidade'] or '-'}{extra}")
     print(f"    site: {item['site'] or '-'}")
+    if item["motivo"]:
+        print(f"    obs: {item['motivo']}")
     print("    ---")
     print("    " + item["texto"])
 
@@ -89,7 +91,8 @@ def cmd_fila(app: App, args: argparse.Namespace) -> int:
     if not args.so_mostrar:
         res = fq.build_queue(app.conn, app.templates, app.rules, db.utcnow(),
                              size=args.tamanho or s.max_per_day, followup_days=s.followup_business_days,
-                             busca=args.busca, cidade=args.cidade, charge_text=app.charge_text)
+                             busca=args.busca, cidade=args.cidade, charge_text=app.charge_text,
+                             checar_presenca=app.presence_checker())
         print(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças "
               f"({res.encerrados} leads encerrados como sem_resposta).")
     itens = fq.list_items(app.conn)
@@ -335,6 +338,14 @@ def cmd_checar_sites(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_checar_presenca(app: App, args: argparse.Namespace) -> int:
+    from .presenca import checar_leads
+    res = checar_leads(app.conn, app.presence_checker(force=True), limite=args.limite, out=print)
+    print(f"{res.checados} lead(s) checado(s), {res.mudados} mudaram, {res.erros} com erro na busca "
+          "(ficam para a próxima).")
+    return 0
+
+
 def cmd_lote(app: App, args: argparse.Namespace) -> int:
     from .lote import BatchConfig, pending, run_batch
     try:
@@ -501,6 +512,10 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("checar-sites", help="checa os sites dos leads (fora do ar, sem HTTPS, lento, celular)")
     a.add_argument("--limite", type=int, default=50)
     a.set_defaults(fn=cmd_checar_sites)
+
+    a = sub.add_parser("checar-presenca", help="busca Instagram/site/cardápio online dos leads novos no DuckDuckGo")
+    a.add_argument("--limite", type=int, default=20)
+    a.set_defaults(fn=cmd_checar_presenca)
 
     a = sub.add_parser("lote", help="roda as buscas de buscas.yaml (nichos × cidades) ainda não feitas")
     a.add_argument("--max", type=int, help="máximo de buscas nesta execução")

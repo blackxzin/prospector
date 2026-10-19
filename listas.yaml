@@ -105,3 +105,31 @@ dominios_social:
   - doctoralia.com.br
   - booksy.com
   - trinks.com
+
+# Checagem de presença online (prospector checar-presenca e geração da fila).
+# Busca "nome + cidade" no DuckDuckGo e olha os links achados.
+# Cardápio/pedido online com robô de WhatsApp: lead descartado (já tem o que oferecemos).
+# Pode ter caminho: "ifood.com.br/delivery" só vale para links que começam assim.
+dominios_robo:
+  - anota.ai
+  - whatsmenu.com.br
+  - goomer.app
+  - goomer.com.br
+  - cardapioweb.com
+  - ifood.com.br/delivery
+
+# Guias e diretórios: ignorados (não provam que o negócio tem site ou rede social).
+dominios_diretorio:
+  - restaurantguru.com
+  - restaurantguru.com.br
+  - solutudo.com.br
+  - todosnegocios.com
+  - cardapio.menu
+  - menuweb.menu
+  - tripadvisor.com
+  - tripadvisor.com.br
+  - cnpj.biz
+  - wherevi.com
+  - apontador.com.br
+  - infobel.com
+  - wanderlog.com

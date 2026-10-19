@@ -20,6 +20,7 @@ from .importer import ImportResult, import_rows, read_csv_text
 from .messages import Templates
 from .notify import notify
 from .phone import to_jid
+from .presenca import Verificador
 from .replies import Inbound, ReplyOutcome, handle_inbound
 from .schedule import Rules, in_window, typing_seconds
 from .scraper import GMapsClient
@@ -60,6 +61,10 @@ class App:
     @cached_property
     def gmaps(self) -> GMapsClient:
         return GMapsClient(self.settings.gmaps_url)
+
+    def presence_checker(self, force: bool = False) -> Verificador | None:
+        """Busca de presença online antes da 1ª mensagem (desligue com CHECAR_PRESENCA=0)."""
+        return Verificador(self.listas) if force or self.settings.checar_presenca else None
 
     def whatsapp(self) -> WaClient:
         s = self.settings

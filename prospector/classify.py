@@ -22,7 +22,7 @@ def fold(text: str) -> str:
     return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
 
 
-def _tokens(text: str) -> list[str]:
+def tokens(text: str) -> list[str]:
     return [t for t in re.split(r"[^a-z0-9]+", fold(text).replace("'", "").replace("’", "")) if t]
 
 
@@ -30,14 +30,22 @@ def _tokens(text: str) -> list[str]:
 class Listas:
     franquias: tuple[str, ...]
     dominios_social: tuple[str, ...]
+    dominios_robo: tuple[str, ...] = ()       # cardápio/pedido online com robô de WhatsApp
+    dominios_diretorio: tuple[str, ...] = ()  # guias e diretórios: ignorados na checagem de presença
 
     @classmethod
     def load(cls, path: Path) -> Listas:
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         return cls(
             franquias=tuple(str(x) for x in data.get("franquias") or ()),
-            dominios_social=tuple(str(x).lower() for x in data.get("dominios_social") or ()),
+            dominios_social=_lower(data.get("dominios_social")),
+            dominios_robo=_lower(data.get("dominios_robo")),
+            dominios_diretorio=_lower(data.get("dominios_diretorio")),
         )
+
+
+def _lower(items: list | None) -> tuple[str, ...]:
+    return tuple(str(x).strip().lower() for x in items or ())
 
 
 def is_franchise(name: str, franquias: tuple[str, ...]) -> str | None:
@@ -46,16 +54,16 @@ def is_franchise(name: str, franquias: tuple[str, ...]) -> str | None:
     Compara sequências de palavras inteiras, ignorando espaços/pontuação:
     'Academia Smart Fit Itaí' e 'SMARTFIT' batem com 'Smart Fit'.
     """
-    tokens = _tokens(name)
-    if not tokens:
+    words = tokens(name)
+    if not words:
         return None
     for franchise in franquias:
-        target = "".join(_tokens(franchise))
+        target = "".join(tokens(franchise))
         if not target:
             continue
-        for i in range(len(tokens)):
+        for i in range(len(words)):
             joined = ""
-            for tok in tokens[i:]:
+            for tok in words[i:]:
                 joined += tok
                 if joined == target:
                     return franchise

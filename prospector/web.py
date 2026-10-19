@@ -182,7 +182,8 @@ def create_app(app_ctx: App | None = None) -> Flask:
     def gerar_fila() -> Response:
         s = ctx.settings
         res = fq.build_queue(ctx.conn, ctx.templates, ctx.rules, db.utcnow(), size=s.max_per_day,
-                             followup_days=s.followup_business_days, charge_text=ctx.charge_text)
+                             followup_days=s.followup_business_days, charge_text=ctx.charge_text,
+                             checar_presenca=ctx.presence_checker())
         flash(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças, "
               f"{res.encerrados} encerrados.")
         return redirect(url_for("fila"))

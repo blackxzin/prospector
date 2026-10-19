@@ -213,6 +213,7 @@ _MIGRATIONS = (
     ("leads", "atributos_json", "TEXT"),      # comodidades marcadas no Google ["Entrega", ...]
     ("leads", "latitude", "REAL"),
     ("leads", "longitude", "REAL"),
+    ("leads", "presenca_checada_em", "TEXT"),  # busca de site/Instagram/cardápio online (presenca.py)
 )
 
 
@@ -282,7 +283,7 @@ _LEAD_COLUMNS = frozenset({
     "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
     "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
-    "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+    "presenca_checada_em", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
 })
 
 
