@@ -7,6 +7,7 @@ segue no máximo 3 redirecionamentos (cada um revalidado), tem timeout e limite 
 from __future__ import annotations
 
 import ipaddress
+import json
 import re
 import socket
 import sqlite3
@@ -14,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import date
 from typing import Callable
 from urllib.parse import urljoin, urlparse
 
@@ -26,6 +28,12 @@ MAX_BYTES = 512 * 1024
 MAX_REDIRECTS = 3
 USER_AGENT = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36"
 _VIEWPORT = re.compile(rb"<meta[^>]+name=[\"']?viewport", re.IGNORECASE)
+_WHATSAPP = re.compile(rb"wa\.me|whatsapp", re.IGNORECASE)  # qualquer menção, inclusive em script de widget
+_TEL = re.compile(rb"href=[\"']?tel:", re.IGNORECASE)
+_DESCRIPTION = re.compile(rb"<meta[^>]+name=[\"']?description", re.IGNORECASE)
+_COPYRIGHT_YEAR = re.compile(rb"(?:&copy;|&#169;|\xc2\xa9|copyright)[^0-9<]{0,30}((?:19|20)\d\d)", re.IGNORECASE)
+MIN_BODY_FOR_SIGNALS = 1500   # página minúscula/SPA sem conteúdo: não dá para afirmar que falta alguma coisa
+STALE_FOOTER_YEARS = 3
 
 
 class UnsafeUrl(Exception):
@@ -38,6 +46,7 @@ class SiteReport:
     problems: tuple[str, ...]
     status: int | None = None
     seconds: float | None = None
+    sinais: tuple[str, ...] = ()   # fatos lidos no site que não são "problema" (sem_whatsapp, sem_telefone...)
 
     @property
     def ok(self) -> bool:
@@ -91,6 +100,23 @@ def _fetch(url: str) -> tuple[int, str, bytes, float]:
     raise UnsafeUrl("redirecionamentos demais")
 
 
+def extract_signals(body: bytes, year: int | None = None) -> tuple[str, ...]:
+    """Fatos objetivos do HTML da página inicial, usados para personalizar a abordagem (nunca para acusar)."""
+    if len(body) < MIN_BODY_FOR_SIGNALS:
+        return ()
+    found: list[str] = []
+    if not _WHATSAPP.search(body):
+        found.append("sem_whatsapp")
+    if not _TEL.search(body):
+        found.append("sem_telefone")
+    if not _DESCRIPTION.search(body):
+        found.append("sem_descricao")
+    years = [int(m.group(1)) for m in _COPYRIGHT_YEAR.finditer(body)]
+    if years and max(years) <= (year or date.today().year) - STALE_FOOTER_YEARS:
+        found.append(f"rodape_{max(years)}")
+    return tuple(found)
+
+
 def check_site(url: str, fetch: Callable[[str], tuple[int, str, bytes, float]] = _fetch) -> SiteReport:
     url = url.strip()
     if "://" not in url:
@@ -107,14 +133,14 @@ def check_site(url: str, fetch: Callable[[str], tuple[int, str, bytes, float]] =
     problems: list[str] = []
     if status >= 400:
         problems.append("o site está fora do ar" if status >= 500 or status == 404 else f"o site dá erro ({status})")
-        return SiteReport(final, tuple(problems), status, seconds)
+        return SiteReport(final, tuple(problems), status, seconds, extract_signals(body))
     if urlparse(final).scheme != "https":
         problems.append("o site aparece como “não seguro” no navegador (sem HTTPS)")
     if seconds >= SLOW_S:
         problems.append(f"o site demora uns {seconds:.0f} segundos para abrir")
     if body and not _VIEWPORT.search(body):
         problems.append("o site não se adapta bem ao celular")
-    return SiteReport(final, tuple(problems), status, seconds)
+    return SiteReport(final, tuple(problems), status, seconds, extract_signals(body))
 
 
 def check_leads(conn: sqlite3.Connection, *, limit: int = 50, check: Callable[[str], SiteReport] = check_site,
@@ -123,14 +149,15 @@ def check_leads(conn: sqlite3.Connection, *, limit: int = 50, check: Callable[[s
     rows = conn.execute(
         # só Brasil: os diagnósticos são em português e, de fora, muito site "fora do ar" é só bloqueio (Cloudflare)
         "SELECT id, nome, site FROM leads WHERE status = ? AND oferta = ? AND site IS NOT NULL AND pais = 'BR' "
-        "AND site_checado_em IS NULL ORDER BY id LIMIT ?",
+        "AND (site_checado_em IS NULL OR site_sinais IS NULL) ORDER BY id LIMIT ?",
         (db.NOVO, TEM_SITE, limit),
     ).fetchall()
     bad = 0
     for row in rows:
         report = check(row["site"])
         fields: dict[str, object] = {"site_checado_em": db.iso(db.utcnow()),
-                                     "site_problemas": report.summary() or None}
+                                     "site_problemas": report.summary() or None,
+                                     "site_sinais": json.dumps(list(report.sinais))}
         if not report.ok:
             fields["oferta"] = SITE_PROBLEMA
             bad += 1

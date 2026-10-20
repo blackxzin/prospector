@@ -63,6 +63,12 @@ primeira:
     - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Um bot de atendimento no WhatsApp faz ninguém ficar sem resposta no horário de pico. Teriam interesse em ver um exemplo funcionando, sem compromisso?"
     - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Fazemos automação do WhatsApp: mensagem de boas-vindas, respostas prontas e encaminhamento dos pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
 
+  # Só para quem tem site sem botão de WhatsApp (sinal lido no site: sem_whatsapp).
+  tem_site_sem_whatsapp:
+    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Dei uma olhada no site de vocês e não achei um botão de WhatsApp nele. Eu coloco um botão que abre a conversa direto e um atendimento automático que responde as dúvidas e passa os pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
+    - "{saudacao}! Tudo bem? Sou o {remetente}. {apresentacao} {elogio} Visitei o site de vocês e não vi botão de WhatsApp. Quem entra querendo pedir acaba saindo sem falar com vocês. Instalo o botão e um bot de atendimento que responde na hora. Quer ver um exemplo?"
+    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {apresentacao} {elogio} Notei que o site de vocês não tem botão de WhatsApp. Coloco um botão direto pro WhatsApp e, se quiserem, um atendimento automático pra ninguém ficar sem resposta. Posso te mandar um exemplo?"
+
   site_problema:
     - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Fui abrir o site de vocês e reparei que {problema}. Isso faz cliente desistir antes de pedir. A gente arruma isso ou faz um novo, simples e rápido, com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
     - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Tentei acessar o site de vocês e {problema}. Como muita gente procura pelo Google antes, vale a pena resolver. Posso te mandar um exemplo, sem compromisso?"

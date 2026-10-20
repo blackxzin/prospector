@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import random
 import re
 from dataclasses import dataclass
@@ -21,6 +22,8 @@ REQUIRED_LISTS = ("followup", "fora_do_horario", "elogios_com_nota", "elogios_se
 EXTRA_SAMPLE = {"valor": "R$ 300,00", "vencimento": "20/10",
                 "descricao": "Entrada", "pix": "000201...", "problema": "o site está fora do ar"}
 MIN_VARIANTS = 3
+# Grupos opcionais dentro de 'primeira', usados quando o lead tem um sinal específico (ver sitecheck.extract_signals).
+EXTRA_GROUPS = ("tem_site_sem_whatsapp",)
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
 _PARENS = re.compile(r"\s*\([^)]*\)\s*")
 _SPACES = re.compile(r"\s{2,}")
@@ -40,7 +43,10 @@ class Templates:
         """Lê um arquivo de textos. Com `base`, o arquivo sobrescreve só o que traz (idiomas fora do pt)."""
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         if base is not None:
+            own = set((data.get("primeira") or {}))
             data = _overlay(dict(base.data), data)
+            # textos de sinais escritos em português não valem para outro idioma
+            data["primeira"] = {k: v for k, v in data["primeira"].items() if k not in EXTRA_GROUPS or k in own}
         tpl = cls(data)
         tpl.validate(path.name)
         return tpl
@@ -61,6 +67,9 @@ class Templates:
         for offer in OFFERS:
             if len(primeira.get(offer) or []) < MIN_VARIANTS:
                 raise TemplateError(f"{name}: 'primeira.{offer}' precisa de pelo menos {MIN_VARIANTS} variações")
+        for group in EXTRA_GROUPS:
+            if group in primeira and len(primeira[group] or []) < MIN_VARIANTS:
+                raise TemplateError(f"{name}: 'primeira.{group}' precisa de pelo menos {MIN_VARIANTS} variações")
         for key in REQUIRED_LISTS:
             if not self.data.get(key):
                 raise TemplateError(f"{name}: '{key}' está vazio")
@@ -76,6 +85,7 @@ class Templates:
 
     def _all_texts(self) -> list[str]:
         texts = [t for offer in OFFERS for t in self.data["primeira"][offer]]
+        texts += [t for group in EXTRA_GROUPS for t in self.data["primeira"].get(group) or []]
         for key in REQUIRED_LISTS:
             texts.extend(self.data[key])
         return texts
@@ -139,6 +149,8 @@ class Templates:
         if offer not in OFFERS:
             raise TemplateError(f"Oferta desconhecida: {offer}")
         options = list(self.data["primeira"][offer])
+        if offer == TEM_SITE and "sem_whatsapp" in site_signals(lead):
+            options = list(self.data["primeira"].get("tem_site_sem_whatsapp") or options)
         chosen = choose_variant(options, stats or {}, rng)
         if self.idioma == "pt":
             extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
@@ -157,6 +169,14 @@ class Templates:
     def out_of_hours(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
                      rng: random.Random | None = None) -> str:
         return self._render(self.data["fora_do_horario"], lead, now, tz, rng)
+
+
+def site_signals(lead: Mapping[str, Any]) -> set[str]:
+    try:
+        raw = json.loads(lead.get("site_sinais") or "[]")
+    except (TypeError, ValueError):
+        return set()
+    return {str(x) for x in raw} if isinstance(raw, list) else set()
 
 
 def variant_id(template: str) -> str:
