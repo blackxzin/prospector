@@ -3,7 +3,7 @@ idioma: fr
 decimal: ","
 apresentacao: "Je suis développeur brésilien et, avec mon associé Felipe, nous créons des sites web, des automatisations et des bots de service client pour WhatsApp."
 portfolio: ""
-optout: "(Si vous préférez que je ne vous écrive plus, répondez STOP et je ne vous recontacterai pas.)"
+optout: "(Répondez STOP et je ne vous écrirai plus.)"
 problema_padrao: "il ne s'affichait pas correctement"
 saudacoes: {manha: "Bonjour", tarde: "Bonjour", noite: "Bonsoir"}
 
@@ -28,28 +28,34 @@ vitrine:
     - palavras: [boutique, magasin, vetement, animalerie, fleuriste, cadeaux]
       texto: "vos produits"
 
+# Abordagem curta: gancho real do lead, uma pergunta simples e pedido de "com quem falo". Sem link e sem preço.
 primeira:
   sem_site:
-    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai cherché votre site web sans le trouver. Si vous n'en avez pas encore, nous pouvons en créer un simple, avec {vitrine} et un bouton qui ouvre directement WhatsApp. Aimeriez-vous voir un exemple, sans engagement ? {optout}"
-    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Je n'ai pas trouvé de site pour {nome} sur Google. Si c'est bien le cas, nous réalisons des pages rapides et soignées avec {vitrine} et un bouton WhatsApp. Puis-je vous envoyer un exemple ? {optout}"
-    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Votre fiche Google n'a pas de site associé. Nous pouvons en faire un simple, avec {vitrine} et un bouton WhatsApp pour que vos clients vous joignent en un geste. Voulez-vous voir un exemple ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai cherché {nome} sur Google et je n'ai pas trouvé de site. Avec qui puis-je en parler ? {optout}"
+    - "Bonjour, Lucas, développeur. Quand on cherche votre établissement sur Google, on ne voit que la fiche, sans site. Est-ce un sujet pour vous ? Qui s'en occupe ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai une idée simple pour que {nome} apparaisse mieux sur Google. Puis-je l'expliquer rapidement à la personne qui décide ? {optout}"
+    - "Bonjour, je suis Lucas, développeur brésilien. Je vous ai trouvés sur Google avec une note de {nota_boa}, mais sans site. Y avez-vous déjà pensé ? Avec qui puis-je en parler ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai lu ce qu'un client a écrit sur vous sur Google : « {avaliacao} ». Mais je n'ai pas trouvé de site. Qui s'en occupe ? {optout}"
   so_social:
-    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai trouvé vos réseaux sociaux mais pas de site à vous. Une page simple avec {vitrine} et un bouton WhatsApp aide aussi à apparaître sur Google. Aimeriez-vous voir un exemple ? {optout}"
-    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Pour l'instant, le lien de votre fiche Google mène seulement aux réseaux sociaux. Nous créons des sites rapides avec {vitrine} et un bouton WhatsApp. Puis-je vous envoyer un exemple ? {optout}"
-    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} J'ai remarqué que vous n'avez pas de site propre, seulement des réseaux sociaux. Nous pouvons monter une page claire avec {vitrine} et un bouton WhatsApp. Cela vous intéresse ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. Je suis arrivé sur vos réseaux sociaux via Google. Avez-vous aussi un site, ou seulement les réseaux ? {optout}"
+    - "Bonjour, Lucas, développeur. J'ai vu que {nome} ne communique que sur les réseaux sociaux. Avez-vous pensé à un site simple avec un bouton WhatsApp ? Avec qui puis-je en parler ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. Qui s'occupe de votre communication ? J'ai une idée rapide pour que ceux qui vous cherchent sur Google arrivent directement sur WhatsApp. Puis-je l'expliquer à la personne qui décide ? {optout}"
+    - "Bonjour, je suis Lucas, développeur brésilien. J'ai vu votre {arroba}, très bien ! Mais pas de site. Y avez-vous pensé ? Avec qui puis-je en parler ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai lu un avis client sur Google : « {avaliacao} ». Qui vous cherche ne trouve que des réseaux sociaux. Qui s'en occupe ? {optout}"
   tem_site:
-    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} Je vois que vous avez déjà un site, super ! Nous créons aussi des bots WhatsApp : ils répondent aux questions courantes, présentent {vitrine} et vous transmettent les commandes ou réservations. Aimeriez-vous voir un exemple ? {optout}"
-    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Un bot WhatsApp évite que quelqu'un reste sans réponse aux heures de pointe. Puis-je vous montrer un exemple ? {optout}"
-    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Nous automatisons WhatsApp : message d'accueil, réponses prêtes et transfert vers vous quand c'est important. Cela vous intéresse ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. Quand un client vous écrit sur WhatsApp en dehors des horaires, quelqu'un répond-il ou cela attend-il le lendemain ? {optout}"
+    - "Bonjour, Lucas, développeur. J'ai vu votre site. WhatsApp est-il le principal canal de contact ? Je crée des réponses automatiques instantanées. Puis-je l'expliquer à la personne concernée ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. Quelqu'un gère-t-il WhatsApp toute la journée, ou y a-t-il trop de monde pour cela ? J'ai une idée pour alléger. Avec qui puis-je en parler ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai lu un avis client : « {avaliacao} ». Les jours de forte affluence, arrivez-vous à répondre à tout le monde sur WhatsApp ? Avec qui puis-je en parler ? {optout}"
   site_problema:
-    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai essayé votre site et {problema}. Les clients abandonnent avant de vous contacter. Nous pouvons le corriger ou en créer un nouveau, rapide, avec {vitrine} et un bouton WhatsApp. Voulez-vous voir un exemple ? {optout}"
-    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Je suis allé sur votre site et {problema}. Comme beaucoup de gens regardent d'abord sur Google, cela vaut la peine de le régler. Puis-je vous envoyer un exemple ? {optout}"
-    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Petite alerte : votre site {problema}. Nous créons des sites légers avec {vitrine} et un bouton WhatsApp. Cela vous intéresse ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. J'ai essayé d'ouvrir votre site et {problema}. Le saviez-vous ? Avec qui puis-je en parler pour le corriger ? {optout}"
+    - "Bonjour, Lucas, développeur. Je suis passé sur votre site et {problema}. Les clients abandonnent. Qui s'occupe du site ? {optout}"
+    - "{saudacao}. Je suis Lucas, développeur brésilien. Petite alerte : en ouvrant votre site, {problema}. Je peux aider à le corriger. Avec qui puis-je en parler ? {optout}"
 
 followup:
-  - "Bonjour {nome} ! Je voulais juste savoir si vous avez vu mon message. Si ce n'est pas le moment, aucun souci. Puis-je vous envoyer l'exemple ? {optout}"
-  - "{saudacao} ! Je sais que le quotidien est chargé, je ne relance donc qu'une fois. Souhaitez-vous que je vous envoie l'exemple ? {optout}"
-  - "Re-bonjour {nome} ! Dernier message de ma part. Si vous voulez voir l'exemple, dites-le-moi ici. {optout}"
+  - "Bonjour. Je voulais juste savoir si mon message vous est bien parvenu. Si ce n'est pas vous, pourriez-vous m'indiquer qui s'en occupe ? {optout}"
+  - "{saudacao}. Je sais que c'est chargé. Si quelqu'un s'occupe de votre site ou de WhatsApp, pourriez-vous me donner son contact pour que je lui parle directement ? {optout}"
+  - "Bonjour. Dernier message, je n'insiste pas. Si un jour vous voulez voir ce que je fais, écrivez-moi ici. Bonne continuation ! {optout}"
 
 fora_do_horario:
   - "Bonjour ! Merci pour votre réponse. Je suis hors horaires pour le moment, mais je vous réponds le prochain jour ouvré."

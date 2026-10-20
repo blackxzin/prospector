@@ -3,7 +3,7 @@ idioma: es
 decimal: ","
 apresentacao: "Soy desarrollador de Brasil y, junto con mi socio Felipe, hacemos páginas web, automatizaciones y bots de atención al cliente para WhatsApp."
 portfolio: ""
-optout: "(Si prefieren que no les escriba más, respondan STOP y no volveré a hacerlo.)"
+optout: "(Respondan STOP y no volveré a escribirles.)"
 problema_padrao: "no cargaba bien"
 saudacoes: {manha: "Buenos días", tarde: "Buenas tardes", noite: "Buenas noches"}
 
@@ -28,28 +28,34 @@ vitrine:
     - palavras: [tienda, boutique, ropa, mascota, floristeria, regalos, ferreteria]
       texto: "sus productos"
 
+# Abordagem curta: gancho real do lead, uma pergunta simples e pedido de "com quem falo". Sem link e sem preço.
 primeira:
   sem_site:
-    - "{saudacao}, {nome}. Soy {remetente}. {apresentacao} {elogio} Busqué su página web y no la encontré. Si todavía no tienen una, podemos hacerla sencilla, con {vitrine} y un botón que abre directamente WhatsApp. ¿Les interesaría ver un ejemplo, sin compromiso? {optout}"
-    - "{saudacao}. Soy {remetente}. {apresentacao} {elogio} No he encontrado una web de {nome} en Google. Si es así, hacemos páginas rápidas y limpias con {vitrine} y botón de WhatsApp. ¿Les envío un ejemplo? {optout}"
-    - "Hola, {nome}. Soy {remetente}. {apresentacao} {elogio} Vi que su perfil de Google no tiene web enlazada. Podemos crear una sencilla con {vitrine} y un botón de WhatsApp para que los clientes los contacten con un toque. ¿Quieren ver un ejemplo? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Busqué {nome} en Google y no encontré su web. ¿Con quién puedo hablar de esto? {optout}"
+    - "Hola, soy Lucas, desarrollador. Cuando alguien busca su negocio en Google hoy, solo aparece el mapa, sin web. ¿Ya lo han hablado alguna vez? ¿Quién se encarga de esa parte? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Tengo una idea sencilla para que {nome} aparezca mejor en Google. ¿Puedo explicársela rápidamente a quien decide esto? {optout}"
+    - "Hola, soy Lucas, desarrollador de Brasil. Los vi en Google con nota {nota_boa}, pero sin web. ¿Han pensado en tener una? ¿Con quién puedo hablar? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Leí lo que escribió un cliente suyo en Google: “{avaliacao}”. Pero no encontré su web. ¿Quién se encarga de eso? {optout}"
   so_social:
-    - "{saudacao}, {nome}. Soy {remetente}. {apresentacao} {elogio} Encontré sus redes sociales pero no una web propia. Una página sencilla con {vitrine} y botón de WhatsApp también ayuda a aparecer en Google. ¿Les interesaría ver un ejemplo? {optout}"
-    - "{saudacao}. Soy {remetente}. {apresentacao} {elogio} Ahora mismo el enlace de Google solo lleva a redes sociales. Hacemos webs rápidas y sencillas con {vitrine} y botón de WhatsApp. ¿Les envío un ejemplo? {optout}"
-    - "Hola, {nome}. Soy {remetente}. {apresentacao} {elogio} Noté que no tienen una web propia, solo redes sociales. Podemos montar una página limpia con {vitrine} y un botón para WhatsApp. ¿Les interesa un ejemplo? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Llegué a sus redes sociales a través de Google. ¿Tienen también una web o solo las redes? {optout}"
+    - "Hola, soy Lucas, desarrollador. Vi que {nome} se promociona solo en redes sociales. ¿Han pensado en una web sencilla con botón de WhatsApp? ¿Con quién puedo hablar de eso? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. ¿Quién lleva la promoción de ustedes? Tengo una idea rápida para que quien los busque en Google llegue directo a su WhatsApp. ¿Puedo explicársela a quien decide? {optout}"
+    - "Hola, soy Lucas, desarrollador de Brasil. Vi su {arroba}, ¡muy bueno! Pero no encontré una web. ¿Han pensado en tener una? ¿Con quién puedo hablar? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Leí una reseña de un cliente en Google: “{avaliacao}”. Quien los busca solo encuentra redes sociales. ¿Quién se encarga de eso? {optout}"
   tem_site:
-    - "{saudacao}, {nome}. Soy {remetente}. {apresentacao} {elogio} Vi que ya tienen web, ¡genial! También hacemos bots de atención en WhatsApp: responden las dudas habituales, muestran {vitrine} y les pasan los pedidos o reservas. ¿Les gustaría ver un ejemplo? {optout}"
-    - "{saudacao}. Soy {remetente}. {apresentacao} {elogio} Un bot de WhatsApp evita que alguien se quede sin respuesta en las horas de más trabajo. ¿Les muestro un ejemplo? {optout}"
-    - "Hola, {nome}. Soy {remetente}. {apresentacao} {elogio} Automatizamos WhatsApp: mensaje de bienvenida, respuestas listas y traspaso de la conversación a ustedes cuando importa. ¿Les interesa un ejemplo? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Cuando un cliente les escribe por WhatsApp fuera de horario, ¿alguien responde o queda para el día siguiente? {optout}"
+    - "Hola, soy Lucas, desarrollador. Vi su web. ¿Es por WhatsApp por donde más llegan consultas? Hago respuestas automáticas que contestan al instante. ¿Puedo explicárselo a quien lo gestiona? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. ¿Alguien atiende el WhatsApp todo el día o hay demasiado movimiento para eso? Tengo una idea para aligerar. ¿Con quién puedo hablar? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Leí una reseña de un cliente suyo: “{avaliacao}”. En un día de mucho trabajo, ¿dan abasto para responder a todos por WhatsApp? ¿Con quién hablo de esto? {optout}"
   site_problema:
-    - "{saudacao}, {nome}. Soy {remetente}. {apresentacao} {elogio} Probé su web y {problema}. Eso hace que los clientes se vayan antes de contactarlos. Podemos arreglarla o hacer una nueva, rápida, con {vitrine} y botón de WhatsApp. ¿Quieren ver un ejemplo? {optout}"
-    - "{saudacao}. Soy {remetente}. {apresentacao} {elogio} Entré en su web y {problema}. Como mucha gente mira primero en Google, merece la pena solucionarlo. ¿Les envío un ejemplo? {optout}"
-    - "Hola, {nome}. Soy {remetente}. {apresentacao} {elogio} Un aviso rápido: su web {problema}. Hacemos webs nuevas y ligeras con {vitrine} y botón de WhatsApp. ¿Les interesa un ejemplo? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Intenté abrir su web y {problema}. ¿Lo sabían? ¿Con quién puedo hablar para ayudar a solucionarlo? {optout}"
+    - "Hola, soy Lucas, desarrollador. Pasé por su web y {problema}. Eso hace que los clientes se vayan. ¿Quién se encarga de la web? {optout}"
+    - "{saudacao}. Soy Lucas, desarrollador de Brasil. Un aviso rápido: al abrir su web, {problema}. Puedo ayudar a arreglarlo. ¿Con quién hablo? {optout}"
 
 followup:
-  - "Hola, {nome}. Solo quería saber si vieron mi mensaje anterior. Si ahora no les interesa, no hay problema. ¿Les envío el ejemplo? {optout}"
-  - "{saudacao}. Sé que hay mucho trabajo, así que solo insisto esta vez. ¿Quieren que les envíe el ejemplo? {optout}"
-  - "Hola de nuevo, {nome}. Este es mi último mensaje. Si quieren ver el ejemplo, díganmelo por aquí. {optout}"
+  - "Hola. Solo quería saber si les llegó mi mensaje. Si no es con ustedes, ¿me indicarían quién se encarga de esto? {optout}"
+  - "{saudacao}. Sé que hay mucho trabajo. Si alguien se ocupa de su web o del WhatsApp, ¿me pasarían su contacto para hablar directamente? {optout}"
+  - "Hola. Último mensaje, no insistiré. Si algún día quieren ver lo que hago, escríbanme por aquí. ¡Mucho éxito! {optout}"
 
 fora_do_horario:
   - "¡Hola! Gracias por responder. Ahora mismo estoy fuera de horario, pero les contesto el próximo día laborable."

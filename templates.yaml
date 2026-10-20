@@ -59,30 +59,30 @@ sem_cidade: "aqui da região"
 
 primeira:
   sem_site:
-    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"
-    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Quando alguém pesquisa por vocês no Google hoje, aparece só o mapa, sem site. Isso já foi assunto por aí? Quem cuida dessa parte?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"
+    - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Quando alguém pesquisa por vocês no Google hoje, aparece só o mapa, sem site. Isso já foi assunto por aí? Quem cuida dessa parte?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Tenho uma ideia simples pra {nome} aparecer melhor no Google. Posso explicar rápido pra quem decide isso aí?"
-    - "Oi, {saudacao_minuscula}! Lucas aqui, desenvolvedor {local}. Vi vocês no Google com nota {nota_boa}, mas sem site. Já pensaram em ter um? Com quem eu falo?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Vi vocês no Google com nota {nota_boa}, mas sem site. Já pensaram em ter um? Com quem eu falo?"
     - "{saudacao}! Lucas, desenvolvedor {local}. Li o que um cliente escreveu de vocês no Google: “{avaliacao}”. Mas não achei site de vocês. Quem cuida disso aí?"
   so_social:
-    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Cheguei no Instagram de vocês pelo Google. Vocês têm site também ou só o Instagram mesmo?"
-    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Vi que {nome} divulga só pelas redes sociais. Já pensaram em ter um site próprio com botão de WhatsApp? Com quem eu falo sobre isso?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Cheguei no Instagram de vocês pelo Google. Vocês têm site também ou só o Instagram mesmo?"
+    - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Vi que {nome} divulga só pelas redes sociais. Já pensaram em ter um site próprio com botão de WhatsApp? Com quem eu falo sobre isso?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Quem cuida da divulgação de vocês? Tenho uma ideia rápida pra quem procura vocês no Google cair direto no WhatsApp. Posso explicar pra quem decide?"
-    - "Oi, {saudacao_minuscula}! Lucas aqui, desenvolvedor {local}. Vi o {arroba} de vocês, muito bom! Só não achei site. Já pensaram em ter um? Com quem eu falo?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Vi o {arroba} de vocês, muito bom! Só não achei site. Já pensaram em ter um? Com quem eu falo?"
     - "{saudacao}! Lucas, desenvolvedor {local}. Li uma avaliação de cliente de vocês no Google: “{avaliacao}”. Quem procura vocês só encontra rede social. Quem cuida disso aí?"
   tem_site:
-    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Quando um cliente chama vocês no WhatsApp fora do horário, alguém responde ou fica pro dia seguinte?"
-    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Vi o site de vocês. O WhatsApp é por onde mais chega pedido ou contato? Faço atendimento automático que responde na hora. Posso explicar pra quem cuida disso?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Quando um cliente chama vocês no WhatsApp fora do horário, alguém responde ou fica pro dia seguinte?"
+    - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Vi o site de vocês. O WhatsApp é por onde mais chega pedido ou contato? Faço atendimento automático que responde na hora. Posso explicar pra quem cuida disso?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Alguém aí cuida do WhatsApp o dia todo ou o movimento é grande demais pra isso? Tenho uma ideia pra aliviar. Com quem falo sobre isso?"
     - "{saudacao}! Lucas, desenvolvedor {local}. Li uma avaliação de cliente de vocês: “{avaliacao}”. Em dia cheio, dá conta de responder todo mundo no WhatsApp? Com quem falo sobre isso?"
   # Só para quem tem site sem botão de WhatsApp (sinal lido no site: sem_whatsapp).
   tem_site_sem_whatsapp:
-    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."
-    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Quem chega no site de vocês e quer falar não acha um botão de WhatsApp. Posso mostrar como resolver em um dia. Com quem eu falo?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."
+    - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Quem chega no site de vocês e quer falar não acha um botão de WhatsApp. Posso mostrar como resolver em um dia. Com quem eu falo?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Reparei que o site de vocês não tem botão pro WhatsApp. Já foi assunto por aí? Quem cuida disso?"
   site_problema:
-    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Tentei abrir o site de vocês e reparei que {problema}. Já sabiam? Com quem eu falo pra ajudar a resolver?"
-    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Passei pelo site de vocês e reparei que {problema}. Isso faz cliente desistir. Quem cuida do site?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Tentei abrir o site de vocês e reparei que {problema}. Já sabiam? Com quem eu falo pra ajudar a resolver?"
+    - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Passei pelo site de vocês e reparei que {problema}. Isso faz cliente desistir. Quem cuida do site?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Um aviso rápido: reparei que {problema}. Posso ajudar a arrumar. Com quem falo sobre o site?"
 
 followup:

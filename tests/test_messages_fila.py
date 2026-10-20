@@ -162,27 +162,28 @@ def test_all_shipped_languages_load(tset):
 
 @pytest.mark.parametrize("lang", LANGS)
 @pytest.mark.parametrize("offer", ["sem_site", "so_social", "tem_site", "site_problema"])
-def test_foreign_messages_are_clean_and_localized(tset, lang, offer):
+def test_foreign_messages_are_short_clean_and_localized(tset, lang, offer):
     lead = {"nome": "Napoli Pizza", "nota": 4.6, "avaliacoes": 120, "categoria": "Pizza restaurant",
             "oferta": offer, "cidade": "Madrid"}
     tpl = tset.get(lang)
-    for seed in range(12):
+    for seed in range(20):
         text = tpl.first_message(lead, local_dt(2026, 10, 20, 10), TZ, random.Random(seed))
-        assert "{" not in text and "  " not in text and "Napoli Pizza" in text or offer != "sem_site"
-        assert "Lucas" in text and tpl.data["optout"] in text          # opt-out explícito em toda abordagem
-        assert "vercel.app" not in text and "R$" not in text           # sem link em pt nem preço em reais
-        assert "aqui da região" not in text and "Bom dia" not in text or lang == "pt-pt"
+        assert "{" not in text and "  " not in text and len(text.split()) <= 60
+        assert "Lucas" in text and text.endswith(tpl.data["optout"])      # opt-out explícito em toda abordagem
+        assert "vercel.app" not in text and "R$" not in text and "http" not in text
+        assert "aqui da região" not in text and ("Bom dia" not in text or lang == "pt-pt")
+        assert "?" in text                                                # sempre pergunta algo
 
 
 def test_greeting_and_decimal_follow_the_language(tset):
     lead = {"nome": "Joe's Pizza", "nota": 4.6, "avaliacoes": 120, "categoria": "Pizza", "oferta": "sem_site"}
-    morning = tset.get("en").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(1))
-    evening = tset.get("en").first_message(lead, local_dt(2026, 10, 20, 20), TZ, random.Random(1))
-    assert "Good morning" in morning or "Hi Joe" in morning
-    assert "Good evening" in evening or "Hi Joe" in evening
-    assert "4.6" in morning and "4,6" not in morning
-    es = tset.get("es").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(1))
-    assert "4,6" in es
+    en = [tset.get("en").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(i)) for i in range(60)]
+    assert any("4.6" in t for t in en) and not any("4,6" in t for t in en)
+    assert any("Good morning" in t for t in en) and not any("Good evening" in t for t in en)
+    night = [tset.get("en").first_message(lead, local_dt(2026, 10, 20, 20), TZ, random.Random(i)) for i in range(60)]
+    assert any("Good evening" in t for t in night) and not any("Good morning" in t for t in night)
+    es = [tset.get("es").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(i)) for i in range(60)]
+    assert any("4,6" in t for t in es) and not any("4.6" in t for t in es)
 
 
 def test_fix_greeting_works_per_language(tset):
@@ -227,7 +228,7 @@ def test_queue_is_brazil_only_by_default_and_uses_language_when_asked(conn, list
     assert only_br == ["Pizzaria Bella"]
     fq.build_queue(conn, tset, rules, now, size=5, followup_days=3, rng=random.Random(0), pais=("ES",))
     texto = conn.execute("SELECT f.texto FROM fila f JOIN leads l ON l.id = f.lead_id WHERE l.pais = 'ES'").fetchone()[0]
-    assert "Napoli" in texto and "Felipe" in texto and "STOP" in texto and "Bom dia" not in texto
+    assert "Lucas" in texto and "STOP" in texto and "Bom dia" not in texto
     assert texto.startswith(("Buenos días", "Buenas tardes", "Buenas noches", "Hola"))
 
 

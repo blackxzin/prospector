@@ -104,7 +104,7 @@ def test_followups_do_not_repeat_the_pitch_and_only_the_last_has_the_portfolio(p
 def test_template_needs_three_unconditional_variants(tmp_path):
     from prospector.messages import TemplateError
     text = (ROOT / "templates.yaml").read_text(encoding="utf-8")
-    broken = text.replace('"Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"',
+    broken = text.replace('"Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"',
                           '"Oi! {avaliacao} Quem cuida disso?"')
     assert broken != text
     p = tmp_path / "t.yaml"

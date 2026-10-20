@@ -3,7 +3,7 @@ idioma: en
 decimal: "."
 apresentacao: "I'm a developer from Brazil and, together with my partner Felipe, I build websites, automations and customer-service bots for WhatsApp."
 portfolio: ""
-optout: "(If you'd rather not hear from me, just reply STOP and I won't message again.)"
+optout: "(Reply STOP and I won't message again.)"
 problema_padrao: "it didn't load properly"
 saudacoes: {manha: "Good morning", tarde: "Good afternoon", noite: "Good evening"}
 
@@ -28,28 +28,34 @@ vitrine:
     - palavras: [store, shop, boutique, clothing, pet, florist, gift]
       texto: "your products"
 
+# Abordagem curta: gancho real do lead, uma pergunta simples e pedido de "com quem falo". Sem link e sem preço.
 primeira:
   sem_site:
-    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I looked for your website and couldn't find one. If you don't have one yet, we can build a simple site with {vitrine} and a button that opens WhatsApp directly. Would you like to see an example, no strings attached? {optout}"
-    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} I couldn't find a website for {nome} on Google. If that's the case, we put together fast, clean pages with {vitrine} and a WhatsApp button. Can I send you an example? {optout}"
-    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} There's no website linked to your Google profile. We can make a simple one with {vitrine} and a WhatsApp button, so customers can reach you in one tap. Interested in seeing an example? {optout}"
+    - "{saudacao}! This is Lucas, a developer from Brazil. I searched for {nome} on Google and couldn't find a website. Who's the right person to talk to about that? {optout}"
+    - "Hi! Lucas here, a web developer. When people search for you on Google right now, they only get the map listing, no website. Has that come up before? Who handles this side? {optout}"
+    - "{saudacao}, I'm Lucas, a developer from Brazil. I have a simple idea to help {nome} show up better on Google. Can I explain it quickly to whoever makes these decisions? {optout}"
+    - "Hi! Lucas here, a developer from Brazil. I found you on Google with a {nota_boa} rating but no website. Ever thought about having one? Who should I talk to? {optout}"
+    - "{saudacao}! I'm Lucas, a developer from Brazil. I read what a customer wrote about you on Google: “{avaliacao}”. I couldn't find a website for you though. Who handles that? {optout}"
   so_social:
-    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I found your social media page but no website of your own. A simple site with {vitrine} and a WhatsApp button also helps you show up on Google. Would you like to see an example? {optout}"
-    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} Right now your Google link only leads to social media. We build fast, simple sites with {vitrine} and a WhatsApp button. Can I send you an example? {optout}"
-    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} I noticed you don't have a site of your own, only social media. We can set up a clean page with {vitrine} and a button for WhatsApp. Interested in an example? {optout}"
+    - "{saudacao}! This is Lucas, a developer from Brazil. I found your social media page through Google. Do you also have a website, or is it just social media? {optout}"
+    - "Hi! Lucas here, a developer. I noticed {nome} only promotes on social media. Ever thought about a simple website with a WhatsApp button? Who should I talk to about that? {optout}"
+    - "{saudacao}, I'm Lucas, a developer from Brazil. Who handles your marketing? I have a quick idea so people who search for you on Google land straight in your WhatsApp. Can I explain it to whoever decides? {optout}"
+    - "Hi! Lucas here, a developer from Brazil. I saw your {arroba}, nice work! I couldn't find a website though. Ever thought about one? Who should I talk to? {optout}"
+    - "{saudacao}! I'm Lucas, a developer from Brazil. I read a customer review of you on Google: “{avaliacao}”. People who search for you only find social media. Who handles that? {optout}"
   tem_site:
-    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I saw you already have a website, nice! We also build WhatsApp customer-service bots: they answer common questions, show {vitrine} and pass orders or bookings on to you. Would you like to see an example? {optout}"
-    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} A WhatsApp bot makes sure nobody is left without an answer during your busiest hours. Can I show you an example? {optout}"
-    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} We automate WhatsApp: a welcome message, ready answers and handing the conversation over to you when it matters. Interested in an example? {optout}"
+    - "{saudacao}! This is Lucas, a developer from Brazil. When a customer messages you on WhatsApp outside opening hours, does someone answer or does it wait until the next day? {optout}"
+    - "Hi! Lucas here, a developer. I saw your website. Is WhatsApp where most inquiries come in? I build automatic replies that answer instantly. Can I explain it to whoever handles that? {optout}"
+    - "{saudacao}, I'm Lucas, a developer from Brazil. Does someone handle WhatsApp all day, or is it too busy for that? I have an idea to lighten the load. Who should I talk to? {optout}"
+    - "{saudacao}! I'm Lucas, a developer from Brazil. I read a customer review of you: “{avaliacao}”. On a busy day, can you keep up with every WhatsApp message? Who should I talk to about this? {optout}"
   site_problema:
-    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I tried your website and {problema}. That makes customers give up before they reach you. We can fix it or build a new, fast one with {vitrine} and a WhatsApp button. Want to see an example? {optout}"
-    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} I visited your website and {problema}. Since many people check Google first, it's worth fixing. Can I send you an example? {optout}"
-    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} A quick heads-up: your website {problema}. We build lightweight new sites with {vitrine} and a WhatsApp button. Interested in an example? {optout}"
+    - "{saudacao}! This is Lucas, a developer from Brazil. I tried to open your website and {problema}. Did you know? Who should I talk to about fixing it? {optout}"
+    - "Hi! Lucas here, a developer. I visited your website and {problema}. That makes customers give up. Who handles the site? {optout}"
+    - "{saudacao}, I'm Lucas, a developer from Brazil. Quick heads-up: when I opened your website, {problema}. I can help fix it. Who should I talk to? {optout}"
 
 followup:
-  - "Hi {nome}! Just checking whether you saw my last message. If it's not relevant right now, no problem at all. Shall I send you that example? {optout}"
-  - "{saudacao}! I know things get busy, so I'll only follow up this once. Would you like me to send the example? {optout}"
-  - "Hi again, {nome}! Last note from me, I promise. If you'd like to see the example, just let me know here. {optout}"
+  - "Hi! Just checking my message got through. If it's not you, could you point me to whoever handles this? {optout}"
+  - "{saudacao}! I know it's busy. If someone looks after your website or WhatsApp, could you share their contact so I can talk to them directly? {optout}"
+  - "Hi! Last note, I won't push. If you ever want to see what I do, just message me here. Wishing you all the best! {optout}"
 
 fora_do_horario:
   - "Hi! Thanks for your reply. I'm offline right now, but I'll get back to you on the next business day."

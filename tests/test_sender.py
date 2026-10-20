@@ -256,7 +256,7 @@ def test_sender_picks_the_lead_that_can_go_now_and_uses_local_greeting(conn, lis
     client = FakeWa()
     report = _run(conn, client, rules, VirtualClock(MONDAY_9), templates=tset)
     assert [t for _, t in client.sent][0].startswith(("Buenos días", "Buenas tardes", "Hola"))
-    assert "Café Luna" in client.sent[0][1] and report.enviados >= 1
+    assert client.sent[0][0].startswith("34612345679") and report.enviados >= 1  # Madrid antes de Tóquio
 
 
 def templates_path():
