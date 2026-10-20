@@ -248,6 +248,7 @@ def run(
                 report.motivo_fim = f"Limite diário ({rules.max_per_day}) atingido. Continua no próximo dia útil."
                 break
             tomorrow = clock.now().astimezone(rules.tz).replace(hour=0, minute=0, second=0) + timedelta(days=1)
+            out(f"  limite diário ({rules.max_per_day}) atingido; continua em {fmt_local(tomorrow, rules.tz)}")
             clock.sleep((tomorrow - clock.now()).total_seconds())
             when = when_for(item)
             if when is None:
