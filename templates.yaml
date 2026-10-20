@@ -49,35 +49,46 @@ vitrine:
     - palavras: [loja, cosmético, cosmetico, roupa, moda, calçado, calcado, presente, papelaria, ótica, otica, pet shop]
       texto: "os produtos"
 
+# Abordagem curta (WhatsApp de negócio costuma ser atendido por funcionário ou robô, não pelo dono):
+# gancho real do lead, sem link, uma pergunta simples e pedido de "com quem eu falo".
+# Variáveis extras: {local} ("de Itaí" na cidade-base, "aqui da região" nas demais), {nota_boa}, {avaliacao} (frase curta de uma avaliação
+# de 5 estrelas) e {arroba} (Instagram). A variação que usa uma delas só entra no sorteio se o lead tiver o dado.
+cidade_base: "Itaí"          # onde você mora: só aí a mensagem diz "desenvolvedor de Itaí"
+de_cidade: "de"
+sem_cidade: "aqui da região"
+
 primeira:
   sem_site:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Dei uma olhada e não encontrei um site de vocês. Se ainda não tiverem, montamos um simples, com {vitrine} e um botão que abre direto o WhatsApp. Teriam interesse em ver um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Procurei um site de vocês e não achei. Caso ainda não tenham, fazemos uma página rápida com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Não encontrei um site de vocês no Google. Se não tiverem, fazemos um bem simples, com {vitrine} e um botão pro WhatsApp. Teriam interesse em ver um exemplo?"
+    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"
+    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Quando alguém pesquisa por vocês no Google hoje, aparece só o mapa, sem site. Isso já foi assunto por aí? Quem cuida dessa parte?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Tenho uma ideia simples pra {nome} aparecer melhor no Google. Posso explicar rápido pra quem decide isso aí?"
+    - "Oi, {saudacao_minuscula}! Lucas aqui, desenvolvedor {local}. Vi vocês no Google com nota {nota_boa}, mas sem site. Já pensaram em ter um? Com quem eu falo?"
+    - "{saudacao}! Lucas, desenvolvedor {local}. Li o que um cliente escreveu de vocês no Google: “{avaliacao}”. Mas não achei site de vocês. Quem cuida disso aí?"
   so_social:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Dei uma olhada e só encontrei a rede social de vocês, não um site próprio. Se ainda não tiverem, montamos uma página simples, com {vitrine} e um botão que abre o WhatsApp. Teriam interesse em ver um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Procurei um site de vocês e só achei o Instagram. Caso não tenham, fazemos um site simples com {vitrine} e botão de WhatsApp, que ajuda a aparecer no Google. Posso te mandar um exemplo?"
-    - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Não encontrei um site próprio de vocês, só rede social. Se não tiverem, montamos uma página rápida com {vitrine} e um botão pro WhatsApp. Teriam interesse em ver um exemplo?"
+    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Cheguei no Instagram de vocês pelo Google. Vocês têm site também ou só o Instagram mesmo?"
+    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Vi que {nome} divulga só pelas redes sociais. Já pensaram em ter um site próprio com botão de WhatsApp? Com quem eu falo sobre isso?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Quem cuida da divulgação de vocês? Tenho uma ideia rápida pra quem procura vocês no Google cair direto no WhatsApp. Posso explicar pra quem decide?"
+    - "Oi, {saudacao_minuscula}! Lucas aqui, desenvolvedor {local}. Vi o {arroba} de vocês, muito bom! Só não achei site. Já pensaram em ter um? Com quem eu falo?"
+    - "{saudacao}! Lucas, desenvolvedor {local}. Li uma avaliação de cliente de vocês no Google: “{avaliacao}”. Quem procura vocês só encontra rede social. Quem cuida disso aí?"
   tem_site:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Vi que vocês já têm site, legal! Montamos um bot de atendimento no WhatsApp que responde as dúvidas comuns, mostra {vitrine} e passa os pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Um bot de atendimento no WhatsApp faz ninguém ficar sem resposta no horário de pico. Teriam interesse em ver um exemplo funcionando, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Fazemos automação do WhatsApp: mensagem de boas-vindas, respostas prontas e encaminhamento dos pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
-
+    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Quando um cliente chama vocês no WhatsApp fora do horário, alguém responde ou fica pro dia seguinte?"
+    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Vi o site de vocês. O WhatsApp é por onde mais chega pedido ou contato? Faço atendimento automático que responde na hora. Posso explicar pra quem cuida disso?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Alguém aí cuida do WhatsApp o dia todo ou o movimento é grande demais pra isso? Tenho uma ideia pra aliviar. Com quem falo sobre isso?"
+    - "{saudacao}! Lucas, desenvolvedor {local}. Li uma avaliação de cliente de vocês: “{avaliacao}”. Em dia cheio, dá conta de responder todo mundo no WhatsApp? Com quem falo sobre isso?"
   # Só para quem tem site sem botão de WhatsApp (sinal lido no site: sem_whatsapp).
   tem_site_sem_whatsapp:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Dei uma olhada no site de vocês e não achei um botão de WhatsApp nele. Eu coloco um botão que abre a conversa direto e um atendimento automático que responde as dúvidas e passa os pedidos pra vocês. Posso te mandar um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Sou o {remetente}. {apresentacao} {elogio} Visitei o site de vocês e não vi botão de WhatsApp. Quem entra querendo pedir acaba saindo sem falar com vocês. Instalo o botão e um bot de atendimento que responde na hora. Quer ver um exemplo?"
-    - "Oi, {nome}, {saudacao_minuscula}! Aqui é o {remetente}. {apresentacao} {elogio} Notei que o site de vocês não tem botão de WhatsApp. Coloco um botão direto pro WhatsApp e, se quiserem, um atendimento automático pra ninguém ficar sem resposta. Posso te mandar um exemplo?"
-
+    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."
+    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Quem chega no site de vocês e quer falar não acha um botão de WhatsApp. Posso mostrar como resolver em um dia. Com quem eu falo?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Reparei que o site de vocês não tem botão pro WhatsApp. Já foi assunto por aí? Quem cuida disso?"
   site_problema:
-    - "{saudacao}, {nome}! Meu nome é {remetente}. {apresentacao} {elogio} Fui abrir o site de vocês e reparei que {problema}. Isso faz cliente desistir antes de pedir. A gente arruma isso ou faz um novo, simples e rápido, com {vitrine} e botão de WhatsApp. Posso te mandar um exemplo, sem compromisso?"
-    - "{saudacao}! Tudo bem? Aqui é o {remetente}. {apresentacao} {elogio} Tentei acessar o site de vocês e {problema}. Como muita gente procura pelo Google antes, vale a pena resolver. Posso te mandar um exemplo, sem compromisso?"
-    - "Oi, {nome}, {saudacao_minuscula}! Sou o {remetente}. {apresentacao} {elogio} Um aviso rápido: {problema}. Fazemos um site novo, leve, com {vitrine} e botão pro WhatsApp. Posso te mandar um exemplo, sem compromisso?"
+    - "Oi, {saudacao_minuscula}! Aqui é o Lucas, desenvolvedor {local}. Tentei abrir o site de vocês e reparei que {problema}. Já sabiam? Com quem eu falo pra ajudar a resolver?"
+    - "{saudacao}! Lucas aqui, desenvolvedor {local}. Passei pelo site de vocês e reparei que {problema}. Isso faz cliente desistir. Quem cuida do site?"
+    - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Um aviso rápido: reparei que {problema}. Posso ajudar a arrumar. Com quem falo sobre o site?"
 
 followup:
-  - "Oi, {nome}! Passando só pra saber se viu minha mensagem. Se quiser conhecer nosso trabalho antes, está em {portfolio}. Se não fizer sentido agora, tudo bem, é só me falar. Posso te mandar o exemplo?"
-  - "{saudacao}! Sei que a rotina é corrida, por isso volto só mais esta vez. Quer que eu te mande o exemplo, sem compromisso?"
-  - "Oi de novo, {nome}! Não quero incomodar, é o último recado. Se tiver interesse em ver o exemplo, me avisa por aqui?"
+  - "Oi, {saudacao_minuscula}! Passando só pra saber se minha mensagem chegou. Se não for com você, me indica quem cuida disso por aí?"
+  - "{saudacao}! Sei que a rotina aí é corrida, então sem pressa. Se tiver alguém que cuida do site ou do WhatsApp, me passa o contato que eu falo direto com a pessoa?"
+  - "Oi! Último recado, prometo: não vou insistir. Se um dia quiserem ver o que eu faço, está aqui: {portfolio} . Sucesso aí!"
 
 fora_do_horario:
   - "Oi! Obrigado pela resposta. Agora estou fora do horário, mas te respondo no próximo horário útil, combinado?"

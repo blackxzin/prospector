@@ -18,35 +18,29 @@ def test_templates_have_three_variants_per_offer(templates):
 
 
 @pytest.mark.parametrize("offer", ["sem_site", "so_social", "tem_site"])
-def test_first_message_is_personal_and_ends_with_question(templates, offer):
+def test_first_message_is_short_personal_and_asks_who_to_talk_to(templates, offer):
     lead = {"nome": "Pizzaria Bella - Delivery", "nota": 4.7, "avaliacoes": 132, "categoria": "Pizzaria",
-            "oferta": offer}
-    for seed in range(10):
+            "oferta": offer, "cidade": "Itaí"}
+    for seed in range(20):
         text = templates.first_message(lead, NOW, TZ, random.Random(seed))
-        assert text.endswith("?") and "exemplo" in text.rsplit(".", 1)[-1]
-        assert "Lucas" in text and "desenvolvedores aqui da região" in text
-        assert "https://portifolio-dupla.vercel.app." in text
-        assert "{" not in text and "  " not in text
-        assert "Delivery" not in text
+        assert text.endswith("?") and "Lucas" in text and "desenvolvedor" in text
+        assert "http" not in text and "vercel" not in text          # sem link na 1ª mensagem
+        assert len(text.split()) <= 50                              # curta
+        assert "{" not in text and "  " not in text and "Delivery" not in text
+        assert "de Itaí" in text                                    # gancho local
 
 
-def test_rating_used_only_when_good(templates):
+def test_rating_appears_only_when_it_is_good(templates):
     good = {"nome": "Bella", "nota": 4.7, "avaliacoes": 132, "categoria": "Pizzaria", "oferta": "sem_site"}
-    texts = {templates.first_message(good, NOW, TZ, random.Random(s)) for s in range(20)}
-    assert all("4,7" in t and "132" in t for t in texts)
+    texts = {templates.first_message(good, NOW, TZ, random.Random(s)) for s in range(40)}
+    assert any("4,7" in t for t in texts)
     bad = {**good, "nota": 3.1, "avaliacoes": 4}
-    assert all("3,1" not in templates.first_message(bad, NOW, TZ, random.Random(s)) for s in range(20))
+    assert all("3,1" not in templates.first_message(bad, NOW, TZ, random.Random(s)) for s in range(40))
 
 
 def test_variants_are_drawn(templates):
     lead = {"nome": "Bella", "nota": None, "avaliacoes": None, "categoria": "Academia", "oferta": "tem_site"}
     assert len({templates.first_message(lead, NOW, TZ, random.Random(s)) for s in range(30)}) >= 3
-
-
-def test_vitrine_by_category(templates):
-    gym = {"nome": "Academia Força", "categoria": "Academia", "oferta": "sem_site", "nota": None, "avaliacoes": None}
-    texts = [templates.first_message(gym, NOW, TZ, random.Random(s)) for s in range(10)]
-    assert all("planos" in t for t in texts)
 
 
 def test_invalid_template_variable_rejected(tmp_path):
@@ -147,12 +141,6 @@ def test_clean_name_drops_trailing_city():
     assert clean_name("Pizzaria Itaí", "Itaí") == "Pizzaria Itaí"  # sobraria uma palavra só
     assert clean_name("Bar do Zé", "Itaí") == "Bar do Zé"
     assert clean_name("Lanches Salto do Itararé", "Salto do Itararé") == "Lanches Salto do Itararé"
-
-
-def test_barbershop_is_not_food(templates):
-    lead = {"nome": "Barbearia Arte", "nota": 4.9, "avaliacoes": 50, "categoria": "Barbearia", "oferta": "so_social"}
-    text = templates.first_message(lead, NOW, TZ, random.Random(0))
-    assert "cardápio" not in text and "serviços e preços" in text
 
 
 # ---------- idiomas ----------

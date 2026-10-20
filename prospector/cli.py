@@ -178,6 +178,13 @@ def cmd_aprovar(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_refazer_textos(app: App, _args: argparse.Namespace) -> int:
+    """Refaz com os templates atuais o texto das primeiras mensagens ainda não enviadas."""
+    n = fq.regenerate_texts(app.conn, app.template_set, app.rules, db.utcnow())
+    print(f"{n} texto(s) refeito(s). Status e horário de liberação ficaram como estavam.")
+    return 0
+
+
 def cmd_rejeitar(app: App, args: argparse.Namespace) -> int:
     print(f"{fq.reject(app.conn, args.ids)} itens rejeitados.")
     return 0
@@ -564,6 +571,9 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--liberar-em", metavar="'AAAA-MM-DD HH:MM'",
                    help="aprova agora, mas só envia a partir deste horário (horário do Brasil)")
     a.set_defaults(fn=cmd_aprovar)
+
+    sub.add_parser("refazer-textos", help="refaz o texto das mensagens pendentes/aprovadas com os templates atuais"
+                   ).set_defaults(fn=cmd_refazer_textos)
 
     a = sub.add_parser("rejeitar", help="rejeita itens da fila por id")
     a.add_argument("ids", nargs="+", type=int)

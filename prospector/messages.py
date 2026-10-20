@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.parse import urlparse
 
 import yaml
 
@@ -24,6 +25,9 @@ EXTRA_SAMPLE = {"valor": "R$ 300,00", "vencimento": "20/10",
 MIN_VARIANTS = 3
 # Grupos opcionais dentro de 'primeira', usados quando o lead tem um sinal específico (ver sitecheck.extract_signals).
 EXTRA_GROUPS = ("tem_site_sem_whatsapp",)
+# Campos que nem todo lead tem: a variação que usa um deles só entra no sorteio se o lead tiver o dado.
+CONDITIONAL_FIELDS = ("avaliacao", "arroba", "nota_boa")
+MIN_UNCONDITIONAL = 3
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
 _PARENS = re.compile(r"\s*\([^)]*\)\s*")
 _SPACES = re.compile(r"\s{2,}")
@@ -67,6 +71,11 @@ class Templates:
         for offer in OFFERS:
             if len(primeira.get(offer) or []) < MIN_VARIANTS:
                 raise TemplateError(f"{name}: 'primeira.{offer}' precisa de pelo menos {MIN_VARIANTS} variações")
+        for offer in (*OFFERS, *(g for g in EXTRA_GROUPS if g in primeira)):
+            plain = [t for t in primeira.get(offer) or [] if not any("{" + k + "}" in t for k in CONDITIONAL_FIELDS)]
+            if len(plain) < MIN_UNCONDITIONAL:
+                raise TemplateError(f"{name}: 'primeira.{offer}' precisa de pelo menos {MIN_UNCONDITIONAL} variações "
+                                    f"que não dependam de {', '.join(CONDITIONAL_FIELDS)}")
         for group in EXTRA_GROUPS:
             if group in primeira and len(primeira[group] or []) < MIN_VARIANTS:
                 raise TemplateError(f"{name}: 'primeira.{group}' precisa de pelo menos {MIN_VARIANTS} variações")
@@ -100,6 +109,22 @@ class Templates:
                 return str(rule.get("texto"))
         return str(cfg.get("padrao") or "os serviços")
 
+    def _local(self, cidade: str | None) -> str:
+        """'de Itaí' só para quem é da cidade-base de quem escreve; nas outras, 'aqui da região' (verdade)."""
+        base = str(self.data.get("cidade_base") or "").strip()
+        if base and cidade and fold(cidade) == fold(base):
+            return f"{self.data.get('de_cidade', 'de')} {base}"
+        return str(self.data.get("sem_cidade") or "aqui da região")
+
+    def _nota_boa(self, nota: float | None, avaliacoes: int | None) -> str:
+        """Nota só quando é boa (como no elogio); fora disso '', e as variações que a usam saem do sorteio."""
+        if nota is None or avaliacoes is None:
+            return ""
+        if nota >= float(self.data.get("elogio_nota_minima", 4.0)) and \
+                avaliacoes >= int(self.data.get("elogio_avaliacoes_minimas", 10)):
+            return format_rating(nota, str(self.data.get("decimal") or ","))
+        return ""
+
     def _elogio(self, nota: float | None, avaliacoes: int | None, rng: random.Random, base: dict[str, str]) -> str:
         min_nota = float(self.data.get("elogio_nota_minima", 4.0))
         min_aval = int(self.data.get("elogio_avaliacoes_minimas", 10))
@@ -123,6 +148,10 @@ class Templates:
             "optout": str(self.data.get("optout") or ""),
             "avaliacoes": str(avaliacoes or 0),
             "vitrine": self._vitrine(lead.get("categoria")),
+            "local": self._local(lead.get("cidade")),
+            "avaliacao": review_snippet(lead.get("avaliacoes_json")),
+            "arroba": instagram_handle(lead.get("site")),
+            "nota_boa": self._nota_boa(nota, avaliacoes),
         }
         return {**base, "elogio": self._elogio(nota, avaliacoes, rng, base)}
 
@@ -151,7 +180,10 @@ class Templates:
         options = list(self.data["primeira"][offer])
         if offer == TEM_SITE and "sem_whatsapp" in site_signals(lead):
             options = list(self.data["primeira"].get("tem_site_sem_whatsapp") or options)
-        chosen = choose_variant(options, stats or {}, rng)
+        ctx = self._context(lead, now.astimezone(tz), random.Random(0))
+        has = lambda o: all(ctx[k] for k in CONDITIONAL_FIELDS if "{" + k + "}" in o)  # noqa: E731
+        usable = [o for o in options if has(o)]
+        chosen = choose_variant(usable or options, stats or {}, rng)
         if self.idioma == "pt":
             extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
         else:  # os diagnósticos do sitecheck são em português: fora do pt usa a frase padrão do idioma
@@ -169,6 +201,47 @@ class Templates:
     def out_of_hours(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
                      rng: random.Random | None = None) -> str:
         return self._render(self.data["fora_do_horario"], lead, now, tz, rng)
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+|\n")
+_SNIPPET_BAD = re.compile(r"https?:|www\.|\.\.|\d{4,}|@|!{2,}|\?{2,}")
+SNIPPET_MIN_WORDS, SNIPPET_MAX_WORDS, SNIPPET_MAX_CHARS = 3, 12, 70
+_IG_SKIP = frozenset({"p", "reel", "reels", "explore", "popular", "accounts", "stories", "tv", "share"})
+
+
+def review_snippet(avaliacoes_json: str | None) -> str:
+    """Primeira frase curta de uma avaliação de 5 estrelas (“Melhor pizza da cidade”), ou ''.
+
+    Só frases limpas: 3 a 12 palavras, sem link, número de telefone, reticências ou exclamação repetida."""
+    try:
+        reviews = json.loads(avaliacoes_json or "[]")
+    except (TypeError, ValueError):
+        return ""
+    best = ""
+    for r in reviews if isinstance(reviews, list) else []:
+        if not isinstance(r, dict) or int(r.get("nota") or 0) < 5:
+            continue
+        first = _SENTENCE_END.split(str(r.get("texto") or "").strip())[0].strip().rstrip(".!…").strip()
+        words = first.split()
+        if (SNIPPET_MIN_WORDS <= len(words) <= SNIPPET_MAX_WORDS and len(first) <= SNIPPET_MAX_CHARS
+                and not _SNIPPET_BAD.search(first) and not first.isupper()):
+            if not best or len(first) < len(best):
+                best = first
+    return best[:1].upper() + best[1:] if best else ""
+
+
+def instagram_handle(site: str | None) -> str:
+    """'https://instagram.com/pizzariabella?igsh=..' -> '@pizzariabella'; senão ''."""
+    if not site:
+        return ""
+    parsed = urlparse(site if "://" in site else "http://" + site)
+    host = (parsed.hostname or "").lower()
+    if host not in ("instagram.com", "www.instagram.com", "m.instagram.com"):
+        return ""
+    segment = parsed.path.strip("/").split("/")[0].strip()
+    if not segment or segment.lower() in _IG_SKIP or not re.fullmatch(r"[A-Za-z0-9._]{2,30}", segment):
+        return ""
+    return "@" + segment
 
 
 def site_signals(lead: Mapping[str, Any]) -> set[str]:

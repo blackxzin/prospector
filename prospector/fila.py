@@ -229,6 +229,27 @@ def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, 
     ).fetchall()
 
 
+def regenerate_texts(conn: sqlite3.Connection, templates: Templates | TemplateSet, rules: Rules, now: datetime, *,
+                     rng: random.Random | None = None) -> int:
+    """Refaz o texto das primeiras mensagens ainda não enviadas (pendentes e aprovadas) com os templates atuais.
+    Mantém status, horário de liberação e aprovação; não mexe em texto editado à mão. Devolve quantos refez."""
+    rng = rng or random.Random()
+    stats = ab_stats(conn)
+    rows = conn.execute(
+        "SELECT f.id, f.lead_id FROM fila f WHERE f.tipo = ? AND f.status IN (?, ?) AND f.editado = 0 ORDER BY f.id",
+        (db.PRIMEIRA, PENDENTE, APROVADO),
+    ).fetchall()
+    with db.tx(conn):
+        for row in rows:
+            lead = db.get_lead(conn, row["lead_id"])
+            tpl, tz = _tpl_and_tz(templates, lead, rules)
+            texto, variante = tpl.first_message_ab(dict(lead), now, tz, rng, stats)
+            conn.execute("UPDATE fila SET texto = ?, variante = ?, atualizado_em = ? WHERE id = ?",
+                         (texto, variante, db.iso(db.utcnow()), row["id"]))
+            db.update_lead(conn, row["lead_id"], variante=variante)
+    return len(rows)
+
+
 def approve(conn: sqlite3.Connection, item_ids: list[int], texto: str | None = None,
             liberar_em: datetime | None = None) -> int:
     """Aprova itens pendentes. `texto` (opcional) substitui a mensagem de um único item.
@@ -245,7 +266,7 @@ def approve(conn: sqlite3.Connection, item_ids: list[int], texto: str | None = N
             if texto is not None:
                 if not texto.strip():
                     raise ValueError("Mensagem vazia")
-                conn.execute("UPDATE fila SET texto = ? WHERE id = ?", (texto.strip(), item_id))
+                conn.execute("UPDATE fila SET texto = ?, editado = 1 WHERE id = ?", (texto.strip(), item_id))
             conn.execute("UPDATE fila SET status = ?, atualizado_em = ?, liberar_em = ? WHERE id = ?",
                          (APROVADO, now, db.iso(liberar_em) if liberar_em else None, item_id))
             if row["tipo"] == db.PRIMEIRA:

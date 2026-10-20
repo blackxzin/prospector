@@ -218,6 +218,7 @@ _MIGRATIONS = (
     ("leads", "escalar", "INTEGER NOT NULL DEFAULT 0"),   # falou de advogado/denúncia/lei: só você responde
     ("leads", "escalar_em", "TEXT"),
     ("leads", "site_sinais", "TEXT"),                     # JSON: sinais lidos no site (sem_whatsapp, ...)
+    ("fila", "editado", "INTEGER NOT NULL DEFAULT 0"),   # texto editado à mão: não é refeito
     ("fila", "liberar_em", "TEXT"),            # item aprovado só sai a partir deste instante (UTC iso)
     ("leads", "pais", "TEXT NOT NULL DEFAULT 'BR'"),                     # ISO-2 do mercado do lead
     ("leads", "idioma", "TEXT NOT NULL DEFAULT 'pt'"),                   # idioma da mensagem (pt, en, es, fr, de, it)
