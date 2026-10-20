@@ -12,7 +12,8 @@ from pathlib import Path
 
 from . import db
 from .classify import Listas, classify_offer, is_franchise
-from .phone import normalize_any, normalize_mobile, variants
+from .mundo import BRASIL, Origem
+from .phone import normalize_any, normalize_any_intl, normalize_mobile, normalize_mobile_intl, variants
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # "..., Itaí - SP, 18730-000"
@@ -53,7 +54,7 @@ def first_email(value: str | None) -> str | None:
     return m.group(0).lower() if m else None
 
 
-def extract_city(row: dict[str, str]) -> str | None:
+def extract_city(row: dict[str, str], origem: Origem = BRASIL) -> str | None:
     raw = row.get("complete_address") or ""
     if raw.strip().startswith("{"):
         try:
@@ -62,6 +63,8 @@ def extract_city(row: dict[str, str]) -> str | None:
                 return city
         except (json.JSONDecodeError, AttributeError):
             pass
+    if origem.estrangeiro:
+        return origem.cidade
     m = _CITY_IN_ADDRESS.search(row.get("address") or "")
     return m.group(1).strip() if m else None
 
@@ -106,18 +109,21 @@ def extract_details(row: dict[str, str]) -> dict[str, object]:
     }
 
 
-def dedup_key(row: dict[str, str]) -> str | None:
+def dedup_key(row: dict[str, str], origem: Origem = BRASIL) -> str | None:
     """Telefone normalizado; sem telefone, o link do Maps."""
-    phone = normalize_any(row.get("phone"))
+    phone = normalize_any_intl(row.get("phone"), origem.pais) if origem.estrangeiro else normalize_any(row.get("phone"))
     if phone:
         return f"tel:{phone}"
     link = (row.get("link") or "").strip()
     return f"maps:{link}" if link else None
 
 
-def _evaluate(row: dict[str, str], listas: Listas) -> tuple[str | None, str, str | None]:
+def _evaluate(row: dict[str, str], listas: Listas, origem: Origem = BRASIL) -> tuple[str | None, str, str | None]:
     """(celular normalizado, status, motivo)."""
-    mobile = normalize_mobile(row.get("phone"))
+    if origem.estrangeiro:
+        mobile = normalize_mobile_intl(row.get("phone"), origem.pais)
+    else:
+        mobile = normalize_mobile(row.get("phone"))
     franchise = is_franchise(row.get("title") or "", listas.franquias)
     if franchise:
         return mobile, db.DESCARTADO, f"franquia: {franchise}"
@@ -126,13 +132,14 @@ def _evaluate(row: dict[str, str], listas: Listas) -> tuple[str | None, str, str
     return mobile, db.NOVO, None
 
 
-def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str, listas: Listas) -> ImportResult:
+def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str, listas: Listas,
+                origem: Origem = BRASIL) -> ImportResult:
     counts = {"lidos": 0, "novos": 0, "duplicados": 0, "validos": 0, "descartados": 0, "ignorados": 0}
     now = db.iso(db.utcnow())
     with db.tx(conn):
         for row in rows:
             counts["lidos"] += 1
-            key = dedup_key(row)
+            key = dedup_key(row, origem)
             name = (row.get("title") or "").strip()
             if not key or not name:
                 counts["ignorados"] += 1
@@ -147,19 +154,20 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
                     db.update_lead(conn, existing["id"], **missing)
                 counts["duplicados"] += 1
                 continue
-            mobile, status, motivo = _evaluate(row, listas)
+            mobile, status, motivo = _evaluate(row, listas, origem)
             if mobile and db.is_blocked(conn, variants(mobile)):
                 status, motivo = db.DESCARTADO, "bloqueado"
             conn.execute(
                 "INSERT INTO leads (chave, nome, categoria, endereco, cidade, telefone_raw, telefone, site, email, "
-                "nota, avaliacoes, maps_link, busca, oferta, status, motivo, criado_em, atualizado_em) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "nota, avaliacoes, maps_link, busca, oferta, status, motivo, criado_em, atualizado_em, "
+                "pais, idioma, fuso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
-                    key, name, row.get("category") or None, row.get("address") or None, extract_city(row),
+                    key, name, row.get("category") or None, row.get("address") or None, extract_city(row, origem),
                     row.get("phone") or None, mobile, (row.get("website") or "").strip() or None,
                     first_email(row.get("emails")), _float(row.get("review_rating")),
                     _int(row.get("review_count")), row.get("link") or None, busca,
                     classify_offer(row.get("website"), listas.dominios_social), status, motivo, now, now,
+                    origem.pais.upper(), origem.idioma, origem.fuso,
                 ),
             )
             new_id = conn.execute("SELECT id FROM leads WHERE chave = ?", (key,)).fetchone()["id"]
@@ -175,5 +183,7 @@ def read_csv_text(text: str) -> list[dict[str, str]]:
     return list(csv.DictReader(io.StringIO(text.lstrip("﻿"))))
 
 
-def import_csv(conn: sqlite3.Connection, path: Path, busca: str, listas: Listas) -> ImportResult:
-    return import_rows(conn, read_csv_text(path.read_text(encoding="utf-8", errors="replace")), busca, listas)
+def import_csv(conn: sqlite3.Connection, path: Path, busca: str, listas: Listas,
+               origem: Origem = BRASIL) -> ImportResult:
+    return import_rows(conn, read_csv_text(path.read_text(encoding="utf-8", errors="replace")), busca, listas,
+                       origem)

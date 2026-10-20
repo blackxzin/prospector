@@ -11,6 +11,7 @@ import yaml
 
 from . import db
 from .importer import ImportResult
+from .mundo import BuscaMundo, MundoConfig
 
 
 @dataclass(frozen=True)
@@ -72,19 +73,16 @@ def record(conn: sqlite3.Connection, query: str, result: ImportResult | None, er
         )
 
 
-def run_batch(conn: sqlite3.Connection, cfg: BatchConfig, search: Callable[[str], ImportResult], *,
-              limit: int | None = None, out: Callable[[str], None] = print,
-              should_stop: Callable[[], bool] = lambda: False) -> list[tuple[str, str]]:
-    """Roda as buscas pendentes (até `limit`). Erro numa busca não para as outras."""
-    todo = pending(conn, cfg)[: limit or cfg.max_por_execucao]
+def _run(conn: sqlite3.Connection, todo: list[tuple[str, dict]], search: Callable[..., ImportResult],
+         out: Callable[[str], None], should_stop: Callable[[], bool]) -> list[tuple[str, str]]:
     results = []
-    for i, query in enumerate(todo, 1):
+    for i, (query, kwargs) in enumerate(todo, 1):
         if should_stop():
             out("Pausado por você.")
             break
         out(f"[{i}/{len(todo)}] {query}")
         try:
-            res = search(query)
+            res = search(query, **kwargs)
         except Exception as exc:  # noqa: BLE001 - registra e segue para a próxima busca
             record(conn, query, None, str(exc)[:300])
             out(f"  erro: {exc}")
@@ -94,3 +92,24 @@ def run_batch(conn: sqlite3.Connection, cfg: BatchConfig, search: Callable[[str]
         out(f"  {res}")
         results.append((query, str(res)))
     return results
+
+
+def run_batch(conn: sqlite3.Connection, cfg: BatchConfig, search: Callable[[str], ImportResult], *,
+              limit: int | None = None, out: Callable[[str], None] = print,
+              should_stop: Callable[[], bool] = lambda: False) -> list[tuple[str, str]]:
+    """Roda as buscas pendentes (até `limit`). Erro numa busca não para as outras."""
+    todo = pending(conn, cfg)[: limit or cfg.max_por_execucao]
+    return _run(conn, [(q, {}) for q in todo], search, out, should_stop)
+
+
+def pending_world(conn: sqlite3.Connection, cfg: MundoConfig, paises: set[str] | None = None) -> list[BuscaMundo]:
+    done = done_queries(conn)
+    return [b for b in cfg.buscas(paises) if b.consulta not in done]
+
+
+def run_world(conn: sqlite3.Connection, cfg: MundoConfig, search: Callable[..., ImportResult], *,
+              limit: int | None = None, paises: set[str] | None = None, out: Callable[[str], None] = print,
+              should_stop: Callable[[], bool] = lambda: False) -> list[tuple[str, str]]:
+    """Como run_batch, para o mundo.yaml: `search(consulta, origem=Origem)` recebe país, idioma e fuso."""
+    todo = pending_world(conn, cfg, paises)[: limit or cfg.max_por_execucao]
+    return _run(conn, [(b.consulta, {"origem": b.origem}) for b in todo], search, out, should_stop)

@@ -1,0 +1,57 @@
+# Textos em francês (França, Quebec, Suíça francófona). Sobrescreve o templates.yaml (pt).
+idioma: fr
+decimal: ","
+apresentacao: "Je suis développeur brésilien et, avec mon associé Felipe, nous créons des sites web, des automatisations et des bots de service client pour WhatsApp."
+portfolio: ""
+optout: "(Si vous préférez que je ne vous écrive plus, répondez STOP et je ne vous recontacterai pas.)"
+problema_padrao: "il ne s'affichait pas correctement"
+saudacoes: {manha: "Bonjour", tarde: "Bonjour", noite: "Bonsoir"}
+
+elogios_com_nota:
+  - "Une note de {nota} avec {avaliacoes} avis sur Google, c'est impressionnant, félicitations."
+  - "Vous avez {nota} étoiles et {avaliacoes} avis sur Google, bravo !"
+  - "Je vous ai trouvés sur Google Maps, {nota} de moyenne et {avaliacoes} avis, beau travail."
+elogios_sem_nota:
+  - "Je vous ai trouvés sur Google Maps."
+  - "J'ai vu votre fiche Google Maps."
+  - "Je suis tombé sur votre établissement sur Google Maps."
+
+vitrine:
+  padrao: "vos services"
+  por_categoria:
+    - palavras: [coiffeur, coiffure, barbier, salon, beaute, esthetique, ongle, manucure, spa, cosmet, cils, tatou]
+      texto: "vos services et tarifs"
+    - palavras: [pizza, restaurant, burger, cafe, boulanger, patisserie, glacier, bar, brasserie, traiteur, sushi, snack, creperie, bistro]
+      texto: "votre carte"
+    - palavras: [salle de sport, fitness, crossfit, pilates, yoga, boxe, danse, arts martiaux]
+      texto: "vos cours et horaires"
+    - palavras: [boutique, magasin, vetement, animalerie, fleuriste, cadeaux]
+      texto: "vos produits"
+
+primeira:
+  sem_site:
+    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai cherché votre site web sans le trouver. Si vous n'en avez pas encore, nous pouvons en créer un simple, avec {vitrine} et un bouton qui ouvre directement WhatsApp. Aimeriez-vous voir un exemple, sans engagement ? {optout}"
+    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Je n'ai pas trouvé de site pour {nome} sur Google. Si c'est bien le cas, nous réalisons des pages rapides et soignées avec {vitrine} et un bouton WhatsApp. Puis-je vous envoyer un exemple ? {optout}"
+    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Votre fiche Google n'a pas de site associé. Nous pouvons en faire un simple, avec {vitrine} et un bouton WhatsApp pour que vos clients vous joignent en un geste. Voulez-vous voir un exemple ? {optout}"
+  so_social:
+    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai trouvé vos réseaux sociaux mais pas de site à vous. Une page simple avec {vitrine} et un bouton WhatsApp aide aussi à apparaître sur Google. Aimeriez-vous voir un exemple ? {optout}"
+    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Pour l'instant, le lien de votre fiche Google mène seulement aux réseaux sociaux. Nous créons des sites rapides avec {vitrine} et un bouton WhatsApp. Puis-je vous envoyer un exemple ? {optout}"
+    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} J'ai remarqué que vous n'avez pas de site propre, seulement des réseaux sociaux. Nous pouvons monter une page claire avec {vitrine} et un bouton WhatsApp. Cela vous intéresse ? {optout}"
+  tem_site:
+    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} Je vois que vous avez déjà un site, super ! Nous créons aussi des bots WhatsApp : ils répondent aux questions courantes, présentent {vitrine} et vous transmettent les commandes ou réservations. Aimeriez-vous voir un exemple ? {optout}"
+    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Un bot WhatsApp évite que quelqu'un reste sans réponse aux heures de pointe. Puis-je vous montrer un exemple ? {optout}"
+    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Nous automatisons WhatsApp : message d'accueil, réponses prêtes et transfert vers vous quand c'est important. Cela vous intéresse ? {optout}"
+  site_problema:
+    - "{saudacao}, {nome} ! Je suis {remetente}. {apresentacao} {elogio} J'ai essayé votre site et {problema}. Les clients abandonnent avant de vous contacter. Nous pouvons le corriger ou en créer un nouveau, rapide, avec {vitrine} et un bouton WhatsApp. Voulez-vous voir un exemple ? {optout}"
+    - "{saudacao} ! Ici {remetente}. {apresentacao} {elogio} Je suis allé sur votre site et {problema}. Comme beaucoup de gens regardent d'abord sur Google, cela vaut la peine de le régler. Puis-je vous envoyer un exemple ? {optout}"
+    - "Bonjour {nome} ! {remetente} à l'appareil. {apresentacao} {elogio} Petite alerte : votre site {problema}. Nous créons des sites légers avec {vitrine} et un bouton WhatsApp. Cela vous intéresse ? {optout}"
+
+followup:
+  - "Bonjour {nome} ! Je voulais juste savoir si vous avez vu mon message. Si ce n'est pas le moment, aucun souci. Puis-je vous envoyer l'exemple ? {optout}"
+  - "{saudacao} ! Je sais que le quotidien est chargé, je ne relance donc qu'une fois. Souhaitez-vous que je vous envoie l'exemple ? {optout}"
+  - "Re-bonjour {nome} ! Dernier message de ma part. Si vous voulez voir l'exemple, dites-le-moi ici. {optout}"
+
+fora_do_horario:
+  - "Bonjour ! Merci pour votre réponse. Je suis hors horaires pour le moment, mais je vous réponds le prochain jour ouvré."
+  - "Merci d'avoir répondu ! J'ai terminé pour aujourd'hui, mais je reviens vers vous le prochain jour ouvré."
+  - "J'ai bien reçu votre message, merci. Je suis absent pour l'instant et je réponds le prochain jour ouvré."

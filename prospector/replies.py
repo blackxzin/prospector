@@ -17,20 +17,36 @@ from .phone import phone_from_jid, variants
 
 log = logging.getLogger("prospector")
 
-# Opt-out explícito: vale em qualquer tamanho de mensagem.
+# Opt-out explícito: vale em qualquer tamanho de mensagem (pt, en, es, fr, de, it). Texto já sem acento
+# (fold). O rodapé das abordagens pede STOP/PARAR, então os dois sempre contam.
 _OPT_OUT_STRONG = re.compile(
     r"\bpare\b|\bparar\b|\bpara de\b|\bremov|\bdescadastr|\bsem interesse\b|\bdesinteress|"
-    r"\bnao (tenho interesse|quero|preciso)\b|\bme tira\b|\bbloque|\bspam\b|\bdenunc|\bnao mand",
+    r"\bnao (tenho interesse|quero|preciso)\b|\bme tira\b|\bbloque|\bspam\b|\bdenunc|\bnao mand|\bstop\b|"
+    r"unsubscribe|not interested|no thanks|no thank you|do ?n[o']?t (contact|message|text|write|email)|"
+    r"leave me alone|remove me|take me off|stop (messaging|texting|writing)|please stop|"
+    r"no me interesa|no nos interesa|no gracias|dej(a|en|e) de|no me (escribas|escriban|molest)|no quiero|"
+    r"no estoy interesad|"
+    r"pas interesse|non merci|arretez|arrete de|ne m'ecrivez plus|ne me contactez|desabonn|"
+    r"kein interesse|nicht interessiert|nein danke|aufhoren|abmelden|schreiben sie mir nicht|lassen sie mich|"
+    r"non mi interessa|non ci interessa|no grazie|smettila|smettete|non scrivermi|non contattarmi|\bbasta\b",
 )
-# Opt-out fraco ("não", "sair"...): só conta em mensagem curta. Em texto longo costuma ser aviso do
-# negócio ("não fazemos entrega"), não um pedido para parar.
+# Opt-out fraco: só conta em mensagem curta. Em texto longo costuma ser aviso do negócio
+# ("não fazemos entrega"), não um pedido para parar.
 _OPT_OUT_WEAK = re.compile(
-    r"\bnao\b|\bnaum\b|\bnn\b|\bsair\b|\bsai\b|\bstop\b|\bchato\b|\bincomod|\bobrigad[oa],? mas\b",
+    r"\bnao\b|\bnaum\b|\bnn\b|\bsair\b|\bsai\b|\bchato\b|\bincomod|\bobrigad[oa],? mas\b",
 )
 WEAK_OPT_OUT_MAX_WORDS = 8
+# "no", "non", "nein", "nope"... são ambíguos fora do inglês/espanhol: só valem como resposta de 1 a 3 palavras.
+_OPT_OUT_WEAK_SHORT = re.compile(r"^\W*(no|non|nein|nope|nah|nao|nada)\W*(\w+\W*){0,2}$")
 _INTEREST = re.compile(
     r"\bsim\b|\bpode\b|\bquero\b|\bmanda\b|\bmande\b|\btenho interesse\b|\binteress|\bclaro\b|"
-    r"\bcomo funciona\b|\bquanto\b|\bvalor\b|\bpreco\b|\bbora\b|\bok\b|\bpode ser\b|\bgostaria\b",
+    r"\bcomo funciona\b|\bquanto\b|\bvalor\b|\bpreco\b|\bbora\b|\bok\b|\bpode ser\b|\bgostaria\b|"
+    r"\byes\b|\bsure\b|\bplease\b|\bsend (it|me|over)\b|interested|how much|\bprice\b|tell me more|"
+    r"sounds good|\bokay\b|\bgo ahead\b|\bpricing\b|"
+    r"\bsi\b|me interesa|mandame|enviame|\bcuanto\b|\bprecio\b|\bvale\b|"
+    r"\boui\b|bien sur|\bcombien\b|\btarif\b|envoyez|"
+    r"\bja\b|\bgerne\b|interessiert|wie viel|\bpreis\b|schicken sie|"
+    r"\bcerto\b|mi interessa|quanto costa|\bprezzo\b|\bmandi\b|\bmandami\b",
 )
 
 
@@ -48,6 +64,15 @@ _AUTO = re.compile(
     r"auto ?atendimento|atendimento automatic|mensagem automatica|resposta automatica|bem[- ]?vind[oa]|"
     r"agradece (o |seu )?contato|obrigad[oa] pelo seu contato|vamos responder|responderemos em|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
     r"link (do|de nosso) cardapio|segue o (link|cardapio)|como podemos (te )?(ajudar|atender)|"
+    r"thank you for (contacting|reaching|your message)|thanks for (contacting|reaching|your message)|"
+    r"we(')?ll get back|we will get back|opening hours|business hours|automatic (reply|response)|auto.?reply|"
+    r"out of (the )?office|welcome to|currently closed|we are (currently )?closed|how can (we|i) help|"
+    r"gracias por (contactar|escribir|comunicarse)|horario de (atencion|apertura)|respuesta automatica|"
+    r"estamos cerrados|bienvenid[oa] a|como podemos ayudar|"
+    r"merci de nous avoir contact|horaires d'ouverture|reponse automatique|nous sommes fermes|bienvenue chez|"
+    r"vielen dank fur ihre nachricht|offnungszeiten|automatische antwort|willkommen bei|derzeit geschlossen|"
+    r"grazie per (averci|aver) contattat|orari di apertura|risposta automatica|siamo chiusi|benvenut[oi] da|"
+    r"come possiamo aiutar|"
     r"em que (posso|podemos) (te )?ajudar|que bom falar com|seu interesse e\b|1\ufe0f?\u20e3|digite [0-9]|escolha uma opcao|no momento nao (estamos|estou) "
     r"(atendendo|disponivel)|estamos fora do horario",
 )
@@ -64,6 +89,8 @@ def is_closing(text: str | None) -> bool:
 def is_opt_out(text: str | None) -> bool:
     folded = fold(text or "")
     if _OPT_OUT_STRONG.search(folded):
+        return True
+    if _OPT_OUT_WEAK_SHORT.match(folded):
         return True
     return len(folded.split()) <= WEAK_OPT_OUT_MAX_WORDS and bool(_OPT_OUT_WEAK.search(folded))
 

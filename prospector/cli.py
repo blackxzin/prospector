@@ -45,9 +45,26 @@ def _print_item(item) -> None:
 
 # ---------- comandos ----------
 
+def _origem(app: App, args: argparse.Namespace):
+    """Origem da busca manual: --pais pega idioma e fuso do mundo.yaml (dá para sobrescrever)."""
+    from .mundo import BRASIL, Origem
+    pais = (args.pais or "BR").upper()
+    if pais == "BR":
+        return BRASIL
+    market = next((m for m in app.mundo.mercados if m[0] == pais), None)
+    if market is None and not (args.idioma and args.fuso):
+        raise ValueError(f"País {pais} não está no mundo.yaml: informe --idioma e --fuso")
+    idioma = args.idioma or (market[2] if market else "en")
+    fuso = args.fuso or (market[3][0][1] if market else "UTC")
+    return Origem(pais, idioma, fuso, args.cidade)
+
+
 def cmd_buscar(app: App, args: argparse.Namespace) -> int:
     try:
-        result = app.search(args.consulta)
+        result = app.search(args.consulta, origem=_origem(app, args))
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
     except ScraperError as exc:
         print(f"Erro no scraper: {exc}", file=sys.stderr)
         return 1
@@ -89,9 +106,10 @@ def cmd_reclassificar(app: App, _args: argparse.Namespace) -> int:
 def cmd_fila(app: App, args: argparse.Namespace) -> int:
     s = app.settings
     if not args.so_mostrar:
-        res = fq.build_queue(app.conn, app.templates, app.rules, db.utcnow(),
+        pais = None if args.pais.lower() == "todos" else tuple(p.strip().upper() for p in args.pais.split(","))
+        res = fq.build_queue(app.conn, app.template_set, app.rules, db.utcnow(),
                              size=args.tamanho or s.max_per_day, followup_days=s.followup_business_days,
-                             busca=args.busca, cidade=args.cidade, charge_text=app.charge_text,
+                             busca=args.busca, cidade=args.cidade, pais=pais, charge_text=app.charge_text,
                              checar_presenca=app.presence_checker())
         print(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças "
               f"({res.encerrados} leads encerrados como sem_resposta).")
@@ -168,7 +186,7 @@ def cmd_enviar(app: App, args: argparse.Namespace) -> int:
         print("== DRY-RUN: nada será enviado. Horários abaixo são simulados. ==")
     report = run_sender(
         app.conn, client, app.rules, typing_min_s=s.typing_min_s, typing_max_s=s.typing_max_s,
-        dry_run=args.dry_run, wait_next_day=args.aguardar, notify_enabled=s.notify,
+        dry_run=args.dry_run, wait_next_day=args.aguardar, notify_enabled=s.notify, templates=app.template_set,
     )
     print(f"\nResumo: {report.enviados} {'simulados' if args.dry_run else 'enviados'}, "
           f"{report.pulados} pulados, {report.erros} erros. {report.motivo_fim}")
@@ -346,8 +364,30 @@ def cmd_checar_presenca(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lote_mundo(app: App, args: argparse.Namespace) -> int:
+    from .lote import pending_world, run_world
+    try:
+        cfg = app.mundo
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    paises = {p.strip().upper() for p in args.pais.split(",")} if args.pais else None
+    todo = pending_world(app.conn, cfg, paises)
+    if args.listar or not todo:
+        print(f"{len(todo)} busca(s) pendente(s) de {len(cfg.buscas(paises))}:")
+        for b in todo[:60]:
+            print(f"  [{b.origem.pais}] {b.consulta}")
+        return 0
+    results = run_world(app.conn, cfg, lambda q, origem: app.search(q, origem=origem), limit=args.max, paises=paises)
+    ok = sum(1 for _, r in results if not r.startswith("erro"))
+    app.notify("buscas pelo mundo", f"{ok}/{len(results)} buscas ok. {len(pending_world(app.conn, cfg, paises))} pendentes.")
+    return 0
+
+
 def cmd_lote(app: App, args: argparse.Namespace) -> int:
     from .lote import BatchConfig, pending, run_batch
+    if args.mundo:
+        return cmd_lote_mundo(app, args)
     try:
         cfg = BatchConfig.load(app.settings.buscas_path)
     except ValueError as exc:
@@ -474,6 +514,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     a = sub.add_parser("buscar", help='busca no Google Maps, ex.: prospector buscar "pizzaria em Itaí SP"')
     a.add_argument("consulta")
+    a.add_argument("--pais", help="país ISO-2 da busca (padrão BR); pega idioma e fuso do mundo.yaml")
+    a.add_argument("--idioma", help="idioma da mensagem: pt, en, es, fr, de, it")
+    a.add_argument("--fuso", help="fuso IANA do horário comercial, ex.: Europe/Madrid")
+    a.add_argument("--cidade", help="cidade (usada se o endereço do Maps não trouxer)")
     a.set_defaults(fn=cmd_buscar)
 
     a = sub.add_parser("importar", help="importa um CSV já baixado do scraper")
@@ -491,6 +535,8 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("fila", help="gera e mostra a fila do dia (com follow-ups vencidos)")
     a.add_argument("--busca")
     a.add_argument("--cidade")
+    a.add_argument("--pais", default="BR",
+                   help="países dos leads novos (ISO-2 separados por vírgula, ou 'todos'); padrão: BR")
     a.add_argument("--tamanho", type=int, help="itens abertos na fila (padrão: MAX_POR_DIA)")
     a.add_argument("--so-mostrar", action="store_true", help="não gera, só mostra")
     a.set_defaults(fn=cmd_fila)
@@ -550,6 +596,8 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("lote", help="roda as buscas de buscas.yaml (nichos × cidades) ainda não feitas")
     a.add_argument("--max", type=int, help="máximo de buscas nesta execução")
     a.add_argument("--listar", action="store_true", help="só lista as pendentes")
+    a.add_argument("--mundo", action="store_true", help="usa o mundo.yaml (Europa, EUA, Canadá...) em vez do buscas.yaml")
+    a.add_argument("--pais", help="com --mundo: só estes países (ISO-2 separados por vírgula, ex.: ES,PT,US)")
     a.set_defaults(fn=cmd_lote)
 
     a = sub.add_parser("proposta", help="gera a proposta em PDF de um projeto")

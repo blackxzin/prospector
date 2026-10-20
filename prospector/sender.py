@@ -7,15 +7,16 @@ import random
 import sqlite3
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Callable, Iterator, Protocol
+from datetime import datetime, timedelta, tzinfo
+from typing import Callable, Protocol
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import db
 from . import fila as fq
-from .messages import fix_greeting
+from .messages import TemplateSet, fix_greeting
 from .notify import notify
 from .phone import to_jid, variants
-from .schedule import fmt_local, Rules, earliest_send, random_gap, typing_seconds
+from .schedule import fmt_local, Rules, earliest_send_local, random_gap, typing_seconds
 from .whatsapp import WhatsAppError
 
 log = logging.getLogger("prospector")
@@ -85,21 +86,32 @@ def emergency_stop(conn: sqlite3.Connection, reason: str, notify_enabled: bool) 
 
 def _approved(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT f.*, l.telefone, l.jid, l.nome, l.status AS lead_status FROM fila f "
+        "SELECT f.*, l.telefone, l.jid, l.nome, l.status AS lead_status, l.fuso, l.idioma FROM fila f "
         "JOIN leads l ON l.id = f.lead_id WHERE f.status = ? ORDER BY f.id",
         (fq.APROVADO,),
     ).fetchall()
 
 
-def _approved_stream(conn: sqlite3.Connection) -> Iterator[sqlite3.Row]:
-    """Itens aprovados, um por vez, relendo a fila a cada item: o que for aprovado durante o envio entra."""
-    seen: set[int] = set()
-    while True:
-        pending = [i for i in _approved(conn) if i["id"] not in seen]
-        if not pending:
-            return
-        seen.add(pending[0]["id"])
-        yield pending[0]
+def _lead_tz(item: sqlite3.Row, rules: Rules) -> tzinfo:
+    try:
+        return ZoneInfo(item["fuso"]) if item["fuso"] else rules.tz
+    except (KeyError, IndexError, ZoneInfoNotFoundError):
+        return rules.tz
+
+
+def _next_item(conn: sqlite3.Connection, seen: set[int],
+               when_for: Callable[[sqlite3.Row], datetime | None]) -> sqlite3.Row | None:
+    """Próximo item aprovado a enviar: o que puder sair mais cedo (lead de outro fuso não trava os demais).
+    A fila é relida a cada chamada: o que for aprovado durante o envio entra."""
+    pending = [i for i in _approved(conn) if i["id"] not in seen]
+    if not pending:
+        return None
+    best: tuple[datetime, sqlite3.Row] | None = None
+    for item in pending:
+        when = when_for(item)
+        if when is not None and (best is None or when < best[0]):
+            best = (when, item)
+    return best[1] if best else pending[0]
 
 
 def _skip(conn: sqlite3.Connection, item: sqlite3.Row) -> None:
@@ -187,6 +199,7 @@ def run(
     rng: random.Random | None = None,
     out: Callable[[str], None] = print,
     should_stop: Callable[[], bool] = lambda: False,
+    templates: TemplateSet | None = None,
 ) -> SendReport:
     """Envia os itens aprovados respeitando todas as regras. Em dry-run simula o relógio e não envia nada."""
     rng = rng or random.Random()
@@ -209,7 +222,15 @@ def run(
     simulated: list[datetime] = []
     gap = random_gap(rules, rng)
 
-    for item in _approved_stream(conn):
+    def when_for(it: sqlite3.Row) -> datetime | None:
+        return earliest_send_local(clock.now(), sent_times + simulated, rules, gap, _lead_tz(it, rules))
+
+    seen: set[int] = set()
+    while True:
+        item = _next_item(conn, seen, when_for)
+        if item is None:
+            break
+        seen.add(item["id"])
         if should_stop():
             report.motivo_fim = "Pausado por você."
             break
@@ -221,14 +242,14 @@ def run(
             report.pulados += 1
             continue
 
-        when = earliest_send(clock.now(), sent_times + simulated, rules, gap)
+        when = when_for(item)
         if when is None:
             if not cross_days:
                 report.motivo_fim = f"Limite diário ({rules.max_per_day}) atingido. Continua no próximo dia útil."
                 break
             tomorrow = clock.now().astimezone(rules.tz).replace(hour=0, minute=0, second=0) + timedelta(days=1)
             clock.sleep((tomorrow - clock.now()).total_seconds())
-            when = earliest_send(clock.now(), sent_times + simulated, rules, gap)
+            when = when_for(item)
             if when is None:
                 report.motivo_fim = "Sem horário disponível."
                 break
@@ -244,8 +265,9 @@ def run(
                 report.motivo_fim = "Pausado por você."
                 break
 
-        now_local = clock.now().astimezone(rules.tz)
-        text = fix_greeting(item["texto"], now_local)
+        lead_tz = _lead_tz(item, rules)
+        now_local = clock.now().astimezone(lead_tz)
+        text = (templates.get(item["idioma"]).fix_greeting if templates else fix_greeting)(item["texto"], now_local)
         typing_s = typing_seconds(text, typing_min_s, typing_max_s, rng)
 
         if dry_run:

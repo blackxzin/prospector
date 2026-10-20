@@ -269,3 +269,45 @@ def test_long_message_with_a_nao_is_not_an_opt_out(text):
 ])
 def test_long_explicit_opt_out_still_counts(text):
     assert is_opt_out(text)
+
+
+# ---------- vários idiomas ----------
+
+@pytest.mark.parametrize("text", [
+    "STOP", "Please stop messaging me", "Not interested, thanks", "No thanks", "Don't contact me again", "unsubscribe",
+    "No me interesa, gracias", "No gracias", "Dejen de escribirme", "no",
+    "Pas intéressé, merci", "Non merci", "Arrêtez de m'écrire", "non",
+    "Kein Interesse", "Nein danke", "Bitte aufhören", "nein",
+    "Non mi interessa", "No grazie", "Smettila di scrivermi", "PARAR",
+])
+def test_opt_out_in_every_language(text):
+    assert is_opt_out(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Yes please send it", "Sure, how much is it?", "Interested, tell me more", "Sí, mándame el ejemplo",
+    "Claro, ¿cuánto cuesta?", "Oui, envoyez-moi l'exemple", "Combien ça coûte ?", "Ja, gerne",
+    "Wie viel kostet das?", "Sì, mi interessa", "Quanto costa?",
+])
+def test_interest_in_every_language(text):
+    assert is_interested(text) and not is_opt_out(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Thank you for contacting Joe's Pizza! We will get back to you shortly. Our opening hours are 9-5.",
+    "Gracias por contactar con nosotros. Nuestro horario de atención es de 9 a 14. No abrimos los domingos.",
+    "Merci de nous avoir contactés ! Nos horaires d'ouverture : 9h-18h. Nous ne livrons pas.",
+    "Vielen Dank für Ihre Nachricht. Unsere Öffnungszeiten sind 9-18 Uhr. Wir liefern nicht.",
+    "Grazie per averci contattato! Il nostro orario di apertura è 9-18. Non facciamo consegne.",
+])
+def test_foreign_auto_replies_are_not_opt_outs(conn, listas, text):
+    from prospector.replies import is_auto_reply
+    lead = _contacted_lead(conn, listas)
+    assert is_auto_reply(text) and not is_opt_out(text.split(".")[0])
+    out, notes = _handle(conn, text)
+    assert out.status == db.RESPONDEU and not db.is_blocked(conn, {NUMBER}) and notes == []
+
+
+def test_ambiguous_no_in_a_sentence_is_not_an_opt_out():
+    assert not is_opt_out("No momento estamos fechados, voltamos às 18h")
+    assert not is_opt_out("Non abbiamo ancora un sito ma ci stiamo pensando e ci può interessare molto")

@@ -61,6 +61,7 @@ class Settings:
     listas_path: Path
     financeiro_path: Path
     buscas_path: Path
+    mundo_path: Path
     backup_dir: Path
     backup_keep: int
     tz: ZoneInfo
@@ -125,6 +126,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         listas_path=_path(env, "LISTAS_PATH", ROOT / "listas.yaml"),
         financeiro_path=_path(env, "FINANCEIRO_PATH", ROOT / "financeiro.yaml"),
         buscas_path=_path(env, "BUSCAS_PATH", ROOT / "buscas.yaml"),
+        mundo_path=_path(env, "MUNDO_PATH", ROOT / "mundo.yaml"),
         backup_dir=_path(env, "BACKUP_DIR", Path.home() / "prospector-backups"),
         backup_keep=_int(env, "BACKUP_MANTER", 30),
         pix_chave=env.get("PIX_CHAVE", "").strip(),

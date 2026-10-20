@@ -153,3 +153,101 @@ def test_barbershop_is_not_food(templates):
     lead = {"nome": "Barbearia Arte", "nota": 4.9, "avaliacoes": 50, "categoria": "Barbearia", "oferta": "so_social"}
     text = templates.first_message(lead, NOW, TZ, random.Random(0))
     assert "cardápio" not in text and "serviços e preços" in text
+
+
+# ---------- idiomas ----------
+
+from prospector.config import ROOT  # noqa: E402
+from prospector.messages import TemplateSet  # noqa: E402
+
+LANGS = ["en", "es", "fr", "de", "it", "pt-pt"]
+
+
+@pytest.fixture(scope="module")
+def tset():
+    return TemplateSet.load(ROOT / "templates.yaml")
+
+
+def test_all_shipped_languages_load(tset):
+    assert set(LANGS) <= set(tset.languages) and "pt" in tset.languages
+
+
+@pytest.mark.parametrize("lang", LANGS)
+@pytest.mark.parametrize("offer", ["sem_site", "so_social", "tem_site", "site_problema"])
+def test_foreign_messages_are_clean_and_localized(tset, lang, offer):
+    lead = {"nome": "Napoli Pizza", "nota": 4.6, "avaliacoes": 120, "categoria": "Pizza restaurant",
+            "oferta": offer, "cidade": "Madrid"}
+    tpl = tset.get(lang)
+    for seed in range(12):
+        text = tpl.first_message(lead, local_dt(2026, 10, 20, 10), TZ, random.Random(seed))
+        assert "{" not in text and "  " not in text and "Napoli Pizza" in text or offer != "sem_site"
+        assert "Lucas" in text and tpl.data["optout"] in text          # opt-out explícito em toda abordagem
+        assert "vercel.app" not in text and "R$" not in text           # sem link em pt nem preço em reais
+        assert "aqui da região" not in text and "Bom dia" not in text or lang == "pt-pt"
+
+
+def test_greeting_and_decimal_follow_the_language(tset):
+    lead = {"nome": "Joe's Pizza", "nota": 4.6, "avaliacoes": 120, "categoria": "Pizza", "oferta": "sem_site"}
+    morning = tset.get("en").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(1))
+    evening = tset.get("en").first_message(lead, local_dt(2026, 10, 20, 20), TZ, random.Random(1))
+    assert "Good morning" in morning or "Hi Joe" in morning
+    assert "Good evening" in evening or "Hi Joe" in evening
+    assert "4.6" in morning and "4,6" not in morning
+    es = tset.get("es").first_message(lead, local_dt(2026, 10, 20, 9), TZ, random.Random(1))
+    assert "4,6" in es
+
+
+def test_fix_greeting_works_per_language(tset):
+    en = tset.get("en")
+    afternoon = local_dt(2026, 10, 20, 15)
+    assert en.fix_greeting("Good morning, Joe! Good morning", afternoon) == "Good afternoon, Joe! Good afternoon"
+    assert tset.get("es").fix_greeting("Buenos días, Ana", afternoon) == "Buenas tardes, Ana"
+    assert tset.get("de").fix_greeting("Guten Morgen, Herr Kaiser", local_dt(2026, 10, 20, 19)) == "Guten Abend, Herr Kaiser"
+    assert fix_greeting("Bom dia, Zé", afternoon) == "Boa tarde, Zé"      # compatível com o uso antigo
+
+
+def test_barbershop_gets_services_not_menu_in_every_language(tset):
+    cats = {"en": "Barber shop", "es": "Barbería", "fr": "Barbier", "de": "Barbershop", "it": "Barbiere",
+            "pt-pt": "Barbearia"}
+    for lang, cat in cats.items():
+        lead = {"nome": "Style", "categoria": cat, "oferta": "sem_site"}
+        words = tset.get(lang)._vitrine(cat)
+        assert words == tset.get(lang).data["vitrine"]["por_categoria"][0]["texto"], lang
+
+
+def test_unknown_language_falls_back_to_portuguese(tset):
+    assert tset.get("xx") is tset.get("pt") and tset.get(None) is tset.get("pt")
+
+
+# ---------- fila por país ----------
+
+from prospector.importer import import_rows as _import_rows  # noqa: E402
+from prospector.mundo import Origem as _Origem  # noqa: E402
+
+
+def _foreign_and_local(conn, listas):
+    _import_rows(conn, [csv_row(title="Pizzería Napoli", phone="612 34 56 78", link="es1")], "q", listas,
+                 _Origem("ES", "es", "Europe/Madrid", "Madrid"))
+    _import_rows(conn, [csv_row(title="Pizzaria Bella", phone="(14) 99123-4567", link="br1")], "q", listas)
+
+
+def test_queue_is_brazil_only_by_default_and_uses_language_when_asked(conn, listas, tset, rules):
+    _foreign_and_local(conn, listas)
+    now = local_dt(2026, 10, 20, 9)
+    fq.build_queue(conn, tset, rules, now, size=5, followup_days=3, rng=random.Random(0), checar_presenca=None)
+    only_br = [r["nome"] for r in conn.execute("SELECT l.nome FROM fila f JOIN leads l ON l.id = f.lead_id")]
+    assert only_br == ["Pizzaria Bella"]
+    fq.build_queue(conn, tset, rules, now, size=5, followup_days=3, rng=random.Random(0), pais=("ES",))
+    texto = conn.execute("SELECT f.texto FROM fila f JOIN leads l ON l.id = f.lead_id WHERE l.pais = 'ES'").fetchone()[0]
+    assert "Napoli" in texto and "Felipe" in texto and "STOP" in texto and "Bom dia" not in texto
+    assert texto.startswith(("Buenos días", "Buenas tardes", "Buenas noches", "Hola"))
+
+
+def test_greeting_in_queue_uses_the_lead_timezone(conn, listas, tset, rules):
+    # 22h em Madrid (UTC+2) = 17h em São Paulo: para o lead é noite, apesar de ser tarde no Brasil
+    _import_rows(conn, [csv_row(title="Café Luna", phone="612 34 56 79", link="es2")], "q", listas,
+                 _Origem("ES", "es", "Europe/Madrid", "Madrid"))
+    now = local_dt(2026, 10, 20, 17)
+    fq.build_queue(conn, tset, rules, now, size=3, followup_days=3, rng=random.Random(5), pais=("ES",))
+    texto = conn.execute("SELECT texto FROM fila").fetchone()[0]
+    assert "Buenas tardes" not in texto

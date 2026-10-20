@@ -1,0 +1,164 @@
+# Buscas fora do Brasil (`prospector lote --mundo`). Cada país tem idioma, fuso e cidades; os nichos vêm por
+# idioma (a busca é feita na língua do lugar). Combinações já feitas ficam registradas e são puladas.
+# Países onde WhatsApp é forte: Espanha, Itália, Portugal, Reino Unido, Alemanha, Países Baixos, Irlanda.
+# EUA e Canadá usam pouco WhatsApp (SMS/iMessage): muitos números não terão conta.
+
+max_por_execucao: 8
+
+# Como montar a busca em cada idioma: "{nicho} {prep} {cidade}, {pais}"
+idiomas:
+  en: {prep: "in"}
+  es: {prep: "en"}
+  fr: {prep: "à"}
+  de: {prep: "in"}
+  it: {prep: "a"}
+  pt-PT: {prep: "em"}
+
+nichos:
+  en: [pizza restaurant, hamburger restaurant, barber shop, hair salon, bakery, cafe, restaurant, ice cream shop,
+       gym, auto repair shop, pet shop, nail salon, beauty salon, food truck]
+  es: [pizzería, hamburguesería, barbería, peluquería, panadería, cafetería, restaurante, heladería, gimnasio,
+       taller mecánico, tienda de mascotas, salón de uñas, centro de estética]
+  fr: [pizzeria, restaurant de hamburgers, barbier, salon de coiffure, boulangerie, café, restaurant, glacier,
+       salle de sport, garage automobile, animalerie, onglerie, institut de beauté]
+  de: [Pizzeria, Burgerrestaurant, Barbershop, Friseursalon, Bäckerei, Café, Restaurant, Eisdiele, Fitnessstudio,
+       Autowerkstatt, Tierhandlung, Nagelstudio, Kosmetikstudio]
+  it: [pizzeria, hamburgeria, barbiere, parrucchiere, panetteria, caffè, ristorante, gelateria, palestra,
+       officina meccanica, negozio di animali, nail salon, centro estetico]
+  pt-PT: [pizzaria, hamburgueria, barbearia, cabeleireiro, padaria, café, restaurante, gelataria, ginásio,
+       oficina, loja de animais, unhas de gel, centro de estética]
+
+paises:
+  ES:
+    nome: España
+    idioma: es
+    cidades:
+      - {nome: Madrid, fuso: Europe/Madrid}
+      - {nome: Barcelona, fuso: Europe/Madrid}
+      - {nome: Valencia, fuso: Europe/Madrid}
+      - {nome: Sevilla, fuso: Europe/Madrid}
+      - {nome: Málaga, fuso: Europe/Madrid}
+      - {nome: Bilbao, fuso: Europe/Madrid}
+      - {nome: Zaragoza, fuso: Europe/Madrid}
+      - {nome: Alicante, fuso: Europe/Madrid}
+  PT:
+    nome: Portugal
+    idioma: pt-PT
+    cidades:
+      - {nome: Lisboa, fuso: Europe/Lisbon}
+      - {nome: Porto, fuso: Europe/Lisbon}
+      - {nome: Braga, fuso: Europe/Lisbon}
+      - {nome: Coimbra, fuso: Europe/Lisbon}
+      - {nome: Faro, fuso: Europe/Lisbon}
+      - {nome: Setúbal, fuso: Europe/Lisbon}
+  IT:
+    nome: Italia
+    idioma: it
+    cidades:
+      - {nome: Roma, fuso: Europe/Rome}
+      - {nome: Milano, fuso: Europe/Rome}
+      - {nome: Napoli, fuso: Europe/Rome}
+      - {nome: Torino, fuso: Europe/Rome}
+      - {nome: Firenze, fuso: Europe/Rome}
+      - {nome: Bologna, fuso: Europe/Rome}
+      - {nome: Palermo, fuso: Europe/Rome}
+  GB:
+    nome: United Kingdom
+    idioma: en
+    cidades:
+      - {nome: London, fuso: Europe/London}
+      - {nome: Manchester, fuso: Europe/London}
+      - {nome: Birmingham, fuso: Europe/London}
+      - {nome: Leeds, fuso: Europe/London}
+      - {nome: Glasgow, fuso: Europe/London}
+      - {nome: Liverpool, fuso: Europe/London}
+      - {nome: Bristol, fuso: Europe/London}
+      - {nome: Edinburgh, fuso: Europe/London}
+  IE:
+    nome: Ireland
+    idioma: en
+    cidades:
+      - {nome: Dublin, fuso: Europe/Dublin}
+      - {nome: Cork, fuso: Europe/Dublin}
+      - {nome: Galway, fuso: Europe/Dublin}
+  DE:
+    nome: Deutschland
+    idioma: de
+    cidades:
+      - {nome: Berlin, fuso: Europe/Berlin}
+      - {nome: Hamburg, fuso: Europe/Berlin}
+      - {nome: München, fuso: Europe/Berlin}
+      - {nome: Köln, fuso: Europe/Berlin}
+      - {nome: Frankfurt, fuso: Europe/Berlin}
+      - {nome: Stuttgart, fuso: Europe/Berlin}
+      - {nome: Düsseldorf, fuso: Europe/Berlin}
+  FR:
+    nome: France
+    idioma: fr
+    cidades:
+      - {nome: Paris, fuso: Europe/Paris}
+      - {nome: Lyon, fuso: Europe/Paris}
+      - {nome: Marseille, fuso: Europe/Paris}
+      - {nome: Toulouse, fuso: Europe/Paris}
+      - {nome: Nice, fuso: Europe/Paris}
+      - {nome: Bordeaux, fuso: Europe/Paris}
+      - {nome: Lille, fuso: Europe/Paris}
+  NL:
+    nome: Netherlands
+    idioma: en
+    cidades:
+      - {nome: Amsterdam, fuso: Europe/Amsterdam}
+      - {nome: Rotterdam, fuso: Europe/Amsterdam}
+      - {nome: Utrecht, fuso: Europe/Amsterdam}
+      - {nome: The Hague, fuso: Europe/Amsterdam}
+  AT:
+    nome: Österreich
+    idioma: de
+    cidades:
+      - {nome: Wien, fuso: Europe/Vienna}
+      - {nome: Graz, fuso: Europe/Vienna}
+      - {nome: Salzburg, fuso: Europe/Vienna}
+  CH:
+    nome: Schweiz
+    idioma: de
+    cidades:
+      - {nome: Zürich, fuso: Europe/Zurich}
+      - {nome: Bern, fuso: Europe/Zurich}
+      - {nome: Genève, fuso: Europe/Zurich, idioma: fr}
+  US:
+    nome: United States
+    idioma: en
+    cidades:
+      - {nome: "New York, NY", fuso: America/New_York}
+      - {nome: "Miami, FL", fuso: America/New_York}
+      - {nome: "Orlando, FL", fuso: America/New_York}
+      - {nome: "Boston, MA", fuso: America/New_York}
+      - {nome: "Atlanta, GA", fuso: America/New_York}
+      - {nome: "Philadelphia, PA", fuso: America/New_York}
+      - {nome: "Charlotte, NC", fuso: America/New_York}
+      - {nome: "Chicago, IL", fuso: America/Chicago}
+      - {nome: "Houston, TX", fuso: America/Chicago}
+      - {nome: "Dallas, TX", fuso: America/Chicago}
+      - {nome: "Austin, TX", fuso: America/Chicago}
+      - {nome: "San Antonio, TX", fuso: America/Chicago}
+      - {nome: "Nashville, TN", fuso: America/Chicago}
+      - {nome: "Denver, CO", fuso: America/Denver}
+      - {nome: "Phoenix, AZ", fuso: America/Phoenix}
+      - {nome: "Las Vegas, NV", fuso: America/Los_Angeles}
+      - {nome: "Los Angeles, CA", fuso: America/Los_Angeles}
+      - {nome: "San Diego, CA", fuso: America/Los_Angeles}
+      - {nome: "San Francisco, CA", fuso: America/Los_Angeles}
+      - {nome: "Seattle, WA", fuso: America/Los_Angeles}
+  CA:
+    nome: Canada
+    idioma: en
+    cidades:
+      - {nome: "Toronto, ON", fuso: America/Toronto}
+      - {nome: "Ottawa, ON", fuso: America/Toronto}
+      - {nome: "Montréal, QC", fuso: America/Toronto, idioma: fr}
+      - {nome: "Québec, QC", fuso: America/Toronto, idioma: fr}
+      - {nome: "Vancouver, BC", fuso: America/Vancouver}
+      - {nome: "Calgary, AB", fuso: America/Edmonton}
+      - {nome: "Edmonton, AB", fuso: America/Edmonton}
+      - {nome: "Winnipeg, MB", fuso: America/Winnipeg}
+      - {nome: "Halifax, NS", fuso: America/Halifax}

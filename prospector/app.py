@@ -11,13 +11,15 @@ from datetime import date, datetime, timedelta
 from functools import cached_property
 from pathlib import Path
 from typing import Callable
+from zoneinfo import ZoneInfo
 
 from . import db, lote, pix, sitecheck
 from .classify import Listas
 from .finance import FinanceConfig, brl
 from .config import Settings, load_settings
 from .importer import ImportResult, import_rows, read_csv_text
-from .messages import Templates
+from .messages import TemplateSet, Templates
+from .mundo import BRASIL, MundoConfig, Origem
 from .notify import notify
 from .phone import to_jid
 from .presenca import Verificador
@@ -53,8 +55,13 @@ class App:
         return FinanceConfig.load(self.settings.financeiro_path)
 
     @cached_property
+    def template_set(self) -> TemplateSet:
+        return TemplateSet.load(self.settings.templates_path)
+
+    @property
     def templates(self) -> Templates:
-        return Templates.load(self.settings.templates_path)
+        """Textos em português (Brasil): padrão do sistema."""
+        return self.template_set.default
 
     @cached_property
     def rules(self) -> Rules:
@@ -68,6 +75,10 @@ class App:
         """Busca de presença online antes da 1ª mensagem (desligue com CHECAR_PRESENCA=0)."""
         return Verificador(self.listas) if force or self.settings.checar_presenca else None
 
+    @cached_property
+    def mundo(self) -> MundoConfig:
+        return MundoConfig.load(self.settings.mundo_path)
+
     def whatsapp(self) -> WaClient:
         s = self.settings
         if not s.has_whatsapp:
@@ -79,9 +90,10 @@ class App:
 
     # ---------- busca ----------
 
-    def search(self, query: str, out: Callable[[str], None] = print) -> ImportResult:
+    def search(self, query: str, out: Callable[[str], None] = print, origem: Origem = BRASIL) -> ImportResult:
         s = self.settings
-        job_id = self.gmaps.create_job(query, depth=s.gmaps_depth, max_time_s=s.gmaps_max_time_s)
+        job_id = self.gmaps.create_job(query, depth=s.gmaps_depth, max_time_s=s.gmaps_max_time_s,
+                                       lang=origem.idioma)
         out(f"Job criado no scraper: {job_id} (leva no mínimo 3 minutos)")
         self.gmaps.wait(job_id, timeout_s=s.gmaps_max_time_s + 900,
                         on_tick=lambda st, w: out(f"  [{w // 60:02d}:{w % 60:02d}] status: {st or '?'}"))
@@ -89,7 +101,7 @@ class App:
         csv_dir = s.data_dir / "csv"
         csv_dir.mkdir(parents=True, exist_ok=True)
         (csv_dir / f"{job_id}.csv").write_text(csv_text, encoding="utf-8")
-        result = import_rows(self.conn, read_csv_text(csv_text), query, self.listas)
+        result = import_rows(self.conn, read_csv_text(csv_text), query, self.listas, origem)
         lote.record(self.conn, query, result)
         checked, bad = sitecheck.check_leads(self.conn, out=out)
         if checked:
@@ -153,7 +165,9 @@ class App:
             if not lead or db.stop_reason(conn) or not self.settings.has_whatsapp:
                 return
             now = db.utcnow()
-            text = self.templates.out_of_hours(dict(lead), now, self.settings.tz)
+            tpl = self.template_set.get(lead["idioma"])
+            lead_tz = ZoneInfo(lead["fuso"]) if lead["fuso"] else self.settings.tz
+            text = tpl.out_of_hours(dict(lead), now, lead_tz)
             jid = lead["jid"] or to_jid(lead["telefone"])
             s = self.settings
             typing_s = typing_seconds(text, s.typing_min_s, s.typing_max_s, random.Random())

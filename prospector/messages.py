@@ -36,29 +36,43 @@ class Templates:
     data: Mapping[str, Any]
 
     @classmethod
-    def load(cls, path: Path) -> Templates:
+    def load(cls, path: Path, base: Templates | None = None) -> Templates:
+        """Lê um arquivo de textos. Com `base`, o arquivo sobrescreve só o que traz (idiomas fora do pt)."""
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if base is not None:
+            data = _overlay(dict(base.data), data)
         tpl = cls(data)
-        tpl.validate()
+        tpl.validate(path.name)
         return tpl
 
-    def validate(self) -> None:
+    @property
+    def idioma(self) -> str:
+        return str(self.data.get("idioma") or "pt")
+
+    @property
+    def saudacoes(self) -> Mapping[str, str]:
+        return {**DEFAULT_SAUDACOES, **(self.data.get("saudacoes") or {})}
+
+    def fix_greeting(self, text: str, now_local: datetime) -> str:
+        return fix_greeting(text, now_local, self.saudacoes)
+
+    def validate(self, name: str = "templates.yaml") -> None:
         primeira = self.data.get("primeira") or {}
         for offer in OFFERS:
             if len(primeira.get(offer) or []) < MIN_VARIANTS:
-                raise TemplateError(f"templates.yaml: 'primeira.{offer}' precisa de pelo menos {MIN_VARIANTS} variações")
+                raise TemplateError(f"{name}: 'primeira.{offer}' precisa de pelo menos {MIN_VARIANTS} variações")
         for key in REQUIRED_LISTS:
             if not self.data.get(key):
-                raise TemplateError(f"templates.yaml: '{key}' está vazio")
+                raise TemplateError(f"{name}: '{key}' está vazio")
         if not self.data.get("remetente"):
-            raise TemplateError("templates.yaml: 'remetente' está vazio")
+            raise TemplateError(f"{name}: 'remetente' está vazio")
         # Renderiza tudo uma vez com dados fictícios para pegar {variavel} errada.
         sample = {"nome": "Teste", "nota": 4.8, "avaliacoes": 50, "categoria": "Pizzaria", "oferta": SEM_SITE}
         for text in self._all_texts():
             try:
                 text.format(**self._context(sample, datetime(2026, 1, 5, 10), random.Random(0)), **EXTRA_SAMPLE)
             except (KeyError, IndexError, ValueError) as exc:
-                raise TemplateError(f"templates.yaml: variável inválida em {text[:60]!r}: {exc}") from exc
+                raise TemplateError(f"{name}: variável inválida em {text[:60]!r}: {exc}") from exc
 
     def _all_texts(self) -> list[str]:
         texts = [t for offer in OFFERS for t in self.data["primeira"][offer]]
@@ -86,7 +100,7 @@ class Templates:
     def _context(self, lead: Mapping[str, Any], now_local: datetime, rng: random.Random) -> dict[str, str]:
         nota = lead.get("nota")
         avaliacoes = lead.get("avaliacoes")
-        hello = greeting(now_local)
+        hello = greeting(now_local, self.saudacoes)
         portfolio = str(self.data.get("portfolio") or "")
         base = {
             "nome": clean_name(str(lead.get("nome") or ""), lead.get("cidade")),
@@ -95,7 +109,8 @@ class Templates:
             "apresentacao": str(self.data.get("apresentacao") or "").format(portfolio=portfolio),
             "saudacao": hello,
             "saudacao_minuscula": hello.lower(),
-            "nota": format_rating(nota),
+            "nota": format_rating(nota, str(self.data.get("decimal") or ",")),
+            "optout": str(self.data.get("optout") or ""),
             "avaliacoes": str(avaliacoes or 0),
             "vitrine": self._vitrine(lead.get("categoria")),
         }
@@ -125,7 +140,10 @@ class Templates:
             raise TemplateError(f"Oferta desconhecida: {offer}")
         options = list(self.data["primeira"][offer])
         chosen = choose_variant(options, stats or {}, rng)
-        extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
+        if self.idioma == "pt":
+            extra = {"problema": str(lead.get("site_problemas") or "o site tem alguns problemas").split(";")[0].strip()}
+        else:  # os diagnósticos do sitecheck são em português: fora do pt usa a frase padrão do idioma
+            extra = {"problema": str(self.data.get("problema_padrao") or "")}
         return self._render(options, lead, now, tz, rng, chosen=chosen, **extra), variant_id(chosen)
 
     def charge_message(self, lead: Mapping[str, Any], *, valor: str, vencimento: str, descricao: str, pix: str,
@@ -160,18 +178,32 @@ def choose_variant(options: list[str], stats: Mapping[str, tuple[int, int]], rng
     return best
 
 
-def greeting(now_local: datetime) -> str:
+DEFAULT_SAUDACOES = {"manha": "Bom dia", "tarde": "Boa tarde", "noite": "Boa noite"}
+
+
+def greeting(now_local: datetime, saudacoes: Mapping[str, str] | None = None) -> str:
+    words = saudacoes or DEFAULT_SAUDACOES
     if now_local.hour < 12:
-        return "Bom dia"
+        return words["manha"]
     if now_local.hour < 18:
-        return "Boa tarde"
-    return "Boa noite"
+        return words["tarde"]
+    return words["noite"]
 
 
-def format_rating(nota: float | None) -> str:
+def format_rating(nota: float | None, decimal: str = ",") -> str:
     if nota is None:
         return ""
-    return f"{nota:.1f}".replace(".", ",")
+    return f"{nota:.1f}".replace(".", decimal)
+
+
+def _overlay(base: dict[str, Any], extra: Mapping[str, Any]) -> dict[str, Any]:
+    """Sobrescreve `base` com `extra`; 'primeira' e 'vitrine' são mesclados por chave interna."""
+    for key, value in extra.items():
+        if key in ("primeira", "vitrine") and isinstance(value, Mapping) and isinstance(base.get(key), Mapping):
+            base[key] = {**base[key], **value}
+        else:
+            base[key] = value
+    return base
 
 
 def clean_name(name: str, cidade: str | None = None) -> str:
@@ -197,10 +229,34 @@ def tidy(text: str) -> str:
     return text.strip()
 
 
-_GREETING = re.compile(r"\b(Bom dia|Boa tarde|Boa noite|bom dia|boa tarde|boa noite)\b")
+def fix_greeting(text: str, now_local: datetime, saudacoes: Mapping[str, str] | None = None) -> str:
+    """Ajusta 'Bom dia'/'Boa tarde'/'Good morning'... ao horário real do envio (a fila é gerada antes)."""
+    words = saudacoes or DEFAULT_SAUDACOES
+    hello = greeting(now_local, words)
+    options = sorted({w for w in words.values()}, key=len, reverse=True)
+    pattern = re.compile(r"(?<!\w)(" + "|".join(re.escape(w) for w in options) + r")(?!\w)", re.IGNORECASE)
+    return pattern.sub(lambda m: hello if m.group(1)[0].isupper() else hello.lower(), text)
 
 
-def fix_greeting(text: str, now_local: datetime) -> str:
-    """Ajusta 'Bom dia'/'Boa tarde' ao horário real do envio (a fila é gerada antes)."""
-    hello = greeting(now_local)
-    return _GREETING.sub(lambda m: hello if m.group(1)[0].isupper() else hello.lower(), text)
+class TemplateSet:
+    """Um Templates por idioma: templates.yaml (pt) + templates.<idioma>.yaml, que sobrescrevem o pt."""
+
+    def __init__(self, default: Templates, by_lang: Mapping[str, Templates]):
+        self.default = default
+        self.by_lang = dict(by_lang)
+
+    @classmethod
+    def load(cls, path: Path) -> TemplateSet:
+        default = Templates.load(path)
+        by_lang = {default.idioma.lower(): default}
+        for extra in sorted(path.parent.glob(f"{path.stem}.*{path.suffix}")):
+            lang = extra.name[len(path.stem) + 1:-len(path.suffix)].lower()
+            by_lang[lang] = Templates.load(extra, base=default)
+        return cls(default, by_lang)
+
+    def get(self, lang: str | None) -> Templates:
+        return self.by_lang.get((lang or "pt").lower(), self.default)
+
+    @property
+    def languages(self) -> list[str]:
+        return sorted(self.by_lang)

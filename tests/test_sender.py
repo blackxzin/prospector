@@ -210,3 +210,55 @@ def test_items_approved_while_running_are_picked_up(conn, listas, templates, rul
     client = Approver()
     report = _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True)
     assert report.enviados == 3 and len(client.sent) == 3
+
+
+# ---------- horário local do lead ----------
+
+from prospector.importer import import_rows as _imp  # noqa: E402
+from prospector.mundo import Origem as _Orig  # noqa: E402
+from prospector.schedule import earliest_send_local  # noqa: E402
+
+
+def test_foreign_window_is_measured_in_the_lead_timezone(rules):
+    from zoneinfo import ZoneInfo
+    madrid = ZoneInfo("Europe/Madrid")
+    # segunda 09:00 em São Paulo = 14:00 em Madrid (UTC+2 em outubro): dentro da janela das 14h às 17h30 de lá
+    assert earliest_send_local(MONDAY_9, [], rules, 200, madrid) == MONDAY_9
+    # segunda 12:00 em São Paulo = 17:00 em Madrid: ainda dentro; 13:00 em SP = 18:00 em Madrid: fechado
+    noon, one = MONDAY_9.replace(hour=12), MONDAY_9.replace(hour=13)
+    assert earliest_send_local(noon, [], rules, 200, madrid) == noon
+    nxt = earliest_send_local(one, [], rules, 200, madrid)
+    assert nxt is not None and nxt.astimezone(madrid).hour == 9 and nxt.astimezone(madrid).date().day == 20
+    # Brasil e sem fuso: igual ao de sempre
+    assert earliest_send_local(MONDAY_9, [], rules, 200, rules.tz) == MONDAY_9
+    assert earliest_send_local(MONDAY_9, [], rules, 200, None) == MONDAY_9
+
+
+def test_global_daily_limit_still_applies_to_foreign_leads(rules):
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+    sent = [MONDAY_9 + timedelta(minutes=10 * i) for i in range(8)]  # limite diário do conftest: 8
+    tokyo = ZoneInfo("Europe/Madrid")
+    when = earliest_send_local(MONDAY_9 + timedelta(hours=2), sent, rules, 200, tokyo)
+    assert when is None or when.astimezone(rules.tz).date() > MONDAY_9.date()
+
+
+def test_sender_picks_the_lead_that_can_go_now_and_uses_local_greeting(conn, listas, templates, rules):
+    from prospector.messages import TemplateSet
+    tset = TemplateSet.load(templates_path())
+    # São Paulo 20h de domingo→ não usado; aqui: segunda 09:00 SP. Tóquio já está fora do horário; Madrid está dentro.
+    _imp(conn, [csv_row(title="Tokyo Cafe", phone="090 1234 5678", link="t1")], "q", listas,
+         _Orig("JP", "en", "Asia/Tokyo", "Tokyo"))
+    _imp(conn, [csv_row(title="Café Luna", phone="612 34 56 79", link="m1")], "q", listas,
+         _Orig("ES", "es", "Europe/Madrid", "Madrid"))
+    fq.build_queue(conn, tset, rules, MONDAY_9, size=5, followup_days=3, rng=random.Random(0), pais=("JP", "ES"))
+    fq.approve(conn, fq.pending_ids(conn))
+    client = FakeWa()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9), templates=tset)
+    assert [t for _, t in client.sent][0].startswith(("Buenos días", "Buenas tardes", "Hola"))
+    assert "Café Luna" in client.sent[0][1] and report.enviados >= 1
+
+
+def templates_path():
+    from prospector.config import ROOT
+    return ROOT / "templates.yaml"

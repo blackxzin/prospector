@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta, tzinfo
 
 HOUR = timedelta(hours=1)
@@ -111,6 +111,35 @@ def earliest_send(now: datetime, sent: list[datetime], rules: Rules, gap_s: int)
             candidate = recent[len(recent) - rules.max_per_hour] + HOUR + timedelta(seconds=1 + gap_s % 300)
             continue
         return candidate
+    return None
+
+
+_ALL_DAY = ((time(0), time(23, 59, 59, 999999)),)
+
+
+def same_zone(a: tzinfo, b: tzinfo) -> bool:
+    return a is b or getattr(a, "key", None) == getattr(b, "key", object())
+
+
+def earliest_send_local(now: datetime, sent: list[datetime], rules: Rules, gap_s: int, tz: tzinfo | None) -> datetime | None:
+    """Como earliest_send, mas a janela comercial é a do fuso do lead (`tz`).
+
+    Limites de intervalo, hora e dia continuam globais (contados no fuso de `rules`); só o horário em que o lead
+    pode receber (dias úteis e janelas) é medido no relógio dele. `tz` None ou igual ao de `rules`: comportamento
+    de sempre."""
+    if tz is None or same_zone(tz, rules.tz):
+        return earliest_send(now, sent, rules, gap_s)
+    lead_rules = replace(rules, tz=tz)
+    limits_only = replace(rules, windows=_ALL_DAY, weekdays=frozenset(range(7)))
+    candidate = now
+    for _ in range(60):
+        by_limits = earliest_send(candidate, sent, limits_only, gap_s)
+        if by_limits is None:
+            return None
+        by_window = next_window_start(by_limits, lead_rules)
+        if by_window == by_limits:
+            return by_limits
+        candidate = by_window
     return None
 
 

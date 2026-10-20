@@ -9,7 +9,9 @@ from datetime import date, datetime, timedelta, tzinfo
 from typing import Callable, Mapping
 
 from . import db
-from .messages import Templates
+from zoneinfo import ZoneInfo
+
+from .messages import TemplateSet, Templates
 from .phone import variants
 from .schedule import Rules, add_business_days
 
@@ -107,9 +109,23 @@ def due_followups(conn: sqlite3.Connection, now: datetime, rules: Rules, busines
     return out
 
 
-def _new_leads_query(busca: str | None, cidade: str | None) -> tuple[str, list[object]]:
+def _tpl_and_tz(templates: Templates | TemplateSet, lead: Mapping, rules: Rules) -> tuple[Templates, tzinfo]:
+    """Texto no idioma do lead e horário (saudação) no fuso dele. Lead do Brasil: como sempre."""
+    tpl = templates.get(lead["idioma"]) if isinstance(templates, TemplateSet) else templates
+    try:
+        tz: tzinfo = ZoneInfo(lead["fuso"]) if lead["fuso"] else rules.tz
+    except (KeyError, IndexError):
+        tz = rules.tz
+    return tpl, tz
+
+
+def _new_leads_query(busca: str | None, cidade: str | None, pais: tuple[str, ...] | None = None,
+                     ) -> tuple[str, list[object]]:
     sql = "SELECT * FROM leads WHERE status = ? AND telefone IS NOT NULL"
     params: list[object] = [db.NOVO]
+    if pais:
+        sql += f" AND pais IN ({','.join('?' * len(pais))})"
+        params.extend(p.upper() for p in pais)
     if busca:
         sql += " AND busca = ?"
         params.append(busca)
@@ -123,10 +139,10 @@ Checker = Callable[[sqlite3.Connection, Mapping], bool]
 
 
 def check_presence(conn: sqlite3.Connection, checker: Checker, slots: int,
-                   busca: str | None = None, cidade: str | None = None) -> int:
+                   busca: str | None = None, cidade: str | None = None, pais: tuple[str, ...] | None = None) -> int:
     """Checa a presença online dos próximos leads novos até sobrarem `slots` válidos. Fora da transação
     da fila: a busca demora e não pode segurar o banco. Devolve quantos foram buscados."""
-    sql, params = _new_leads_query(busca, cidade)
+    sql, params = _new_leads_query(busca, cidade, pais)
     kept = searched = 0
     for lead in conn.execute(sql, params).fetchall():
         if kept >= slots or searched >= slots * MAX_CHECAGENS_POR_VAGA:
@@ -142,7 +158,7 @@ def check_presence(conn: sqlite3.Connection, checker: Checker, slots: int,
 
 def build_queue(
     conn: sqlite3.Connection,
-    templates: Templates,
+    templates: Templates | TemplateSet,
     rules: Rules,
     now: datetime,
     *,
@@ -150,6 +166,7 @@ def build_queue(
     followup_days: int,
     busca: str | None = None,
     cidade: str | None = None,
+    pais: tuple[str, ...] | None = ("BR",),
     rng: random.Random | None = None,
     charge_text: Callable[[sqlite3.Row, sqlite3.Row], str] | None = None,
     checar_presenca: Checker | None = None,
@@ -162,14 +179,15 @@ def build_queue(
     dia = _today(now, rules.tz)
     if checar_presenca:
         check_presence(conn, checar_presenca, max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP))),
-                       busca, cidade)
+                       busca, cidade, pais)
     with db.tx(conn):
         closed = close_stale_followups(conn, now, rules, followup_days)
         followups = 0
         for lead in due_followups(conn, now, rules, followup_days):
             if lead["telefone"] and db.is_blocked(conn, variants(lead["telefone"])):
                 continue
-            _insert(conn, lead["id"], db.FOLLOWUP, templates.followup(dict(lead), now, rules.tz, rng), dia)
+            tpl, tz = _tpl_and_tz(templates, lead, rules)
+            _insert(conn, lead["id"], db.FOLLOWUP, tpl.followup(dict(lead), now, tz, rng), dia)
             followups += 1
 
         charges = 0
@@ -181,7 +199,7 @@ def build_queue(
 
         slots = max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP)))
         stats = ab_stats(conn)
-        sql, params = _new_leads_query(busca, cidade)
+        sql, params = _new_leads_query(busca, cidade, pais)
         firsts = 0
         for lead in conn.execute(sql, params).fetchall():
             if firsts >= slots:
@@ -193,7 +211,8 @@ def build_queue(
             if db.first_message_already_sent(conn, numbers):
                 db.update_lead(conn, lead["id"], status=db.DESCARTADO, motivo="já contatado (outro cadastro)")
                 continue
-            texto, variante = templates.first_message_ab(dict(lead), now, rules.tz, rng, stats)
+            tpl, tz = _tpl_and_tz(templates, lead, rules)
+            texto, variante = tpl.first_message_ab(dict(lead), now, tz, rng, stats)
             _insert(conn, lead["id"], db.PRIMEIRA, texto, dia, variante=variante)
             db.update_lead(conn, lead["id"], status=db.NA_FILA)
             firsts += 1
@@ -203,7 +222,8 @@ def build_queue(
 def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, APROVADO)) -> list[sqlite3.Row]:
     marks = ",".join("?" * len(statuses))
     return conn.execute(
-        "SELECT f.*, l.nome, l.telefone, l.cidade, l.oferta, l.nota, l.avaliacoes, l.categoria, l.site, l.motivo "
+        "SELECT f.*, l.nome, l.telefone, l.cidade, l.oferta, l.nota, l.avaliacoes, l.categoria, l.site, l.motivo, "
+        "l.pais, l.idioma "
         f"FROM fila f JOIN leads l ON l.id = f.lead_id WHERE f.status IN ({marks}) ORDER BY f.id",
         statuses,
     ).fetchall()

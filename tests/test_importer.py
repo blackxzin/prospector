@@ -73,3 +73,43 @@ def test_extract_city_from_complete_address_json():
 def test_first_email():
     assert first_email('["a@b.com"]') == "a@b.com"
     assert first_email("") is None
+
+
+# ---------- mercados fora do Brasil ----------
+
+from prospector.mundo import BRASIL, Origem  # noqa: E402
+
+SPAIN = Origem(pais="ES", idioma="es", fuso="Europe/Madrid", cidade="Madrid")
+USA = Origem(pais="US", idioma="en", fuso="America/Chicago", cidade="Austin")
+
+
+def test_foreign_lead_gets_country_language_timezone(conn, listas):
+    row = csv_row(title="Pizzería Napoli", phone="612 34 56 78", address="Calle Mayor 5, 28013 Madrid, España",
+                  link="https://maps/napoli")
+    res = import_rows(conn, [row], "pizzería en Madrid, España", listas, SPAIN)
+    lead = conn.execute("SELECT * FROM leads").fetchone()
+    assert res.validos == 1 and lead["telefone"] == "34612345678"
+    assert (lead["pais"], lead["idioma"], lead["fuso"], lead["cidade"]) == ("ES", "es", "Europe/Madrid", "Madrid")
+
+
+def test_foreign_landline_is_discarded_and_us_numbers_are_kept(conn, listas):
+    rows = [csv_row(title="Bar Fijo", phone="91 123 45 67", link="a"),
+            csv_row(title="Taco Place", phone="(512) 555-0147", link="b")]
+    import_rows(conn, rows[:1], "bar en Madrid", listas, SPAIN)
+    import_rows(conn, rows[1:], "tacos in Austin, TX", listas, USA)
+    got = {r["nome"]: (r["status"], r["telefone"]) for r in conn.execute("SELECT * FROM leads")}
+    assert got["Bar Fijo"][0] == "descartado" and got["Taco Place"] == ("novo", "15125550147")
+
+
+def test_same_foreign_number_in_two_formats_is_one_lead(conn, listas):
+    a = csv_row(title="Café Sol", phone="+34 612 34 56 78", link="a")
+    b = csv_row(title="Café Sol 2", phone="612345678", link="b")
+    res = import_rows(conn, [a, b], "café en Madrid", listas, SPAIN)
+    assert res.novos == 1 and res.duplicados == 1
+
+
+def test_brazilian_import_is_unchanged_and_defaults_to_br(conn, listas):
+    import_rows(conn, [csv_row()], "pizzaria em Itaí SP", listas, BRASIL)
+    lead = conn.execute("SELECT * FROM leads").fetchone()
+    assert (lead["pais"], lead["idioma"], lead["fuso"]) == ("BR", "pt", "America/Sao_Paulo")
+    assert lead["telefone"] == "5514991234567" and lead["cidade"] == "Itaí"

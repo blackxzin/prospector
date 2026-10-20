@@ -215,6 +215,9 @@ _MIGRATIONS = (
     ("leads", "longitude", "REAL"),
     ("leads", "presenca_checada_em", "TEXT"),  # busca de site/Instagram/cardápio online (presenca.py)
     ("respostas", "msg_id", "TEXT"),          # id da mensagem no WhatsApp (evita contar a mesma resposta 2x)
+    ("leads", "pais", "TEXT NOT NULL DEFAULT 'BR'"),                     # ISO-2 do mercado do lead
+    ("leads", "idioma", "TEXT NOT NULL DEFAULT 'pt'"),                   # idioma da mensagem (pt, en, es, fr, de, it)
+    ("leads", "fuso", "TEXT NOT NULL DEFAULT 'America/Sao_Paulo'"),      # horário comercial do lead
 )
 
 

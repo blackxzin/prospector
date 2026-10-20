@@ -185,7 +185,7 @@ def register_ops_routes(web: Flask, ctx: App) -> None:
     def gerar_fila_dashboard() -> Response:
         from . import fila as fq
         s = ctx.settings
-        res = fq.build_queue(ctx.conn, ctx.templates, ctx.rules, db.utcnow(), size=s.max_per_day,
+        res = fq.build_queue(ctx.conn, ctx.template_set, ctx.rules, db.utcnow(), size=s.max_per_day,
                              followup_days=s.followup_business_days, charge_text=ctx.charge_text,
                              checar_presenca=ctx.presence_checker())
         flash(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças. "

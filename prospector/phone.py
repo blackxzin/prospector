@@ -1,8 +1,11 @@
-"""Normalização de telefones brasileiros."""
+"""Normalização de telefones: celulares brasileiros e números de qualquer país (via phonenumbers)."""
 
 from __future__ import annotations
 
 import re
+
+import phonenumbers
+from phonenumbers import PhoneNumberType
 
 COUNTRY = "55"
 _NON_DIGIT = re.compile(r"\D+")
@@ -45,6 +48,40 @@ def normalize_any(raw: str | None) -> str | None:
     return national or None
 
 
+# Tipos aceitos como "pode ter WhatsApp". EUA/Canadá não distinguem fixo de celular (FIXED_LINE_OR_MOBILE):
+# a confirmação real vem da checagem no WA-AKG antes do envio.
+_MOBILE_TYPES = frozenset({PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE_OR_MOBILE})
+
+
+def _parse_intl(raw: str | None, region: str) -> phonenumbers.PhoneNumber | None:
+    if not raw or not raw.strip():
+        return None
+    try:
+        number = phonenumbers.parse(raw.strip(), region.upper())
+    except phonenumbers.NumberParseException:
+        return None
+    return number if phonenumbers.is_valid_number(number) else None
+
+
+def _e164_digits(number: phonenumbers.PhoneNumber) -> str:
+    return phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.E164).lstrip("+")
+
+
+def normalize_mobile_intl(raw: str | None, region: str) -> str | None:
+    """Celular válido de qualquer país -> dígitos E.164 sem '+' (ex.: '34612345678'). Fixo/lixo -> None.
+    `region` é o país ISO-2 usado quando o número vem sem código ('ES', 'US'...)."""
+    number = _parse_intl(raw, region)
+    if number is None or phonenumbers.number_type(number) not in _MOBILE_TYPES:
+        return None
+    return _e164_digits(number)
+
+
+def normalize_any_intl(raw: str | None, region: str) -> str | None:
+    """Qualquer telefone válido (fixo ou celular) em E.164 sem '+', para deduplicação."""
+    number = _parse_intl(raw, region)
+    return _e164_digits(number) if number else None
+
+
 def to_jid(number: str) -> str:
     return f"{number}@s.whatsapp.net"
 
@@ -74,9 +111,16 @@ def phone_from_jid(jid: str | None) -> str | None:
 
 
 def pretty(number: str | None) -> str:
-    """'5514991234567' -> '(14) 99123-4567'."""
+    """'5514991234567' -> '(14) 99123-4567'; número estrangeiro -> formato internacional."""
     if not number:
         return ""
+    if not (number.startswith(COUNTRY) and len(number) in (12, 13)) and number.isdigit() and len(number) >= 8:
+        try:
+            parsed = phonenumbers.parse("+" + number)
+            if phonenumbers.is_valid_number(parsed):
+                return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        except phonenumbers.NumberParseException:
+            pass
     national = number[2:] if number.startswith(COUNTRY) and len(number) >= 12 else number
     if len(national) == 11:
         return f"({national[:2]}) {national[2:7]}-{national[7:]}"

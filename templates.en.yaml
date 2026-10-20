@@ -1,0 +1,57 @@
+# Textos em inglês (EUA, Canadá, Reino Unido, Irlanda, Países Baixos). Sobrescreve o templates.yaml (pt).
+idioma: en
+decimal: "."
+apresentacao: "I'm a developer from Brazil and, together with my partner Felipe, I build websites, automations and customer-service bots for WhatsApp."
+portfolio: ""
+optout: "(If you'd rather not hear from me, just reply STOP and I won't message again.)"
+problema_padrao: "it didn't load properly"
+saudacoes: {manha: "Good morning", tarde: "Good afternoon", noite: "Good evening"}
+
+elogios_com_nota:
+  - "{nota} stars across {avaliacoes} Google reviews is impressive, congratulations."
+  - "You have a {nota} rating with {avaliacoes} reviews on Google, well done!"
+  - "Found you on Google Maps, {nota} stars and {avaliacoes} reviews, great work."
+elogios_sem_nota:
+  - "I found you on Google Maps."
+  - "I came across your Google Maps profile."
+  - "I had a look at your profile on Google Maps."
+
+vitrine:
+  padrao: "your services"
+  por_categoria:
+    - palavras: [barber, hair, salon, beauty, nail, spa, cosmetic, lash, brow, tattoo]
+      texto: "your services and prices"
+    - palavras: [pizza, restaurant, burger, cafe, coffee, bakery, ice cream, food, diner, grill, sushi, taco, bbq, bar, pub, deli, bistro, truck]
+      texto: "your menu"
+    - palavras: [gym, fitness, crossfit, pilates, yoga, martial, boxing, studio, dance]
+      texto: "your classes and schedule"
+    - palavras: [store, shop, boutique, clothing, pet, florist, gift]
+      texto: "your products"
+
+primeira:
+  sem_site:
+    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I looked for your website and couldn't find one. If you don't have one yet, we can build a simple site with {vitrine} and a button that opens WhatsApp directly. Would you like to see an example, no strings attached? {optout}"
+    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} I couldn't find a website for {nome} on Google. If that's the case, we put together fast, clean pages with {vitrine} and a WhatsApp button. Can I send you an example? {optout}"
+    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} There's no website linked to your Google profile. We can make a simple one with {vitrine} and a WhatsApp button, so customers can reach you in one tap. Interested in seeing an example? {optout}"
+  so_social:
+    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I found your social media page but no website of your own. A simple site with {vitrine} and a WhatsApp button also helps you show up on Google. Would you like to see an example? {optout}"
+    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} Right now your Google link only leads to social media. We build fast, simple sites with {vitrine} and a WhatsApp button. Can I send you an example? {optout}"
+    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} I noticed you don't have a site of your own, only social media. We can set up a clean page with {vitrine} and a button for WhatsApp. Interested in an example? {optout}"
+  tem_site:
+    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I saw you already have a website, nice! We also build WhatsApp customer-service bots: they answer common questions, show {vitrine} and pass orders or bookings on to you. Would you like to see an example? {optout}"
+    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} A WhatsApp bot makes sure nobody is left without an answer during your busiest hours. Can I show you an example? {optout}"
+    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} We automate WhatsApp: a welcome message, ready answers and handing the conversation over to you when it matters. Interested in an example? {optout}"
+  site_problema:
+    - "{saudacao}, {nome}! I'm {remetente}. {apresentacao} {elogio} I tried your website and {problema}. That makes customers give up before they reach you. We can fix it or build a new, fast one with {vitrine} and a WhatsApp button. Want to see an example? {optout}"
+    - "{saudacao}! This is {remetente}. {apresentacao} {elogio} I visited your website and {problema}. Since many people check Google first, it's worth fixing. Can I send you an example? {optout}"
+    - "Hi {nome}! {remetente} here. {apresentacao} {elogio} A quick heads-up: your website {problema}. We build lightweight new sites with {vitrine} and a WhatsApp button. Interested in an example? {optout}"
+
+followup:
+  - "Hi {nome}! Just checking whether you saw my last message. If it's not relevant right now, no problem at all. Shall I send you that example? {optout}"
+  - "{saudacao}! I know things get busy, so I'll only follow up this once. Would you like me to send the example? {optout}"
+  - "Hi again, {nome}! Last note from me, I promise. If you'd like to see the example, just let me know here. {optout}"
+
+fora_do_horario:
+  - "Hi! Thanks for your reply. I'm offline right now, but I'll get back to you on the next business day."
+  - "Thanks for getting back to me! I'm done for today, but I'll reply on the next business day."
+  - "Got your message, thank you! I'm away at the moment and will answer on the next business day."
