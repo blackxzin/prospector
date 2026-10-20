@@ -184,7 +184,8 @@ def test_register_project_from_lead_flow(web, listas):
     client, app = web
     import_rows(app.conn, [csv_row()], "pizzaria em Itaí SP", listas)
     form = client.get("/projetos/novo?lead=1").get_data(as_text=True)
-    assert "Pizzaria Bella" in form and 'value="600,00"' in form
+    preco = app.finance.precos["site"].valor  # pré-preenchido com o preço do financeiro.yaml
+    assert "Pizzaria Bella" in form and f'value="{preco // 100},{preco % 100:02d}"' in form
     resp = client.post("/projetos", data={
         "lead_id": "1", "cliente": "Pizzaria Bella", "tipo": "site", "valor": "650,00",
         "fechado_em": "2026-10-19", "prazo": "2026-10-26", "entrada": "50", "mensalidade": "0", "custo": "60"})

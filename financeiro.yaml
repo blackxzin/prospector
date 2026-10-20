@@ -5,26 +5,28 @@
 meta_mensal: 3000
 
 # Preços padrão que aparecem pré-preenchidos ao confirmar um fechamento.
+# Política do Lucas: só falar preço se o cliente perguntar. Pacote completo (site e tudo mais):
+# "de R$ 2.000 por R$ 997" + R$ 147 por mês (oferta de lançamento do portfólio-dupla.vercel.app).
 # Dá para mudar caso a caso no painel.
 precos:
   site:
     descricao: "Site simples com cardápio/planos e botão de WhatsApp"
-    valor: 600
+    valor: 997
     custo_estimado: 60      # domínio, hospedagem do 1º ano etc.
-    mensalidade: 0          # manutenção mensal (0 = sem mensalidade)
+    mensalidade: 147          # manutenção mensal (0 = sem mensalidade)
     prazo_dias: 7
-    inclui:                 # vai na proposta em PDF
-      - "Site de uma página, rápido e feito para celular"
-      - "Cardápio, planos ou serviços com fotos e preços"
-      - "Botão que abre o WhatsApp de vocês com a mensagem pronta"
-      - "Mapa, endereço e horário de funcionamento"
-      - "Domínio .com.br e hospedagem do primeiro ano"
-      - "Ajustes de texto e fotos até a entrega"
+    inclui:                 # vai na proposta em PDF (igual à oferta do portfólio)
+      - "Site profissional feito sob medida para o seu negócio"
+      - "Layout que funciona no celular, tablet e computador"
+      - "Botão de WhatsApp para o cliente falar com você em um toque"
+      - "Estrutura pronta para aparecer no Google"
+      - "Domínio próprio e cadeado de segurança (HTTPS)"
+      - "Mensalidade: hospedagem, manutenção, ajustes de texto e fotos e suporte direto"
   automacao:
     descricao: "Automação de atendimento no WhatsApp"
-    valor: 900
+    valor: 997
     custo_estimado: 0
-    mensalidade: 150
+    mensalidade: 147
     prazo_dias: 10
     inclui:
       - "Mensagem de boas-vindas e menu automático no WhatsApp"
