@@ -95,6 +95,7 @@ class Templates:
     def _all_texts(self) -> list[str]:
         texts = [t for offer in OFFERS for t in self.data["primeira"][offer]]
         texts += [t for group in EXTRA_GROUPS for t in self.data["primeira"].get(group) or []]
+        texts += list(self.data.get("portfolio_msg") or [])
         for key in REQUIRED_LISTS:
             texts.extend(self.data[key])
         return texts

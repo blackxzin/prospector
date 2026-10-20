@@ -137,7 +137,7 @@ class JobManager:
             report = run(conn, client, worker_app.rules, typing_min_s=s.typing_min_s, typing_max_s=s.typing_max_s,
                          dry_run=False, clock=StoppableClock(running.stop), wait_next_day=aguardar,
                          notify_enabled=s.notify, out=out, should_stop=running.stop.is_set,
-                         templates=worker_app.template_set)
+                         templates=worker_app.template_set, portfolio_apos_primeira=s.portfolio_apos_primeira)
             resumo = (f"{report.enviados} enviada(s), {report.pulados} pulada(s), {report.erros} erro(s). "
                       f"{report.motivo_fim or report.parado or ''}").strip()
             worker_app.notify("envio terminou", resumo, urgent=bool(report.parado))

@@ -297,3 +297,65 @@ def test_ready_items_go_first_while_another_is_scheduled(conn, listas, templates
     _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True)
     assert len(client.sent) == 2 and client.sent[0][0] != f"{lead}@s.whatsapp.net"  # o agendado sai depois
     assert client.sent[1][0] == f"{lead}@s.whatsapp.net"
+
+
+# ---------- portfólio logo depois da primeira mensagem ----------
+
+def _portfolio_templates(tmp_path):
+    import shutil
+    from prospector.messages import TemplateSet
+    root = ROOT_DIR
+    for name in ("templates.yaml", "templates.es.yaml"):
+        shutil.copy(root / name, tmp_path / name)
+    return TemplateSet.load(tmp_path / "templates.yaml")
+
+
+ROOT_DIR = __import__("pathlib").Path(__file__).resolve().parent.parent
+
+
+def test_portfolio_follows_the_first_message_without_using_the_daily_limit(conn, listas, rules, tmp_path):
+    tset = _portfolio_templates(tmp_path)
+    _approved_queue(conn, listas, tset, rules, 2)
+    client = FakeWa()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True, templates=tset,
+                  portfolio_apos_primeira=True)
+    assert report.enviados == 2 and len(client.sent) == 4                       # 2 primeiras + 2 portfólios
+    assert "vercel.app" not in client.sent[0][1] and "vercel.app" in client.sent[1][1]
+    rows = conn.execute("SELECT tipo FROM envios WHERE ok = 1 ORDER BY id").fetchall()
+    assert [r[0] for r in rows] == ["primeira", "portfolio", "primeira", "portfolio"]
+    assert len(db.real_send_times(conn, MONDAY_9 - timedelta(days=1))) == 2     # só as primeiras contam nos limites
+    gaps = [db.parse_iso(r[0]) for r in conn.execute("SELECT enviado_em FROM envios WHERE tipo = 'primeira' ORDER BY id")]
+    assert gaps[1] - gaps[0] >= timedelta(minutes=4)                           # o portfólio não encurta o intervalo
+
+
+def test_portfolio_is_skipped_when_lead_answers_in_between(conn, listas, rules, tmp_path):
+    tset = _portfolio_templates(tmp_path)
+    _approved_queue(conn, listas, tset, rules, 1)
+
+    class ReplyDuringPause(VirtualClock):
+        def sleep(self, seconds):
+            if 25 <= seconds <= 70:  # a pausa antes do portfólio: o lead responde nesse intervalo
+                conn.execute("UPDATE leads SET status = 'respondeu'")
+                conn.commit()
+            super().sleep(seconds)
+
+    client = FakeWa()
+    _run(conn, client, rules, ReplyDuringPause(MONDAY_9), templates=tset, portfolio_apos_primeira=True)
+    assert len(client.sent) == 1
+
+
+def test_no_portfolio_for_languages_without_one_or_when_disabled(conn, listas, rules, tmp_path):
+    from prospector.mundo import Origem
+    tset = _portfolio_templates(tmp_path)
+    import_rows(conn, [csv_row(title="Café Luna", phone="612 34 56 79", link="m1")], "q", listas,
+                Origem("ES", "es", "Europe/Madrid", "Madrid"))
+    fq.build_queue(conn, tset, rules, MONDAY_9, size=3, followup_days=3, rng=random.Random(0), pais=("ES",))
+    fq.approve(conn, fq.pending_ids(conn))
+    client = FakeWa()
+    _run(conn, client, rules, VirtualClock(MONDAY_9), templates=tset, portfolio_apos_primeira=True)
+    assert len(client.sent) == 1                                                # espanhol: sem link do portfólio (é em português)
+    conn.execute("DELETE FROM envios"); conn.commit()
+    _approved_queue(conn, listas, tset, rules, 1)
+    client2 = FakeWa()
+    _run(conn, client2, rules, VirtualClock(MONDAY_9), templates=tset, portfolio_apos_primeira=False)
+    assert len(client2.sent) == 1

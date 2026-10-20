@@ -175,6 +175,10 @@ Antes de um lead entrar na fila da 1ª mensagem, o prospector busca "nome + cida
 
 Tudo isso também está no painel, em **Buscas**: editar nichos e cidades, ver as cidades por raio antes de salvar (adicionar ou substituir), acompanhar o progresso, ver as próximas buscas e o resultado das últimas.
 
+### Portfólio como segunda mensagem
+
+A primeira mensagem é curta e sem link (link na abertura derruba a resposta). O portfólio vai numa **segunda mensagem**, de 25 a 70 segundos depois ("Pra você ter uma ideia do meu trabalho, dá uma olhada no portfólio da gente: ..."), com 3 variações em `portfolio_msg` no `templates.yaml`. Não sai se o lead responder ou pedir para parar nesse intervalo, nem fora do português do Brasil (o portfólio é em português). Ela não conta no limite diário e o intervalo até a próxima primeira mensagem conta a partir dela. Desligue com `PORTFOLIO_APOS_PRIMEIRA=0` no `.env`. Fica registrada no log de envios como `portfolio`.
+
 ### Fora do Brasil (Europa, EUA, Canadá)
 
 O `mundo.yaml` traz países, cidades (com fuso) e nichos por idioma. Cada lead guarda **país, idioma e fuso**.

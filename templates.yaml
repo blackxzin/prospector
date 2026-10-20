@@ -90,6 +90,13 @@ followup:
   - "{saudacao}! Sei que a rotina aí é corrida, então sem pressa. Se tiver alguém que cuida do site ou do WhatsApp, me passa o contato que eu falo direto com a pessoa?"
   - "Oi! Último recado, prometo: não vou insistir. Se um dia quiserem ver o que eu faço, está aqui: {portfolio} . Sucesso aí!"
 
+# Segunda mensagem, enviada de 25 a 70 s depois da primeira (só para quem tem {portfolio}): o link do portfólio
+# vai separado para a primeira ficar curta. Não sai se o lead responder ou pedir para parar nesse intervalo.
+portfolio_msg:
+  - "Pra você ter uma ideia do meu trabalho, dá uma olhada no portfólio da gente: {portfolio}"
+  - "Se quiser ver o que eu e o Felipe fazemos, o portfólio é este: {portfolio}"
+  - "Deixo aqui o portfólio, pra darem uma olhada com calma: {portfolio}"
+
 fora_do_horario:
   - "Oi! Obrigado pela resposta. Agora estou fora do horário, mas te respondo no próximo horário útil, combinado?"
   - "Opa, valeu por responder! Já encerrei por hoje, mas te retorno no próximo horário útil, tudo bem?"

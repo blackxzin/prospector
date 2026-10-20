@@ -87,6 +87,7 @@ class Settings:
     web_host: str = "127.0.0.1"
     web_port: int = 5050
     notify: bool = True
+    portfolio_apos_primeira: bool = True  # manda o portfólio como 2ª mensagem (se o idioma tiver)
     checar_presenca: bool = True  # busca site/Instagram/cardápio online antes da 1ª mensagem
 
     @property
@@ -153,6 +154,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         web_port=_int(env, "WEB_PORT", 5050),
         notify=_flag(env, "NOTIFICAR"),
         checar_presenca=_flag(env, "CHECAR_PRESENCA"),
+        portfolio_apos_primeira=_flag(env, "PORTFOLIO_APOS_PRIMEIRA"),
     )
     _validate(settings)
     return settings

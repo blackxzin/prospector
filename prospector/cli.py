@@ -211,6 +211,7 @@ def cmd_enviar(app: App, args: argparse.Namespace) -> int:
     report = run_sender(
         app.conn, client, app.rules, typing_min_s=s.typing_min_s, typing_max_s=s.typing_max_s,
         dry_run=args.dry_run, wait_next_day=args.aguardar, notify_enabled=s.notify, templates=app.template_set,
+        portfolio_apos_primeira=s.portfolio_apos_primeira,
     )
     print(f"\nResumo: {report.enviados} {'simulados' if args.dry_run else 'enviados'}, "
           f"{report.pulados} pulados, {report.erros} erros. {report.motivo_fim}")

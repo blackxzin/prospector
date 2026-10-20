@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import db
 from . import fila as fq
-from .messages import TemplateSet, fix_greeting
+from .messages import TemplateSet, fix_greeting, tidy
 from .notify import notify
 from .phone import to_jid, variants
 from .schedule import fmt_local, Rules, earliest_send_local, random_gap, typing_seconds
@@ -160,6 +160,46 @@ def type_and_send(client: Messenger, clock: Clock, jid: str, text: str, typing_s
             log.debug("presence paused falhou: %s", exc)
 
 
+PORTFOLIO_DELAY_S = (25.0, 70.0)   # pausa entre a primeira mensagem e o portfólio
+PORTFOLIO_TYPING_S = (3.0, 8.0)
+_BLOCKS_PORTFOLIO = (db.NAO_QUER, db.RESPONDEU, db.INTERESSADO, db.CLIENTE)
+
+
+def _send_portfolio(conn: sqlite3.Connection, client: Messenger, clock: Clock, rng: random.Random,
+                    item: sqlite3.Row, jid: str, templates: TemplateSet | None, notify_enabled: bool,
+                    should_stop: Callable[[], bool]) -> tuple[bool, float]:
+    """Manda o portfólio como 2ª mensagem, 25 a 70 s depois da primeira. (enviou, segundos gastos).
+
+    Só para idiomas que têm `portfolio` e `portfolio_msg` (hoje: português do Brasil). Se o lead respondeu ou pediu
+    para parar nesse intervalo, não manda: quem responde é você."""
+    tpl = templates.get(item["idioma"]) if templates else None
+    options = list((tpl.data.get("portfolio_msg") if tpl else None) or [])
+    link = str(tpl.data.get("portfolio") or "") if tpl else ""
+    if not options or not link:
+        return False, 0.0
+    started = clock.now()
+    clock.sleep(rng.uniform(*PORTFOLIO_DELAY_S))
+    spent = lambda: (clock.now() - started).total_seconds()  # noqa: E731
+    fresh = conn.execute("SELECT status FROM leads WHERE id = ?", (item["lead_id"],)).fetchone()
+    if should_stop() or db.stop_reason(conn) or (fresh and fresh["status"] in _BLOCKS_PORTFOLIO):
+        return False, spent()
+    text = tidy(rng.choice(options).format(portfolio=link))
+    try:
+        result = type_and_send(client, clock, jid, text, round(rng.uniform(*PORTFOLIO_TYPING_S), 1))
+    except WhatsAppError as exc:
+        with db.tx(conn):
+            db.log_send(conn, lead_id=item["lead_id"], fila_id=item["id"], telefone=item["telefone"],
+                        tipo="portfolio", texto=text, dry_run=False, ok=False, http_status=exc.status,
+                        resposta_api=(exc.body or str(exc))[:2000])
+        emergency_stop(conn, f"Erro ao enviar o portfólio para {item['telefone']} ({item['nome']}): {exc}", notify_enabled)
+        return False, spent()
+    with db.tx(conn):
+        db.log_send(conn, lead_id=item["lead_id"], fila_id=item["id"], telefone=item["telefone"], tipo="portfolio",
+                    texto=text, dry_run=False, ok=True, http_status=getattr(result, "status", 200),
+                    resposta_api=str(getattr(result, "body", ""))[:2000], when=clock.now())
+    return True, spent()
+
+
 def _record_success(conn: sqlite3.Connection, item: sqlite3.Row, text: str, jid: str, result: object,
                     when: datetime) -> None:
     status = getattr(result, "status", 200)
@@ -205,6 +245,7 @@ def run(
     out: Callable[[str], None] = print,
     should_stop: Callable[[], bool] = lambda: False,
     templates: TemplateSet | None = None,
+    portfolio_apos_primeira: bool = False,
 ) -> SendReport:
     """Envia os itens aprovados respeitando todas as regras. Em dry-run simula o relógio e não envia nada."""
     rng = rng or random.Random()
@@ -344,6 +385,15 @@ def run(
         report.enviados += 1
         out(f"  enviado #{item['id']} {item['tipo']} -> {item['telefone']} ({item['nome']}) às {sent_at.astimezone(rules.tz):%H:%M}")
         gap = random_gap(rules, rng)
+        if portfolio_apos_primeira and item["tipo"] == db.PRIMEIRA:
+            sent_portfolio, seconds = _send_portfolio(conn, client, clock, rng, item, jid or to_jid(item["telefone"]),
+                                                      templates, notify_enabled, should_stop)
+            gap += int(seconds)   # o intervalo conta a partir da última mensagem enviada, portfólio incluído
+            if sent_portfolio:
+                out("    + portfólio enviado")
+            if db.stop_reason(conn):
+                report.parado = db.stop_reason(conn)
+                break
 
     if not report.motivo_fim and not report.parado:
         report.motivo_fim = "Fila de aprovados vazia."
