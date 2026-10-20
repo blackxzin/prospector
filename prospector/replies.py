@@ -50,6 +50,27 @@ _INTEREST = re.compile(
 )
 
 
+# Ameaça legal, denúncia, assédio ou suspeita de golpe (pt, en, es, fr, de, it): nunca respondemos sozinhos.
+# É só um alerta para você ler a conversa; não bloqueia sozinho (um "meu advogado precisa de um site" é cliente).
+_ESCALATION = re.compile(
+    r"(advogad|\bprocon\b|denunci|assedi|processar|processo judicial|boletim de ocorrencia|\bpolicia\b|\blgpd\b|"
+    r"ministerio publico|\bgolpe\b|lawyer|attorney|legal action|\bsue\b|\bsuing\b|report (you|this|it)|harass|"
+    r"\bgdpr\b|data protection|cease and desist|\bpolice\b|illegal|\bcasl\b|\btcpa\b|\bscam\b|\bfraud\b|"
+    r"information commissioner|abogado|\bacoso\b|\brgpd\b|proteccion de datos|\bestafa\b|avocat|harcelement|"
+    r"\bcnil\b|\barnaque\b|anwalt|\bdsgvo\b|datenschutz|belastigung|\banzeige\b|zeige sie an|abmahn|polizei|"
+    r"\bbetrug\b|avvocato|molestie|garante della privacy|polizia|illegale|\btruffa\b)",
+)
+
+
+def escalation_term(text: str | None) -> str | None:
+    m = _ESCALATION.search(fold(text or ""))
+    return m.group(1) if m else None
+
+
+def is_escalation(text: str | None) -> bool:
+    return escalation_term(text) is not None
+
+
 # Sinais de que o cliente fechou (vira "possível fechamento" para você confirmar no painel).
 _CLOSING = re.compile(
     r"\bfechado\b|\bfechou\b|\bfechamos\b|\bvamos fechar\b|\bpode fazer\b|\bpode comecar\b|"
@@ -176,6 +197,7 @@ class ReplyOutcome:
     auto_reply: bool = False
     closing: bool = False
     duplicate: bool = False
+    escalated: bool = False
 
 
 def handle_inbound(
@@ -221,17 +243,25 @@ def handle_inbound(
                          "WHERE lead_id = ? AND tipo = 'followup' AND status IN ('pendente', 'aprovado')",
                          (db.iso(now), lead["id"]))
         fields["status"] = new_status
-        closing = new_status == db.INTERESSADO and not auto_msg and is_closing(msg.text)
+        term = None if auto_msg else escalation_term(msg.text)
+        if term:
+            fields["escalar"] = 1
+            fields["escalar_em"] = db.iso(now)
+        closing = new_status == db.INTERESSADO and not auto_msg and is_closing(msg.text) and not term
         if closing:
             fields["sinal_fechamento"] = 1
         auto = (new_status not in (db.NAO_QUER, db.CLIENTE) and not in_business_hours and not auto_msg
-                and not lead["auto_resposta_enviada"])
+                and not term and not lead["auto_resposta_enviada"])
         if auto:
             fields["auto_resposta_enviada"] = 1  # reserva já: no máximo uma vez por contato
         db.update_lead(conn, lead["id"], **fields)
 
     if auto_msg:  # robô: sem alarme
         return ReplyOutcome(lead["id"], new_status)
+    if term:  # ameaça/denúncia/golpe: alarme urgente, nenhuma resposta automática
+        notify_fn(f"NÃO RESPONDA: {lead['nome']} falou em “{term}”",
+                  f"{msg.text[:300]}\nLeia a conversa e decida você mesmo.", True)
+        return ReplyOutcome(lead["id"], new_status, escalated=True)
     label = {db.NAO_QUER: "pediu para parar (bloqueado)", db.INTERESSADO: "parece interessado"}.get(new_status, "respondeu")
     if closing:
         label = "POSSÍVEL FECHAMENTO, confirme no painel"

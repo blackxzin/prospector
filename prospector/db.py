@@ -215,6 +215,9 @@ _MIGRATIONS = (
     ("leads", "longitude", "REAL"),
     ("leads", "presenca_checada_em", "TEXT"),  # busca de site/Instagram/cardápio online (presenca.py)
     ("respostas", "msg_id", "TEXT"),          # id da mensagem no WhatsApp (evita contar a mesma resposta 2x)
+    ("leads", "escalar", "INTEGER NOT NULL DEFAULT 0"),   # falou de advogado/denúncia/lei: só você responde
+    ("leads", "escalar_em", "TEXT"),
+    ("leads", "site_sinais", "TEXT"),                     # JSON: sinais lidos no site (sem_whatsapp, ...)
     ("fila", "liberar_em", "TEXT"),            # item aprovado só sai a partir deste instante (UTC iso)
     ("leads", "pais", "TEXT NOT NULL DEFAULT 'BR'"),                     # ISO-2 do mercado do lead
     ("leads", "idioma", "TEXT NOT NULL DEFAULT 'pt'"),                   # idioma da mensagem (pt, en, es, fr, de, it)
@@ -290,6 +293,7 @@ _LEAD_COLUMNS = frozenset({
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
     "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
     "presenca_checada_em", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
+    "escalar", "escalar_em", "site_sinais", "pais", "idioma", "fuso",
 })
 
 

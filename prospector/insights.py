@@ -22,6 +22,7 @@ MIN_AMOSTRA = 5            # envios mínimos para comparar conversão entre segm
 CONVERSAO_ALTA = 0.30      # acima disso, sugere testar preço maior
 DIAS_INTERESSADO_PARADO = 1
 DIAS_ENTREGUE_SEM_PAGAR = 7
+DIAS_ESCALACAO = 14         # quanto tempo um alerta de ameaça/denúncia fica no painel
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,13 @@ def alerts(conn: sqlite3.Connection, today: date) -> list[Alerta]:
     stop = db.stop_reason(conn)
     if stop:
         out.append(Alerta(CRITICO, "Envio parado", stop, "/"))
+
+    desde = (today - timedelta(days=DIAS_ESCALACAO)).isoformat()
+    for e in conn.execute("SELECT id, nome, resposta FROM leads WHERE escalar = 1 AND substr(escalar_em, 1, 10) >= ? "
+                          "ORDER BY escalar_em DESC", (desde,)):
+        out.append(Alerta(CRITICO, f"Não responda sozinho: {e['nome']}",
+                          f"Falou em advogado, denúncia ou golpe: “{(e['resposta'] or '')[:120]}”. Leia a conversa e decida você.",
+                          "/leads"))
 
     for g in conn.execute(
         "SELECT g.*, p.cliente, p.id AS pid FROM pagamentos g JOIN projetos p ON p.id = g.projeto_id "
