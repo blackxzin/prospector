@@ -5,6 +5,7 @@
 # ("Smart Fit", "SmartFit" e "smart-fit" batem igual).
 franquias:
   - graal
+  - açaí da barra
   - Smart Fit
   - Skyfit
   - Bluefit
@@ -118,6 +119,8 @@ dominios_robo:
   - ola.click
   - brendi.com.br
   - takeat.app
+  - cashbarber.com.br
+  - yabadula.app
   - eatfood.app
   - qrpedir.com
   - pedido.app.br
