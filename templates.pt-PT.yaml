@@ -3,7 +3,7 @@ idioma: pt-PT
 decimal: ","
 apresentacao: "Sou programador brasileiro e, com o meu sócio Felipe, fazemos sites, automatismos e bots de atendimento para WhatsApp."
 portfolio: ""
-optout: "(Se preferir não receber mais mensagens, responda PARAR e não volto a contactar.)"
+optout: "(Se preferirem não receber mais mensagens, respondam PARAR e não volto a contactar.)"
 problema_padrao: "não carregava bem"
 saudacoes: {manha: "Bom dia", tarde: "Boa tarde", noite: "Boa noite"}
 
