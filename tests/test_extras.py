@@ -284,3 +284,14 @@ def test_panel_pix_and_proposal(web, listas):
     dash = client.get("/").get_data(as_text=True)
     assert "Nenhum backup do banco ainda" in dash and "Textos que mais funcionam" in dash
 
+
+
+def test_site_check_skips_foreign_leads(conn, listas):
+    from prospector import sitecheck
+    from prospector.importer import import_rows
+    from prospector.mundo import Origem
+    rows = [csv_row(title="Café Luna", phone="612 34 56 79", website="https://luna.example", link="m1")]
+    import_rows(conn, rows, "q", listas, Origem("ES", "es", "Europe/Madrid", "Madrid"))
+    calls = []
+    sitecheck.check_leads(conn, check=lambda url: calls.append(url) or sitecheck.SiteReport("x", ()), out=lambda s: None)
+    assert calls == []

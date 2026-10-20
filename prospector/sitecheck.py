@@ -121,7 +121,8 @@ def check_leads(conn: sqlite3.Connection, *, limit: int = 50, check: Callable[[s
                 out: Callable[[str], None] = print) -> tuple[int, int]:
     """Checa leads novos com site próprio. Com problema: oferta vira site_problema. Devolve (checados, com_problema)."""
     rows = conn.execute(
-        "SELECT id, nome, site FROM leads WHERE status = ? AND oferta = ? AND site IS NOT NULL "
+        # só Brasil: os diagnósticos são em português e, de fora, muito site "fora do ar" é só bloqueio (Cloudflare)
+        "SELECT id, nome, site FROM leads WHERE status = ? AND oferta = ? AND site IS NOT NULL AND pais = 'BR' "
         "AND site_checado_em IS NULL ORDER BY id LIMIT ?",
         (db.NOVO, TEM_SITE, limit),
     ).fetchall()
