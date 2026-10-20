@@ -171,6 +171,28 @@ Antes de um lead entrar na fila da 1ª mensagem, o prospector busca "nome + cida
 
 Tudo isso também está no painel, em **Buscas**: editar nichos e cidades, ver as cidades por raio antes de salvar (adicionar ou substituir), acompanhar o progresso, ver as próximas buscas e o resultado das últimas.
 
+### Fora do Brasil (Europa, EUA, Canadá)
+
+O `mundo.yaml` traz países, cidades (com fuso) e nichos por idioma. Cada lead guarda **país, idioma e fuso**.
+
+```bash
+prospector lote --mundo --listar                # buscas pendentes pelo mundo
+prospector lote --mundo --pais ES,PT,IT --max 6 # só estes países
+prospector buscar "barber shop in Austin, TX, United States" --pais US --fuso America/Chicago --cidade Austin
+prospector fila --pais ES,PT --tamanho 8        # a fila é só do Brasil por padrão; 'todos' mistura tudo
+```
+
+- **Telefone:** qualquer país (biblioteca `phonenumbers`). Só celular entra; fixo é descartado. EUA e Canadá não
+  distinguem fixo de celular, então a confirmação vem da checagem no WA-AKG (a maioria não tem WhatsApp lá).
+- **Textos:** `templates.en.yaml`, `.es`, `.fr`, `.de`, `.it` e `.pt-PT` sobrescrevem o `templates.yaml`. Toda abordagem
+  traz a linha de saída (STOP/PARAR); sem link do portfólio (ele está em português) e sem preço em reais.
+- **Horário:** o horário comercial (dias úteis, janelas) é medido no relógio do lead. Os limites por intervalo,
+  hora e dia continuam globais. Lead de outro fuso não trava os do Brasil: sai primeiro quem pode sair antes.
+- **Respostas:** opt-out, interesse e resposta automática do negócio são reconhecidos em pt, en, es, fr, de e it.
+- **Atenção legal:** mensagem comercial fria tem regras próprias (CASL no Canadá, TCPA nos EUA, GDPR/ePrivacy na UE e
+  o Reino Unido) e o WhatsApp proíbe envio em massa sem consentimento. Confirme o que vale para o seu caso antes de
+  enviar em escala, e respeite todo STOP na hora.
+
 ### Buscas em lote
 
 Liste nichos e cidades no `buscas.yaml` e rode `prospector lote`: cada combinação nicho × cidade é buscada uma vez só (as já feitas são puladas, inclusive as manuais antigas), até `max_por_execucao` por vez. Uma busca com erro não para as outras e é tentada de novo depois. `prospector lote --listar` mostra o que falta.
