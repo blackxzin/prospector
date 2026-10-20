@@ -38,6 +38,20 @@ _CLOSING = re.compile(
 )
 
 
+# Mensagem automática de robô/atendimento do negócio (não é uma pessoa respondendo à nossa abordagem).
+_AUTO = re.compile(
+    r"auto ?atendimento|atendimento automatic|mensagem automatica|resposta automatica|bem[- ]?vind[oa]|"
+    r"agradece (o |seu )?contato|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
+    r"link (do|de nosso) cardapio|segue o (link|cardapio)|como podemos (te )?(ajudar|atender)|"
+    r"em que (posso|podemos) (te )?ajudar|digite [0-9]|escolha uma opcao|no momento nao (estamos|estou) "
+    r"(atendendo|disponivel)|estamos fora do horario",
+)
+
+
+def is_auto_reply(text: str | None) -> bool:
+    return bool(_AUTO.search(fold(text or "")))
+
+
 def is_closing(text: str | None) -> bool:
     return not is_opt_out(text) and bool(_CLOSING.search(fold(text or "")))
 
@@ -149,7 +163,11 @@ def handle_inbound(
         fields: dict[str, object] = {"resposta": msg.text[:2000]}
         if not lead["respondeu_em"]:
             fields["respondeu_em"] = db.iso(now)
-        if lead["status"] == db.CLIENTE:
+        auto_msg = is_auto_reply(msg.text) and lead["status"] not in (db.NAO_QUER, db.CLIENTE)
+        if auto_msg:
+            # robô do negócio: guarda, mas não é opt-out nem interesse; não rebaixa quem já mostrou interesse
+            new_status = db.INTERESSADO if lead["status"] == db.INTERESSADO else db.RESPONDEU
+        elif lead["status"] == db.CLIENTE:
             # já é cliente: conversa normal, um "não" aqui não é pedido de descadastro
             new_status = db.CLIENTE
         elif lead["status"] == db.NAO_QUER or is_opt_out(msg.text):
@@ -168,15 +186,17 @@ def handle_inbound(
                          "WHERE lead_id = ? AND tipo = 'followup' AND status IN ('pendente', 'aprovado')",
                          (db.iso(now), lead["id"]))
         fields["status"] = new_status
-        closing = new_status == db.INTERESSADO and is_closing(msg.text)
+        closing = new_status == db.INTERESSADO and not auto_msg and is_closing(msg.text)
         if closing:
             fields["sinal_fechamento"] = 1
-        auto = (new_status not in (db.NAO_QUER, db.CLIENTE) and not in_business_hours
+        auto = (new_status not in (db.NAO_QUER, db.CLIENTE) and not in_business_hours and not auto_msg
                 and not lead["auto_resposta_enviada"])
         if auto:
             fields["auto_resposta_enviada"] = 1  # reserva já: no máximo uma vez por contato
         db.update_lead(conn, lead["id"], **fields)
 
+    if auto_msg:  # robô: sem alarme
+        return ReplyOutcome(lead["id"], new_status)
     label = {db.NAO_QUER: "pediu para parar (bloqueado)", db.INTERESSADO: "parece interessado"}.get(new_status, "respondeu")
     if closing:
         label = "POSSÍVEL FECHAMENTO, confirme no painel"

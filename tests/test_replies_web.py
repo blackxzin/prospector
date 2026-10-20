@@ -215,3 +215,36 @@ def test_security_headers(web):
     resp = client.get("/leads")
     assert resp.headers["X-Frame-Options"] == "DENY"
     assert "script-src 'none'" in resp.headers["Content-Security-Policy"]
+
+
+AUTO_TEXTS = [
+    "Olá ! Tudo bem ? 😊\n\nNosso horário de atendimento é de segunda a domingo, das 13 às 22hs*. "
+    "Não estaremos realizando delivery(entregas) Como podemos te atender ?",
+    "Olá LUCAS, seja bem-vindo ao nosso autoatendimento.\nSegue o link de nosso cardápio!\nhttps://eatfood.app/tk7eq1ad",
+    "‎Gordinho lanches Avare agradece seu contato. Como podemos ajudar?",
+    "Olá, seja bem vindo (a) ao nosso auto atendimento. Para fazer seu pedido, acesso o link do cardápio",
+]
+
+
+@pytest.mark.parametrize("text", AUTO_TEXTS)
+def test_business_auto_reply_is_not_an_opt_out(conn, listas, text):
+    from prospector.replies import is_auto_reply
+    lead = _contacted_lead(conn, listas)
+    assert is_auto_reply(text)
+    out, notes = _handle(conn, text)
+    row = db.get_lead(conn, lead["id"])
+    assert out.status == db.RESPONDEU and row["status"] == db.RESPONDEU
+    assert not db.is_blocked(conn, {NUMBER}) and notes == []  # sem bloqueio e sem alarme
+
+
+def test_human_replies_are_not_taken_for_auto_replies():
+    from prospector.replies import is_auto_reply
+    for text in ["Pode", "Não", "não tenho interesse", "quanto custa?", "Pode mandar o exemplo sim"]:
+        assert not is_auto_reply(text)
+
+
+def test_auto_reply_does_not_downgrade_interest(conn, listas):
+    lead = _contacted_lead(conn, listas)
+    _handle(conn, "Pode mandar o exemplo")
+    _handle(conn, AUTO_TEXTS[2])
+    assert db.get_lead(conn, lead["id"])["status"] == db.INTERESSADO
