@@ -1,0 +1,18 @@
+diff --git a/src/modules/whatsapp/store/index.ts b/src/modules/whatsapp/store/index.ts
+index f886507..f0b3160 100644
+--- a/src/modules/whatsapp/store/index.ts
++++ b/src/modules/whatsapp/store/index.ts
+@@ -500,7 +500,12 @@ async function processAndSaveMessage(
+         text = `${messageContent.locationMessage.degreesLatitude},${messageContent.locationMessage.degreesLongitude}`;
+     } else if (messageContent?.contactMessage) {
+         messageType = "CONTACT";
+-        text = messageContent.contactMessage.displayName || "";
++        // prospector: guarda também o vCard (traz o telefone do contato); antes só o nome era salvo
++        text = [messageContent.contactMessage.displayName, messageContent.contactMessage.vcard].filter(Boolean).join("\n");
++    } else if (messageContent?.contactsArrayMessage) {
++        messageType = "CONTACT";
++        text = (messageContent.contactsArrayMessage.contacts || [])
++            .map((c: any) => [c.displayName, c.vcard].filter(Boolean).join("\n")).join("\n");
+     }
+ 
+     // Determine effective participant for groups

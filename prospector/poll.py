@@ -78,7 +78,8 @@ def poll_replies(conn: sqlite3.Connection, client: ChatReader, handle: Handler, 
             if message.get("fromMe") or not key or at is None or at <= sent_at:
                 continue
             inbound = Inbound(numbers=frozenset({lead["telefone"]}), jids=frozenset({jid}),
-                              text=_text(message), push_name=str(message.get("pushName") or ""), msg_id=str(key))
+                              text=_text(message), push_name=str(message.get("pushName") or ""), msg_id=str(key),
+                              kind=str(message.get("type") or "").upper())
             if not handle(inbound, at).duplicate:
                 novas += 1
     return PollResult(chats, novas, erros)

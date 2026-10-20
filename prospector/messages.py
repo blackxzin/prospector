@@ -24,7 +24,7 @@ EXTRA_SAMPLE = {"valor": "R$ 300,00", "vencimento": "20/10",
                 "descricao": "Entrada", "pix": "000201...", "problema": "o site está fora do ar"}
 MIN_VARIANTS = 3
 # Grupos opcionais dentro de 'primeira', usados quando o lead tem um sinal específico (ver sitecheck.extract_signals).
-EXTRA_GROUPS = ("tem_site_sem_whatsapp",)
+EXTRA_GROUPS = ("tem_site_sem_whatsapp", "indicado")
 # Campos que nem todo lead tem: a variação que usa um deles só entra no sorteio se o lead tiver o dado.
 CONDITIONAL_FIELDS = ("avaliacao", "arroba", "nota_boa", "dor")
 MIN_UNCONDITIONAL = 3
@@ -153,6 +153,8 @@ class Templates:
             "avaliacao": review_snippet(lead.get("avaliacoes_json")),
             "arroba": instagram_handle(lead.get("site")),
             "nota_boa": self._nota_boa(nota, avaliacoes),
+            "indicador": str(lead.get("indicador") or ""),   # quem indicou (lead indicado)
+            "chamada": str(lead.get("chamada") or ""),       # ", Rafael" quando o nome veio no cartão
             "dor": str(lead.get("dor") or "").strip(),   # pergunta do nicho (nichos.yaml), só para leads de um nicho
         }
         return {**base, "elogio": self._elogio(nota, avaliacoes, rng, base)}
@@ -180,7 +182,9 @@ class Templates:
         if offer not in OFFERS:
             raise TemplateError(f"Oferta desconhecida: {offer}")
         options = list(self.data["primeira"][offer])
-        if offer == TEM_SITE and "sem_whatsapp" in site_signals(lead):
+        if lead.get("indicado_por") and self.data["primeira"].get("indicado"):
+            options = list(self.data["primeira"]["indicado"])      # veio indicado por um atendente: texto próprio
+        elif offer == TEM_SITE and "sem_whatsapp" in site_signals(lead):
             options = list(self.data["primeira"].get("tem_site_sem_whatsapp") or options)
         ctx = self._context(lead, now.astimezone(tz), random.Random(0))
         has = lambda o: all(ctx[k] for k in CONDITIONAL_FIELDS if "{" + k + "}" in o)  # noqa: E731

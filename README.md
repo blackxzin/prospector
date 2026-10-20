@@ -188,6 +188,14 @@ prospector fila --nicho-do-dia        # fila começando pelo nicho de hoje (ou -
 
 Cada lead guarda o `nicho`. A tabela de `prospector nichos` mostra estoque, enviadas, **respostas de gente de verdade**, interessados e clientes: robô de atendimento ("bem-vindo ao nosso autoatendimento", link de cardápio, só um "boa noite") **não conta**, nem no resultado por nicho nem no teste A/B dos textos. Compare os nichos depois de uns 30 envios cada.
 
+### Indicações: o atendente passa o contato de quem decide
+
+O WhatsApp de um negócio costuma ser atendido por funcionário. Quando ele responde "fala com o Rafael" e manda o contato (cartão de contato) ou o número escrito, o prospector cria um **lead indicado** com esse número: herda cidade e nicho, não passa pela busca de presença, entra **na frente da próxima fila** e tem mensagem própria ("Falei com a equipe de X e me passaram seu contato. Quem cuida do site e do WhatsApp aí é você?"). Você é avisado e aprova como qualquer item.
+
+- Só vale para resposta de gente de verdade (robô de atendimento, pedido de parar e o próprio número do negócio ficam de fora); no máximo 3 números por mensagem; número já existente, já contatado ou bloqueado não vira lead.
+- Cartão de contato que chega **sem número** gera aviso com o comando pronto: `prospector indicado "14 99712-3456" --de 12 --nome "Rafael"`.
+- O WA-AKG só guardava o nome do cartão e descartava o telefone. O `scripts/wa-akg-vcard.patch` faz ele guardar o vCard (aplique na pasta do WA-AKG com `git apply` e reconstrua: `docker compose up -d --build`). Sem o patch, a indicação por cartão cai no aviso manual; o número digitado no texto funciona sempre.
+
 ### Portfólio como segunda mensagem
 
 A primeira mensagem é curta e sem link (link na abertura derruba a resposta). O portfólio vai numa **segunda mensagem**, de 25 a 70 segundos depois ("Pra você ter uma ideia do meu trabalho, dá uma olhada no portfólio da gente: ..."), com 3 variações em `portfolio_msg` no `templates.yaml`. Não sai se o lead responder ou pedir para parar nesse intervalo, nem fora do português do Brasil (o portfólio é em português). Ela não conta no limite diário e o intervalo até a próxima primeira mensagem conta a partir dela. Desligue com `PORTFOLIO_APOS_PRIMEIRA=0` no `.env`. Fica registrada no log de envios como `portfolio`.

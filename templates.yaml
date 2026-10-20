@@ -85,6 +85,12 @@ primeira:
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."
     - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Quem chega no site de vocês e quer falar não acha um botão de WhatsApp. Posso mostrar como resolver em um dia. Com quem eu falo?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Reparei que o site de vocês não tem botão pro WhatsApp. Já foi assunto por aí? Quem cuida disso?"
+  # Lead indicado por um atendente (veio o contato de quem decide). {chamada} = ", Rafael" ou vazio.
+  indicado:
+    - "Oi{chamada}! Falei com a equipe de {indicador} e me passaram seu contato. Sou o Lucas, desenvolvedor {local}. Quem cuida do site e do WhatsApp aí é você? Tenho uma ideia rápida pra mostrar."
+    - "{saudacao}{chamada}! Sou o Lucas, desenvolvedor {local}. A equipe de {indicador} me passou seu contato como responsável. Posso te falar rapidinho de uma ideia pra vocês?"
+    - "Oi{chamada}! Sou o Lucas, desenvolvedor {local}. Conversei com a equipe de {indicador} e disseram que é com você que se fala de site e atendimento no WhatsApp. É isso mesmo?"
+
   site_problema:
     - "Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Tentei abrir o site de vocês e reparei que {problema}. Já sabiam? Com quem eu falo pra ajudar a resolver?"
     - "{saudacao}! Sou o Lucas, desenvolvedor {local}. Passei pelo site de vocês e reparei que {problema}. Isso faz cliente desistir. Quem cuida do site?"

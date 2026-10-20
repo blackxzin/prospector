@@ -155,6 +155,7 @@ class Inbound:
     text: str
     push_name: str
     msg_id: str | None = None  # id da mensagem no WhatsApp (só quando vem do polling)
+    kind: str = ""             # tipo da mensagem no WhatsApp (TEXT, CONTACT, AUDIO...)
 
 
 def _content(data: dict[str, Any]) -> str:
@@ -183,7 +184,8 @@ def parse_inbound(payload: dict[str, Any]) -> Inbound | None:
     numbers = frozenset(n for n in (phone_from_jid(j) for j in jids) if n)
     if not numbers and not jids:
         return None
-    return Inbound(numbers=numbers, jids=jids, text=_content(data), push_name=str(data.get("pushName") or ""))
+    return Inbound(numbers=numbers, jids=jids, text=_content(data), push_name=str(data.get("pushName") or ""),
+                   kind=str(data.get("type") or "").upper())
 
 
 def find_lead(conn: sqlite3.Connection, msg: Inbound) -> sqlite3.Row | None:
@@ -285,4 +287,7 @@ def handle_inbound(
     if closing:
         label = "POSSÍVEL FECHAMENTO, confirme no painel"
     notify_fn(f"{lead['nome']} {label}", f"{msg.text[:300]}", new_status == db.INTERESSADO)
+    if new_status != db.NAO_QUER and (is_human_reply(msg.text) or msg.kind == "CONTACT"):
+        from .indicacoes import register_from_reply
+        register_from_reply(conn, lead, msg.text, msg.kind, now, notify_fn)
     return ReplyOutcome(lead["id"], new_status, auto, closing)

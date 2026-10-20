@@ -559,6 +559,21 @@ def cmd_respostas(app: App, args: argparse.Namespace) -> int:
         time.sleep(args.loop)
 
 
+def cmd_indicado(app: App, args: argparse.Namespace) -> int:
+    """Registra à mão o contato que um atendente passou (cartão de contato sem número, ou número falado)."""
+    from .indicacoes import register_referral
+    try:
+        ids = register_referral(app.conn, args.de, args.numero, nome=args.nome, now=db.utcnow())
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    if not ids:
+        print("Esse número já está no sistema (ou já foi contatado, ou está bloqueado). Nada criado.")
+        return 0
+    print(f"Lead indicado criado (id {ids[0]}). Ele entra na frente da próxima fila: rode 'prospector fila'.")
+    return 0
+
+
 def cmd_nichos(app: App, args: argparse.Namespace) -> int:
     from . import metrics
     from .nichos import reclassificar
@@ -631,6 +646,12 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--liberar-em", metavar="'AAAA-MM-DD HH:MM'",
                    help="aprova agora, mas só envia a partir deste horário (horário do Brasil)")
     a.set_defaults(fn=cmd_aprovar)
+
+    a = sub.add_parser("indicado", help="registra o contato que um atendente passou (número de quem decide)")
+    a.add_argument("numero", help="celular com DDD, ex.: '14 99712-3456'")
+    a.add_argument("--de", type=int, required=True, metavar="LEAD_ID", help="id do lead que indicou (aparece no aviso)")
+    a.add_argument("--nome", help="nome da pessoa indicada, ex.: Rafael")
+    a.set_defaults(fn=cmd_indicado)
 
     a = sub.add_parser("nichos", help="nicho de hoje e resultado de cada nicho (enviadas, respostas humanas...)")
     a.add_argument("--reclassificar", action="store_true", help="marca o nicho dos leads antigos e recalcula respostas humanas")

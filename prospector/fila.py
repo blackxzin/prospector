@@ -11,7 +11,7 @@ from typing import Callable, Mapping
 from . import db
 from zoneinfo import ZoneInfo
 
-from .messages import TemplateSet, Templates
+from .messages import TemplateSet, Templates, clean_name
 from .nichos import Nichos
 from .phone import variants
 from .schedule import Rules, add_business_days
@@ -121,10 +121,15 @@ def _tpl_and_tz(templates: Templates | TemplateSet, lead: Mapping, rules: Rules)
     return tpl, tz
 
 
-def _lead_for_render(lead: Mapping, nichos: Nichos | None) -> dict:
-    """Lead como dict para o texto, com a 'dor' do nicho dele (se tiver)."""
+def _lead_for_render(conn: sqlite3.Connection, lead: Mapping, nichos: Nichos | None) -> dict:
+    """Lead como dict para o texto: 'dor' do nicho e, se foi indicado, quem indicou e o nome da pessoa."""
     out = dict(lead)
     out["dor"] = nichos.dor_de(lead["nicho"]) if nichos and lead["nicho"] else ""
+    if lead["indicado_por"]:
+        referrer = db.get_lead(conn, lead["indicado_por"])
+        out["indicador"] = clean_name(referrer["nome"], referrer["cidade"]) if referrer else ""
+        first = (lead["contato_nome"] or "").split()[:1]
+        out["chamada"] = f", {first[0].capitalize()}" if first and len(first[0]) >= 2 else ""
     return out
 
 
@@ -145,8 +150,9 @@ def _new_leads_query(busca: str | None, cidade: str | None, pais: tuple[str, ...
         sql += " AND nicho = ?"
         params.append(nicho)
     if preferir_nicho:  # o nicho do dia vem primeiro; o resto completa a fila
-        return sql + " ORDER BY (nicho = ?) DESC, COALESCE(avaliacoes, 0) DESC, id", [*params, preferir_nicho]
-    return sql + " ORDER BY COALESCE(avaliacoes, 0) DESC, id", params
+        return (sql + " ORDER BY (indicado_por IS NOT NULL) DESC, (nicho = ?) DESC, COALESCE(avaliacoes, 0) DESC, id",
+                [*params, preferir_nicho])
+    return sql + " ORDER BY (indicado_por IS NOT NULL) DESC, COALESCE(avaliacoes, 0) DESC, id", params
 
 
 Checker = Callable[[sqlite3.Connection, Mapping], bool]
@@ -230,7 +236,7 @@ def build_queue(
                 db.update_lead(conn, lead["id"], status=db.DESCARTADO, motivo="já contatado (outro cadastro)")
                 continue
             tpl, tz = _tpl_and_tz(templates, lead, rules)
-            texto, variante = tpl.first_message_ab(_lead_for_render(lead, nichos), now, tz, rng, stats)
+            texto, variante = tpl.first_message_ab(_lead_for_render(conn, lead, nichos), now, tz, rng, stats)
             _insert(conn, lead["id"], db.PRIMEIRA, texto, dia, variante=variante)
             db.update_lead(conn, lead["id"], status=db.NA_FILA)
             firsts += 1
@@ -261,7 +267,7 @@ def regenerate_texts(conn: sqlite3.Connection, templates: Templates | TemplateSe
         for row in rows:
             lead = db.get_lead(conn, row["lead_id"])
             tpl, tz = _tpl_and_tz(templates, lead, rules)
-            texto, variante = tpl.first_message_ab(_lead_for_render(lead, nichos), now, tz, rng, stats)
+            texto, variante = tpl.first_message_ab(_lead_for_render(conn, lead, nichos), now, tz, rng, stats)
             conn.execute("UPDATE fila SET texto = ?, variante = ?, atualizado_em = ? WHERE id = ?",
                          (texto, variante, db.iso(db.utcnow()), row["id"]))
             db.update_lead(conn, row["lead_id"], variante=variante)

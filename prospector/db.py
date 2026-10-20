@@ -218,6 +218,8 @@ _MIGRATIONS = (
     ("leads", "escalar", "INTEGER NOT NULL DEFAULT 0"),   # falou de advogado/denúncia/lei: só você responde
     ("leads", "escalar_em", "TEXT"),
     ("leads", "site_sinais", "TEXT"),                     # JSON: sinais lidos no site (sem_whatsapp, ...)
+    ("leads", "indicado_por", "INTEGER"),                 # lead de quem veio o contato (atendente passou o dono)
+    ("leads", "contato_nome", "TEXT"),                    # nome da pessoa indicada, quando veio no cartão
     ("leads", "nicho", "TEXT"),                            # id em nichos.yaml (clinicas, mecanicos...)
     ("leads", "resposta_humana", "INTEGER NOT NULL DEFAULT 0"),  # 1 = respondeu uma pessoa (robô não conta)
     ("fila", "editado", "INTEGER NOT NULL DEFAULT 0"),   # texto editado à mão: não é refeito
@@ -296,7 +298,7 @@ _LEAD_COLUMNS = frozenset({
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
     "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
     "presenca_checada_em", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",
-    "escalar", "escalar_em", "site_sinais", "pais", "idioma", "fuso", "nicho", "resposta_humana",
+    "escalar", "escalar_em", "site_sinais", "pais", "idioma", "fuso", "nicho", "resposta_humana", "indicado_por", "contato_nome",
 })
 
 
