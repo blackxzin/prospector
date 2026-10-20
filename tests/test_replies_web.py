@@ -219,6 +219,8 @@ def test_security_headers(web):
 
 
 AUTO_TEXTS = [
+    "Olá! Que bom falar com o Rancho das Pedras 🧡  Seu interesse é: 1️⃣Hospedagem  2️⃣Eventos",
+    "Olá! Obrigado pelo seu contato! ✨ Estamos em atendimento no momento, mas responderemos em breve.",
     "Olá ! Tudo bem ? 😊\n\nNosso horário de atendimento é de segunda a domingo, das 13 às 22hs*. "
     "Não estaremos realizando delivery(entregas) Como podemos te atender ?",
     "Olá LUCAS, seja bem-vindo ao nosso autoatendimento.\nSegue o link de nosso cardápio!\nhttps://eatfood.app/tk7eq1ad",
@@ -249,3 +251,21 @@ def test_auto_reply_does_not_downgrade_interest(conn, listas):
     _handle(conn, "Pode mandar o exemplo")
     _handle(conn, AUTO_TEXTS[2])
     assert db.get_lead(conn, lead["id"])["status"] == db.INTERESSADO
+
+
+@pytest.mark.parametrize("text", [
+    "PENSOU NO DELIVERY ➡️ PALÁCIO DO SORVETE EXPRESS 14996302122 loja 2. Na loja 1 aqui NÃO FAZEMOS ENTREGAS",
+    "Nosso atendimento é exclusivamente presencial garantindo que cada produto seja preparado e servido "
+    "com a qualidade e o frescor que você merece. Não fazemos entregas.",
+    "Oi, tudo bem? Hoje não temos mais pizza de calabresa mas o resto do cardápio está disponível, quer ver?",
+])
+def test_long_message_with_a_nao_is_not_an_opt_out(text):
+    assert not is_opt_out(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Olá, boa tarde, nosso time já viu a mensagem mas pare de mandar por favor, obrigado e bom trabalho a vocês",
+    "Obrigado mas não tenho interesse em site nenhum, o meu movimento está bom do jeito que está hoje",
+])
+def test_long_explicit_opt_out_still_counts(text):
+    assert is_opt_out(text)

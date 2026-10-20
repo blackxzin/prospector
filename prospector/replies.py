@@ -17,12 +17,17 @@ from .phone import phone_from_jid, variants
 
 log = logging.getLogger("prospector")
 
-# Opt-out: qualquer "não" isolado conta (regra pedida: na dúvida, não insistir).
-_OPT_OUT = re.compile(
-    r"\bnao\b|\bnaum\b|\bnn\b|\bpare\b|\bparar\b|\bpara de\b|\bsair\b|\bsai\b|\bremov|\bdescadastr|"
-    r"\bsem interesse\b|\bdesinteress|\bnao quero\b|\bnao preciso\b|\bme tira\b|\bbloque|\bspam\b|"
-    r"\bstop\b|\bdenunc|\bchato\b|\bincomod|\bnao mand|\bobrigad[oa],? mas\b",
+# Opt-out explícito: vale em qualquer tamanho de mensagem.
+_OPT_OUT_STRONG = re.compile(
+    r"\bpare\b|\bparar\b|\bpara de\b|\bremov|\bdescadastr|\bsem interesse\b|\bdesinteress|"
+    r"\bnao (tenho interesse|quero|preciso)\b|\bme tira\b|\bbloque|\bspam\b|\bdenunc|\bnao mand",
 )
+# Opt-out fraco ("não", "sair"...): só conta em mensagem curta. Em texto longo costuma ser aviso do
+# negócio ("não fazemos entrega"), não um pedido para parar.
+_OPT_OUT_WEAK = re.compile(
+    r"\bnao\b|\bnaum\b|\bnn\b|\bsair\b|\bsai\b|\bstop\b|\bchato\b|\bincomod|\bobrigad[oa],? mas\b",
+)
+WEAK_OPT_OUT_MAX_WORDS = 8
 _INTEREST = re.compile(
     r"\bsim\b|\bpode\b|\bquero\b|\bmanda\b|\bmande\b|\btenho interesse\b|\binteress|\bclaro\b|"
     r"\bcomo funciona\b|\bquanto\b|\bvalor\b|\bpreco\b|\bbora\b|\bok\b|\bpode ser\b|\bgostaria\b",
@@ -41,9 +46,9 @@ _CLOSING = re.compile(
 # Mensagem automática de robô/atendimento do negócio (não é uma pessoa respondendo à nossa abordagem).
 _AUTO = re.compile(
     r"auto ?atendimento|atendimento automatic|mensagem automatica|resposta automatica|bem[- ]?vind[oa]|"
-    r"agradece (o |seu )?contato|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
+    r"agradece (o |seu )?contato|obrigad[oa] pelo seu contato|vamos responder|responderemos em|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
     r"link (do|de nosso) cardapio|segue o (link|cardapio)|como podemos (te )?(ajudar|atender)|"
-    r"em que (posso|podemos) (te )?ajudar|digite [0-9]|escolha uma opcao|no momento nao (estamos|estou) "
+    r"em que (posso|podemos) (te )?ajudar|que bom falar com|seu interesse e\b|1\ufe0f?\u20e3|digite [0-9]|escolha uma opcao|no momento nao (estamos|estou) "
     r"(atendendo|disponivel)|estamos fora do horario",
 )
 
@@ -57,7 +62,10 @@ def is_closing(text: str | None) -> bool:
 
 
 def is_opt_out(text: str | None) -> bool:
-    return bool(_OPT_OUT.search(fold(text or "")))
+    folded = fold(text or "")
+    if _OPT_OUT_STRONG.search(folded):
+        return True
+    return len(folded.split()) <= WEAK_OPT_OUT_MAX_WORDS and bool(_OPT_OUT_WEAK.search(folded))
 
 
 def is_interested(text: str | None) -> bool:
