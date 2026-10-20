@@ -124,12 +124,29 @@ def cmd_fila(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def _release_time(app: App, raw: str | None):
+    """'2026-10-21 09:00' (horário do Brasil) -> instante UTC; None se não informado."""
+    if not raw:
+        return None
+    from datetime import datetime
+    try:
+        return datetime.strptime(raw.strip(), "%Y-%m-%d %H:%M").replace(tzinfo=app.settings.tz)
+    except ValueError as exc:
+        raise ValueError("Use --liberar-em 'AAAA-MM-DD HH:MM' (horário do Brasil)") from exc
+
+
 def cmd_aprovar(app: App, args: argparse.Namespace) -> int:
+    try:
+        liberar = _release_time(app, args.liberar_em)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
     if args.todos:
-        print(f"{fq.approve(app.conn, fq.pending_ids(app.conn))} itens aprovados.")
+        print(f"{fq.approve(app.conn, fq.pending_ids(app.conn), liberar_em=liberar)} itens aprovados.")
         return 0
     if args.ids:
-        print(f"{fq.approve(app.conn, args.ids)} itens aprovados.")
+        print(f"{fq.approve(app.conn, args.ids, liberar_em=liberar)} itens aprovados."
+              + (f" Saem a partir de {args.liberar_em}." if liberar else ""))
         return 0
     pend = [i for i in fq.list_items(app.conn, (fq.PENDENTE,))]
     if not pend:
@@ -544,6 +561,8 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("aprovar", help="aprova itens da fila (interativo, por id, ou --todos)")
     a.add_argument("ids", nargs="*", type=int)
     a.add_argument("--todos", action="store_true")
+    a.add_argument("--liberar-em", metavar="'AAAA-MM-DD HH:MM'",
+                   help="aprova agora, mas só envia a partir deste horário (horário do Brasil)")
     a.set_defaults(fn=cmd_aprovar)
 
     a = sub.add_parser("rejeitar", help="rejeita itens da fila por id")

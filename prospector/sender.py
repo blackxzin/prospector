@@ -99,19 +99,24 @@ def _lead_tz(item: sqlite3.Row, rules: Rules) -> tzinfo:
         return rules.tz
 
 
-def _next_item(conn: sqlite3.Connection, seen: set[int],
-               when_for: Callable[[sqlite3.Row], datetime | None]) -> sqlite3.Row | None:
-    """Próximo item aprovado a enviar: o que puder sair mais cedo (lead de outro fuso não trava os demais).
-    A fila é relida a cada chamada: o que for aprovado durante o envio entra."""
+def _next_item(conn: sqlite3.Connection, seen: set[int], when_for: Callable[[sqlite3.Row], datetime | None],
+               now: datetime) -> tuple[sqlite3.Row | None, datetime | None]:
+    """(próximo item, None) ou (None, quando acorda) ou (None, None) se não há mais nada.
+
+    Escolhe o item liberado que puder sair mais cedo (lead de outro fuso não trava os demais). Itens com
+    `liberar_em` no futuro esperam. A fila é relida a cada chamada: o que for aprovado durante o envio entra."""
     pending = [i for i in _approved(conn) if i["id"] not in seen]
     if not pending:
-        return None
+        return None, None
+    ready = [i for i in pending if not i["liberar_em"] or db.parse_iso(i["liberar_em"]) <= now]
+    if not ready:
+        return None, min(db.parse_iso(i["liberar_em"]) for i in pending)
     best: tuple[datetime, sqlite3.Row] | None = None
-    for item in pending:
+    for item in ready:
         when = when_for(item)
         if when is not None and (best is None or when < best[0]):
             best = (when, item)
-    return best[1] if best else pending[0]
+    return (best[1] if best else ready[0]), None
 
 
 def _skip(conn: sqlite3.Connection, item: sqlite3.Row) -> None:
@@ -227,9 +232,20 @@ def run(
 
     seen: set[int] = set()
     while True:
-        item = _next_item(conn, seen, when_for)
+        item, wake = _next_item(conn, seen, when_for, clock.now())
         if item is None:
-            break
+            if wake is None:
+                break
+            if not cross_days:
+                report.motivo_fim = (f"Itens agendados para {fmt_local(wake, rules.tz)}. "
+                                     "Use --aguardar para esperar.")
+                break
+            out(f"  aguardando liberação dos itens agendados ({fmt_local(wake, rules.tz)})")
+            clock.sleep(max(1.0, min((wake - clock.now()).total_seconds(), 300.0)))
+            if should_stop():
+                report.motivo_fim = "Pausado por você."
+                break
+            continue
         seen.add(item["id"])
         if should_stop():
             report.motivo_fim = "Pausado por você."

@@ -262,3 +262,38 @@ def test_sender_picks_the_lead_that_can_go_now_and_uses_local_greeting(conn, lis
 def templates_path():
     from prospector.config import ROOT
     return ROOT / "templates.yaml"
+
+
+# ---------- liberação agendada ----------
+
+def test_item_with_release_time_waits_and_sender_keeps_running(conn, listas, templates, rules):
+    _approved_queue(conn, listas, templates, rules, 1)
+    release = MONDAY_9 + timedelta(hours=2)
+    conn.execute("UPDATE fila SET liberar_em = ?", (db.iso(release),))
+    conn.commit()
+    client = FakeWa()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True)
+    assert report.enviados == 1 and len(client.sent) == 1
+    sent_at = db.parse_iso(conn.execute("SELECT enviado_em FROM envios WHERE ok = 1").fetchone()[0])
+    assert sent_at >= release
+
+
+def test_scheduled_item_without_wait_is_left_for_later(conn, listas, templates, rules):
+    _approved_queue(conn, listas, templates, rules, 1)
+    conn.execute("UPDATE fila SET liberar_em = ?", (db.iso(MONDAY_9 + timedelta(hours=2)),))
+    conn.commit()
+    client = FakeWa()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9))
+    assert report.enviados == 0 and client.sent == [] and "agendados" in report.motivo_fim
+
+
+def test_ready_items_go_first_while_another_is_scheduled(conn, listas, templates, rules):
+    _approved_queue(conn, listas, templates, rules, 2)
+    first, lead = conn.execute("SELECT f.id, l.telefone FROM fila f JOIN leads l ON l.id = f.lead_id "
+                               "ORDER BY f.id").fetchone()
+    conn.execute("UPDATE fila SET liberar_em = ? WHERE id = ?", (db.iso(MONDAY_9 + timedelta(hours=1)), first))
+    conn.commit()
+    client = FakeWa()
+    _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True)
+    assert len(client.sent) == 2 and client.sent[0][0] != f"{lead}@s.whatsapp.net"  # o agendado sai depois
+    assert client.sent[1][0] == f"{lead}@s.whatsapp.net"

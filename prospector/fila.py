@@ -229,8 +229,10 @@ def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, 
     ).fetchall()
 
 
-def approve(conn: sqlite3.Connection, item_ids: list[int], texto: str | None = None) -> int:
-    """Aprova itens pendentes. `texto` (opcional) substitui a mensagem de um único item."""
+def approve(conn: sqlite3.Connection, item_ids: list[int], texto: str | None = None,
+            liberar_em: datetime | None = None) -> int:
+    """Aprova itens pendentes. `texto` (opcional) substitui a mensagem de um único item.
+    `liberar_em`: o item só sai a partir desse instante (aprovar hoje, enviar amanhã)."""
     if texto is not None and len(item_ids) != 1:
         raise ValueError("Edição de texto só para um item por vez")
     now = db.iso(db.utcnow())
@@ -244,7 +246,8 @@ def approve(conn: sqlite3.Connection, item_ids: list[int], texto: str | None = N
                 if not texto.strip():
                     raise ValueError("Mensagem vazia")
                 conn.execute("UPDATE fila SET texto = ? WHERE id = ?", (texto.strip(), item_id))
-            conn.execute("UPDATE fila SET status = ?, atualizado_em = ? WHERE id = ?", (APROVADO, now, item_id))
+            conn.execute("UPDATE fila SET status = ?, atualizado_em = ?, liberar_em = ? WHERE id = ?",
+                         (APROVADO, now, db.iso(liberar_em) if liberar_em else None, item_id))
             if row["tipo"] == db.PRIMEIRA:
                 db.update_lead(conn, row["lead_id"], aprovado_em=now)
             n += 1

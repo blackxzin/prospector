@@ -4,6 +4,97 @@
 # A comparação ignora maiúsculas, acentos, espaços e pontuação
 # ("Smart Fit", "SmartFit" e "smart-fit" batem igual).
 franquias:
+  # redes internacionais (Europa, EUA, Canadá)
+  - McDonald's
+  - Burger King
+  - KFC
+  - Subway
+  - Starbucks
+  - Domino's
+  - Pizza Hut
+  - Papa John's
+  - Dunkin
+  - Costa Coffee
+  - Greggs
+  - Nando's
+  - Pret A Manger
+  - Telepizza
+  - Pans & Company
+  - Foster's Hollywood
+  - VIPS
+  - 100 Montaditos
+  - Goiko
+  - Tim Hortons
+  - Wendy's
+  - Taco Bell
+  - Five Guys
+  - Vapiano
+  - Block House
+  - L'Osteria
+  - Pizza Express
+  - Zizzi
+  - Prezzo
+  - Wagamama
+  - Leon
+  - Itsu
+  - Wasabi
+  - Tesco
+  - Lidl
+  - Aldi
+  - Carrefour
+  - Mercadona
+  - Continente
+  - Pingo Doce
+  - Basic-Fit
+  - McFit
+  - Fitness First
+  - PureGym
+  - Anytime Fitness
+  - Holmes Place
+  - Virgin Active
+  - The Gym Group
+  - Supercuts
+  - Great Clips
+  - Sport Clips
+  - Barber Brothers
+  - Rossmann
+  - Douglas
+  - Sephora
+  - Dunkin'
+  - Le Pain Quotidien
+  - Paul
+  - Brioche Dorée
+  - Exki
+  - Ditsch
+  - Kamps
+  - Back-Werk
+  - Dean & David
+  - Ben & Jerry's
+  - Venchi
+  - Grom
+  - Rustichella
+  - Eataly
+  - Old Wild West
+  - Spizzico
+  - Burger Ranch
+  - Yo! Sushi
+  - Pizza Pilgrims
+  - Franco Manca
+  - GBK
+  - Honest Burgers
+  - Rock & Rolla
+  - Papa Murphy's
+  - Little Caesars
+  - Jimmy John's
+  - Jersey Mike's
+  - Panera
+  - Chipotle
+  - Chick-fil-A
+  - Popeyes
+  - Panda Express
+  - Shake Shack
+  - In-N-Out
+  - Whataburger
   - graal
   - açaí da barra
   - Smart Fit
@@ -114,6 +205,43 @@ dominios_social:
 # Pode ter caminho (ex.: "exemplo.com/loja" só vale para links que começam assim).
 # iFood não entra aqui: é marketplace, não robô de WhatsApp, e quase todo restaurante está nele.
 dominios_robo:
+  # reservas e agendamento (Europa, EUA)
+  - thefork.com
+  - thefork.es
+  - thefork.it
+  - thefork.fr
+  - thefork.de
+  - thefork.pt
+  - thefork.co.uk
+  - opentable.com
+  - opentable.co.uk
+  - opentable.de
+  - opentable.es
+  - opentable.ie
+  - quandoo.de
+  - quandoo.it
+  - quandoo.co.uk
+  - quandoo.es
+  - quandoo.com
+  - resy.com
+  - sevenrooms.com
+  - treatwell.co.uk
+  - treatwell.es
+  - treatwell.it
+  - treatwell.de
+  - treatwell.fr
+  - treatwell.pt
+  - treatwell.com
+  - planity.com
+  - fresha.com
+  - setmore.com
+  - calendly.com
+  - gloriafood.com
+  - flipdish.com
+  - resdiary.com
+  - mindbodyonline.com
+  - timify.com
+  - shore.com
   - anota.ai
   - whatsmenu.com.br
   - ola.click
