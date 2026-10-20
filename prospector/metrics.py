@@ -41,24 +41,38 @@ def _nicho(busca: str | None) -> str:
 
 
 def by_dimension(conn: sqlite3.Connection, dim: str, limit: int = 8) -> list[dict[str, Any]]:
-    """Conversão por 'cidade' ou 'nicho', só entre leads já contatados."""
+    """Conversão por 'cidade' ou 'nicho', só entre leads já contatados. Resposta = gente de verdade (robô não conta)."""
     rows = conn.execute(
-        "SELECT l.cidade, l.busca, l.respondeu_em, l.status, "
+        "SELECT l.cidade, l.busca, l.nicho, l.resposta_humana, l.status, "
         "EXISTS (SELECT 1 FROM projetos p WHERE p.lead_id = l.id AND p.status != 'cancelado') AS cliente "
         "FROM leads l WHERE l.enviado_em IS NOT NULL"
     ).fetchall()
     agg: dict[str, dict[str, int]] = defaultdict(lambda: {"contatados": 0, "responderam": 0, "clientes": 0})
     for r in rows:
-        key = (r["cidade"] or "—") if dim == "cidade" else _nicho(r["busca"])
+        key = (r["cidade"] or "—") if dim == "cidade" else (r["nicho"] or _nicho(r["busca"]))
         a = agg[key]
         a["contatados"] += 1
-        a["responderam"] += int(bool(r["respondeu_em"]) and r["status"] != db.NAO_QUER)
+        a["responderam"] += int(bool(r["resposta_humana"]) and r["status"] != db.NAO_QUER)
         a["clientes"] += int(r["cliente"])
     out = [{"nome": k, **v, "taxa": v["responderam"] / v["contatados"] if v["contatados"] else 0.0}
            for k, v in agg.items()]
     # as mais contatadas entram no gráfico; dentro delas, ordena pela taxa de resposta
     top = sorted(out, key=lambda x: (-x["contatados"], x["nome"]))[:limit]
     return sorted(top, key=lambda x: (-x["taxa"], -x["contatados"]))
+
+
+def nicho_report(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Uma linha por nicho: estoque, enviadas, respostas de gente de verdade, interesse e clientes."""
+    rows = conn.execute(
+        "SELECT COALESCE(nicho, 'sem nicho') AS nicho, "
+        "SUM(status = 'novo') AS estoque, SUM(enviado_em IS NOT NULL) AS enviadas, "
+        "SUM(enviado_em IS NOT NULL AND resposta_humana = 1 AND status != 'nao_quer') AS humanas, "
+        "SUM(status = 'interessado') AS interessados, "
+        "SUM(EXISTS (SELECT 1 FROM projetos p WHERE p.lead_id = leads.id AND p.status != 'cancelado')) AS clientes "
+        "FROM leads WHERE pais = 'BR' GROUP BY 1"
+    ).fetchall()
+    out = [{**dict(r), "taxa": (r["humanas"] or 0) / r["enviadas"] if r["enviadas"] else 0.0} for r in rows]
+    return sorted(out, key=lambda x: (-x["enviadas"], -x["estoque"], x["nicho"]))
 
 
 def leads_by_city(conn: sqlite3.Connection, limit: int = 8) -> list[dict[str, Any]]:

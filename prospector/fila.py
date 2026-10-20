@@ -12,6 +12,7 @@ from . import db
 from zoneinfo import ZoneInfo
 
 from .messages import TemplateSet, Templates
+from .nichos import Nichos
 from .phone import variants
 from .schedule import Rules, add_business_days
 
@@ -51,10 +52,11 @@ def _insert(conn: sqlite3.Connection, lead_id: int, tipo: str, texto: str, dia: 
 
 
 def ab_stats(conn: sqlite3.Connection) -> dict[str, tuple[int, int]]:
-    """{variante: (enviados, respostas positivas)}. "nao_quer" conta como resposta negativa."""
+    """{variante: (enviados, respostas positivas)}. Só resposta de gente de verdade conta (robô de atendimento não);
+    "nao_quer" conta como resposta negativa."""
     rows = conn.execute(
         "SELECT variante, COUNT(*) AS enviados, "
-        "SUM(respondeu_em IS NOT NULL AND status != 'nao_quer') AS positivos "
+        "SUM(resposta_humana = 1 AND status != 'nao_quer') AS positivos "
         "FROM leads WHERE enviado_em IS NOT NULL AND variante IS NOT NULL GROUP BY variante"
     ).fetchall()
     return {r["variante"]: (r["enviados"], r["positivos"] or 0) for r in rows}
@@ -119,8 +121,15 @@ def _tpl_and_tz(templates: Templates | TemplateSet, lead: Mapping, rules: Rules)
     return tpl, tz
 
 
+def _lead_for_render(lead: Mapping, nichos: Nichos | None) -> dict:
+    """Lead como dict para o texto, com a 'dor' do nicho dele (se tiver)."""
+    out = dict(lead)
+    out["dor"] = nichos.dor_de(lead["nicho"]) if nichos and lead["nicho"] else ""
+    return out
+
+
 def _new_leads_query(busca: str | None, cidade: str | None, pais: tuple[str, ...] | None = None,
-                     ) -> tuple[str, list[object]]:
+                     nicho: str | None = None, preferir_nicho: str | None = None) -> tuple[str, list[object]]:
     sql = "SELECT * FROM leads WHERE status = ? AND telefone IS NOT NULL"
     params: list[object] = [db.NOVO]
     if pais:
@@ -132,6 +141,11 @@ def _new_leads_query(busca: str | None, cidade: str | None, pais: tuple[str, ...
     if cidade:
         sql += " AND cidade = ?"
         params.append(cidade)
+    if nicho:
+        sql += " AND nicho = ?"
+        params.append(nicho)
+    if preferir_nicho:  # o nicho do dia vem primeiro; o resto completa a fila
+        return sql + " ORDER BY (nicho = ?) DESC, COALESCE(avaliacoes, 0) DESC, id", [*params, preferir_nicho]
     return sql + " ORDER BY COALESCE(avaliacoes, 0) DESC, id", params
 
 
@@ -139,10 +153,11 @@ Checker = Callable[[sqlite3.Connection, Mapping], bool]
 
 
 def check_presence(conn: sqlite3.Connection, checker: Checker, slots: int,
-                   busca: str | None = None, cidade: str | None = None, pais: tuple[str, ...] | None = None) -> int:
+                   busca: str | None = None, cidade: str | None = None, pais: tuple[str, ...] | None = None,
+                   nicho: str | None = None, preferir_nicho: str | None = None) -> int:
     """Checa a presença online dos próximos leads novos até sobrarem `slots` válidos. Fora da transação
     da fila: a busca demora e não pode segurar o banco. Devolve quantos foram buscados."""
-    sql, params = _new_leads_query(busca, cidade, pais)
+    sql, params = _new_leads_query(busca, cidade, pais, nicho, preferir_nicho)
     kept = searched = 0
     for lead in conn.execute(sql, params).fetchall():
         if kept >= slots or searched >= slots * MAX_CHECAGENS_POR_VAGA:
@@ -167,6 +182,9 @@ def build_queue(
     busca: str | None = None,
     cidade: str | None = None,
     pais: tuple[str, ...] | None = ("BR",),
+    nicho: str | None = None,
+    preferir_nicho: str | None = None,
+    nichos: Nichos | None = None,
     rng: random.Random | None = None,
     charge_text: Callable[[sqlite3.Row, sqlite3.Row], str] | None = None,
     checar_presenca: Checker | None = None,
@@ -179,7 +197,7 @@ def build_queue(
     dia = _today(now, rules.tz)
     if checar_presenca:
         check_presence(conn, checar_presenca, max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP))),
-                       busca, cidade, pais)
+                       busca, cidade, pais, nicho, preferir_nicho)
     with db.tx(conn):
         closed = close_stale_followups(conn, now, rules, followup_days)
         followups = 0
@@ -199,7 +217,7 @@ def build_queue(
 
         slots = max(0, size - open_items(conn, (db.PRIMEIRA, db.FOLLOWUP)))
         stats = ab_stats(conn)
-        sql, params = _new_leads_query(busca, cidade, pais)
+        sql, params = _new_leads_query(busca, cidade, pais, nicho, preferir_nicho)
         firsts = 0
         for lead in conn.execute(sql, params).fetchall():
             if firsts >= slots:
@@ -212,7 +230,7 @@ def build_queue(
                 db.update_lead(conn, lead["id"], status=db.DESCARTADO, motivo="já contatado (outro cadastro)")
                 continue
             tpl, tz = _tpl_and_tz(templates, lead, rules)
-            texto, variante = tpl.first_message_ab(dict(lead), now, tz, rng, stats)
+            texto, variante = tpl.first_message_ab(_lead_for_render(lead, nichos), now, tz, rng, stats)
             _insert(conn, lead["id"], db.PRIMEIRA, texto, dia, variante=variante)
             db.update_lead(conn, lead["id"], status=db.NA_FILA)
             firsts += 1
@@ -230,7 +248,7 @@ def list_items(conn: sqlite3.Connection, statuses: tuple[str, ...] = (PENDENTE, 
 
 
 def regenerate_texts(conn: sqlite3.Connection, templates: Templates | TemplateSet, rules: Rules, now: datetime, *,
-                     rng: random.Random | None = None) -> int:
+                     rng: random.Random | None = None, nichos: Nichos | None = None) -> int:
     """Refaz o texto das primeiras mensagens ainda não enviadas (pendentes e aprovadas) com os templates atuais.
     Mantém status, horário de liberação e aprovação; não mexe em texto editado à mão. Devolve quantos refez."""
     rng = rng or random.Random()
@@ -243,7 +261,7 @@ def regenerate_texts(conn: sqlite3.Connection, templates: Templates | TemplateSe
         for row in rows:
             lead = db.get_lead(conn, row["lead_id"])
             tpl, tz = _tpl_and_tz(templates, lead, rules)
-            texto, variante = tpl.first_message_ab(dict(lead), now, tz, rng, stats)
+            texto, variante = tpl.first_message_ab(_lead_for_render(lead, nichos), now, tz, rng, stats)
             conn.execute("UPDATE fila SET texto = ?, variante = ?, atualizado_em = ? WHERE id = ?",
                          (texto, variante, db.iso(db.utcnow()), row["id"]))
             db.update_lead(conn, row["lead_id"], variante=variante)

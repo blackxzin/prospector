@@ -12,6 +12,7 @@ import yaml
 from . import db
 from .importer import ImportResult
 from .mundo import BuscaMundo, MundoConfig
+from .nichos import Nichos
 
 
 @dataclass(frozen=True)
@@ -113,3 +114,16 @@ def run_world(conn: sqlite3.Connection, cfg: MundoConfig, search: Callable[..., 
     """Como run_batch, para o mundo.yaml: `search(consulta, origem=Origem)` recebe país, idioma e fuso."""
     todo = pending_world(conn, cfg, paises)[: limit or cfg.max_por_execucao]
     return _run(conn, [(b.consulta, {"origem": b.origem}) for b in todo], search, out, should_stop)
+
+
+def pending_nicho(conn: sqlite3.Connection, nichos: Nichos, nicho_id: str, cidades: tuple[str, ...]) -> list[str]:
+    done = done_queries(conn)
+    return [q for q in nichos.queries(nicho_id, cidades) if q not in done]
+
+
+def run_nicho(conn: sqlite3.Connection, nichos: Nichos, nicho_id: str, cidades: tuple[str, ...],
+              search: Callable[[str], ImportResult], *, limit: int, out: Callable[[str], None] = print,
+              should_stop: Callable[[], bool] = lambda: False) -> list[tuple[str, str]]:
+    """Roda as buscas pendentes de UM nicho (os termos dele × as cidades do buscas.yaml)."""
+    todo = pending_nicho(conn, nichos, nicho_id, cidades)[:limit]
+    return _run(conn, [(q, {}) for q in todo], search, out, should_stop)

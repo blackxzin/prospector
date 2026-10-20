@@ -1,0 +1,59 @@
+# Nichos para testar, um por dia. Cada nicho tem: o que buscar no Google Maps, como reconhecê-lo (palavras da
+# categoria do Maps ou da busca, sem acento) e a "dor" (pergunta curta usada nas mensagens desse nicho).
+# `ordem` + `inicio`: cada dia útil (seg a sex) foca um nicho, na ordem, e depois recomeça.
+# Rode `prospector nichos` para ver o resultado de cada um (enviadas, respostas de gente de verdade, interesse).
+
+inicio: 2026-10-21
+ordem: [clinicas, mecanicos, corretores, saloes, advogados, contabilidade, academias, pets, lojas]
+
+nichos:
+  clinicas:
+    nome: Clínicas e consultórios
+    buscas: [dentista, clínica odontológica, psicólogo, fisioterapia, nutricionista, clínica de estética]
+    categorias: [dentista, odonto, psicolog, fisioterap, nutricion, clinica, consultorio, medic, ortodont, fonoaudi]
+    dor: "Quando um paciente chama no WhatsApp pra marcar horário fora do expediente, alguém responde ou ele procura outra clínica?"
+  mecanicos:
+    nome: Oficinas e mecânicos
+    buscas: [oficina mecânica, auto elétrica, funilaria e pintura, borracharia, centro automotivo]
+    categorias: [oficina, mecanic, auto eletric, funilaria, borracharia, automotiv, autopecas, lava jato, estetica automotiva]
+    dor: "Quando alguém chama no WhatsApp pedindo orçamento, vocês respondem na hora ou só depois do serviço?"
+  corretores:
+    nome: Imobiliárias e corretores
+    buscas: [imobiliária, corretor de imóveis]
+    categorias: [imobiliaria, corretor, imoveis, incorporadora, construtora]
+    dor: "Quando alguém se interessa por um imóvel e chama no WhatsApp à noite ou no fim de semana, quem responde?"
+  saloes:
+    nome: Salões e barbearias
+    buscas: [salão de beleza, barbearia, manicure, estúdio de sobrancelha]
+    categorias: [salao, barbear, cabeleireir, manicure, sobrancelha, beleza, estetica, depilacao, unhas]
+    dor: "Vocês marcam horário pelo WhatsApp? Quando estão atendendo, quem responde os outros clientes?"
+  advogados:
+    nome: Advogados
+    buscas: [advogado, escritório de advocacia]
+    categorias: [advogad, advocacia, escritorio juridico]
+    dor: "Quando um possível cliente chama no WhatsApp fora do horário, alguém responde na hora ou ele procura outro escritório?"
+  contabilidade:
+    nome: Contabilidade
+    buscas: [contador, escritório de contabilidade]
+    categorias: [contabil, contador, assessoria fiscal]
+    dor: "Quando um cliente novo chama no WhatsApp pedindo orçamento, vocês respondem na hora ou só depois?"
+  academias:
+    nome: Academias e estúdios
+    buscas: [academia, estúdio de pilates, personal trainer]
+    categorias: [academia, pilates, crossfit, personal, fitness, yoga, musculacao, funcional, danca]
+    dor: "Quando alguém chama no WhatsApp pra saber de plano e horário, quem responde na hora?"
+  pets:
+    nome: Pet shops e veterinárias
+    buscas: [pet shop, clínica veterinária, banho e tosa]
+    categorias: [pet, veterin, banho e tosa, racao, animais]
+    dor: "Quando um tutor chama no WhatsApp pra marcar banho ou consulta, alguém responde na hora?"
+  lojas:
+    nome: Lojas
+    buscas: [loja de roupas, loja de calçados, papelaria, loja de presentes]
+    categorias: [loja, boutique, roupas, calcados, papelaria, presentes, moda, otica, joalheria, floricultura]
+    dor: "Quando um cliente pergunta no WhatsApp se tem o produto, quem responde com a loja cheia?"
+  alimentacao:
+    nome: Alimentação (já testado)
+    buscas: []
+    categorias: [pizza, restaurante, lanch, hamburg, esfih, sorvet, padaria, confeit, acai, bar, cafe, churrasc, sushi, pastel, marmit, delivery, comida, doceria, pesqueiro, pousada, hotel]
+    dor: ""

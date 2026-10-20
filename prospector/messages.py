@@ -26,7 +26,7 @@ MIN_VARIANTS = 3
 # Grupos opcionais dentro de 'primeira', usados quando o lead tem um sinal específico (ver sitecheck.extract_signals).
 EXTRA_GROUPS = ("tem_site_sem_whatsapp",)
 # Campos que nem todo lead tem: a variação que usa um deles só entra no sorteio se o lead tiver o dado.
-CONDITIONAL_FIELDS = ("avaliacao", "arroba", "nota_boa")
+CONDITIONAL_FIELDS = ("avaliacao", "arroba", "nota_boa", "dor")
 MIN_UNCONDITIONAL = 3
 _NAME_SUFFIX = re.compile(r"\s+[-|–—•·]\s+.*$")
 _PARENS = re.compile(r"\s*\([^)]*\)\s*")
@@ -153,6 +153,7 @@ class Templates:
             "avaliacao": review_snippet(lead.get("avaliacoes_json")),
             "arroba": instagram_handle(lead.get("site")),
             "nota_boa": self._nota_boa(nota, avaliacoes),
+            "dor": str(lead.get("dor") or "").strip(),   # pergunta do nicho (nichos.yaml), só para leads de um nicho
         }
         return {**base, "elogio": self._elogio(nota, avaliacoes, rng, base)}
 

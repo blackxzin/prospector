@@ -162,7 +162,8 @@ def _contacted(conn, listas):
             db.update_lead(conn, lead["id"], status=db.ENVIADO, enviado_em=db.iso(sent))
             db.log_send(conn, lead_id=lead["id"], fila_id=None, telefone=lead["telefone"], tipo="primeira",
                         texto="x", dry_run=False, ok=True, http_status=200, resposta_api="", when=sent)
-        db.update_lead(conn, 1, status=db.RESPONDEU, respondeu_em=db.iso(local_dt(2026, 10, 15, 19, 30)))
+        db.update_lead(conn, 1, status=db.RESPONDEU, respondeu_em=db.iso(local_dt(2026, 10, 15, 19, 30)),
+                       resposta_humana=1)
         conn.execute("INSERT INTO respostas (lead_id, telefone, texto, recebido_em) VALUES (1, 'x', 'oi', ?)",
                      (db.iso(local_dt(2026, 10, 15, 19, 30)),))
 

@@ -13,6 +13,7 @@ from pathlib import Path
 from . import db
 from .classify import Listas, classify_offer, is_franchise
 from .mundo import BRASIL, Origem
+from .nichos import Nichos
 from .phone import normalize_any, normalize_any_intl, normalize_mobile, normalize_mobile_intl, variants
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
@@ -133,7 +134,7 @@ def _evaluate(row: dict[str, str], listas: Listas, origem: Origem = BRASIL) -> t
 
 
 def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str, listas: Listas,
-                origem: Origem = BRASIL) -> ImportResult:
+                origem: Origem = BRASIL, nichos: Nichos | None = None) -> ImportResult:
     counts = {"lidos": 0, "novos": 0, "duplicados": 0, "validos": 0, "descartados": 0, "ignorados": 0}
     now = db.iso(db.utcnow())
     with db.tx(conn):
@@ -150,6 +151,8 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
                 details = {k: v for k, v in extract_details(row).items() if v is not None}
                 current = db.get_lead(conn, existing["id"])
                 missing = {k: v for k, v in details.items() if current[k] is None}
+                if current["nicho"] is None and (nicho := _nicho(nichos, busca, row, origem)):
+                    missing["nicho"] = nicho
                 if missing:
                     db.update_lead(conn, existing["id"], **missing)
                 counts["duplicados"] += 1
@@ -160,14 +163,14 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
             conn.execute(
                 "INSERT INTO leads (chave, nome, categoria, endereco, cidade, telefone_raw, telefone, site, email, "
                 "nota, avaliacoes, maps_link, busca, oferta, status, motivo, criado_em, atualizado_em, "
-                "pais, idioma, fuso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "pais, idioma, fuso, nicho) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     key, name, row.get("category") or None, row.get("address") or None, extract_city(row, origem),
                     row.get("phone") or None, mobile, (row.get("website") or "").strip() or None,
                     first_email(row.get("emails")), _float(row.get("review_rating")),
                     _int(row.get("review_count")), row.get("link") or None, busca,
                     classify_offer(row.get("website"), listas.dominios_social), status, motivo, now, now,
-                    origem.pais.upper(), origem.idioma, origem.fuso,
+                    origem.pais.upper(), origem.idioma, origem.fuso, _nicho(nichos, busca, row, origem),
                 ),
             )
             new_id = conn.execute("SELECT id FROM leads WHERE chave = ?", (key,)).fetchone()["id"]
@@ -179,11 +182,18 @@ def import_rows(conn: sqlite3.Connection, rows: list[dict[str, str]], busca: str
     return ImportResult(**counts)
 
 
+def _nicho(nichos: Nichos | None, busca: str, row: dict[str, str], origem: Origem) -> str | None:
+    """Nicho só para leads do Brasil (as palavras do catálogo são em português)."""
+    if nichos is None or origem.estrangeiro:
+        return None
+    return nichos.classify(busca, row.get("category"))
+
+
 def read_csv_text(text: str) -> list[dict[str, str]]:
     return list(csv.DictReader(io.StringIO(text.lstrip("﻿"))))
 
 
 def import_csv(conn: sqlite3.Connection, path: Path, busca: str, listas: Listas,
-               origem: Origem = BRASIL) -> ImportResult:
+               origem: Origem = BRASIL, nichos: Nichos | None = None) -> ImportResult:
     return import_rows(conn, read_csv_text(path.read_text(encoding="utf-8", errors="replace")), busca, listas,
-                       origem)
+                       origem, nichos)

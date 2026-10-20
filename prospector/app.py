@@ -20,6 +20,7 @@ from .config import Settings, load_settings
 from .importer import ImportResult, import_rows, read_csv_text
 from .messages import TemplateSet, Templates
 from .mundo import BRASIL, MundoConfig, Origem
+from .nichos import Nichos
 from .notify import notify
 from .phone import to_jid
 from .presenca import Verificador
@@ -76,6 +77,14 @@ class App:
         return Verificador(self.listas) if force or self.settings.checar_presenca else None
 
     @cached_property
+    def nichos(self) -> Nichos | None:
+        """Catálogo de nichos (nichos.yaml); sem o arquivo o sistema funciona sem marcar nicho."""
+        try:
+            return Nichos.load(self.settings.nichos_path)
+        except ValueError:
+            return None
+
+    @cached_property
     def mundo(self) -> MundoConfig:
         return MundoConfig.load(self.settings.mundo_path)
 
@@ -101,7 +110,7 @@ class App:
         csv_dir = s.data_dir / "csv"
         csv_dir.mkdir(parents=True, exist_ok=True)
         (csv_dir / f"{job_id}.csv").write_text(csv_text, encoding="utf-8")
-        result = import_rows(self.conn, read_csv_text(csv_text), query, self.listas, origem)
+        result = import_rows(self.conn, read_csv_text(csv_text), query, self.listas, origem, self.nichos)
         lote.record(self.conn, query, result)
         checked, bad = sitecheck.check_leads(self.conn, out=out)
         if checked:

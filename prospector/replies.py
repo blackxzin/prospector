@@ -82,8 +82,10 @@ _CLOSING = re.compile(
 
 # Mensagem automática de robô/atendimento do negócio (não é uma pessoa respondendo à nossa abordagem).
 _AUTO = re.compile(
-    r"auto ?atendimento|atendimento automatic|mensagem automatica|resposta automatica|bem[- ]?vind[oa]|"
-    r"agradece (o |seu )?contato|obrigad[oa] pelo seu contato|vamos responder|responderemos em|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
+    r"auto ?atendimento|atendimento automatic|mensagem automatica|resposta automatica|bem[- ]?vind[oa]s?|"
+    r"agradece(mos)? (o |seu |sua |a )?(contato|mensagem)|exclusivamente presencial|pensou no delivery|"
+    r"nao (fazemos|realizamos|estamos realizando) (entrega|delivery)|faca seu pedido|peca pelo link|"
+    r"atendimento tio|baixe o nosso app|obrigad[oa] pelo seu contato|vamos responder|responderemos em|obrigad[oa] pel[oa] (seu )?contato|horario de atendimento|nosso horario|"
     r"link (do|de nosso) cardapio|segue o (link|cardapio)|como podemos (te )?(ajudar|atender)|"
     r"thank you for (contacting|reaching|your message)|thanks for (contacting|reaching|your message)|"
     r"we(')?ll get back|we will get back|opening hours|business hours|automatic (reply|response)|auto.?reply|"
@@ -101,6 +103,21 @@ _AUTO = re.compile(
 
 def is_auto_reply(text: str | None) -> bool:
     return bool(_AUTO.search(fold(text or "")))
+
+
+_PLACEHOLDER = re.compile(r"^\[[a-z_ ]+\]$")
+_URL = re.compile(r"https?://|www\.")
+_GREETING_ONLY = re.compile(
+    r"^\W*(oi+|ola|opa|boa (tarde|noite)|bom dia|tudo bem|e ai|hello|hi|hey|hola|buenos dias|buenas (tardes|noches)|"
+    r"bonjour|bonsoir|hallo|guten (tag|morgen|abend)|ciao|buongiorno|buonasera)\W*$")
+
+
+def is_human_reply(text: str | None) -> bool:
+    """Parece uma pessoa respondendo: não é mídia sem texto, robô de atendimento, só um cumprimento, nem link."""
+    folded = fold(text or "").strip()
+    if not folded or _PLACEHOLDER.match(folded) or _GREETING_ONLY.match(folded) or _URL.search(folded):
+        return False
+    return not is_auto_reply(text)
 
 
 def is_closing(text: str | None) -> bool:
@@ -243,6 +260,8 @@ def handle_inbound(
                          "WHERE lead_id = ? AND tipo = 'followup' AND status IN ('pendente', 'aprovado')",
                          (db.iso(now), lead["id"]))
         fields["status"] = new_status
+        if is_human_reply(msg.text):
+            fields["resposta_humana"] = 1
         term = None if auto_msg else escalation_term(msg.text)
         if term:
             fields["escalar"] = 1

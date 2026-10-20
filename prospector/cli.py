@@ -103,6 +103,13 @@ def cmd_reclassificar(app: App, _args: argparse.Namespace) -> int:
     return 0
 
 
+def _nicho_do_dia(app: App) -> str | None:
+    if app.nichos is None:
+        return None
+    nicho = app.nichos.do_dia(db.utcnow().astimezone(app.settings.tz).date())
+    return nicho.id if nicho else None
+
+
 def cmd_fila(app: App, args: argparse.Namespace) -> int:
     s = app.settings
     if not args.so_mostrar:
@@ -110,6 +117,8 @@ def cmd_fila(app: App, args: argparse.Namespace) -> int:
         res = fq.build_queue(app.conn, app.template_set, app.rules, db.utcnow(),
                              size=args.tamanho or s.max_per_day, followup_days=s.followup_business_days,
                              busca=args.busca, cidade=args.cidade, pais=pais, charge_text=app.charge_text,
+                             nicho=args.nicho, nichos=app.nichos,
+                             preferir_nicho=_nicho_do_dia(app) if args.nicho_do_dia else None,
                              checar_presenca=app.presence_checker())
         print(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças "
               f"({res.encerrados} leads encerrados como sem_resposta).")
@@ -180,7 +189,7 @@ def cmd_aprovar(app: App, args: argparse.Namespace) -> int:
 
 def cmd_refazer_textos(app: App, _args: argparse.Namespace) -> int:
     """Refaz com os templates atuais o texto das primeiras mensagens ainda não enviadas."""
-    n = fq.regenerate_texts(app.conn, app.template_set, app.rules, db.utcnow())
+    n = fq.regenerate_texts(app.conn, app.template_set, app.rules, db.utcnow(), nichos=app.nichos)
     print(f"{n} texto(s) refeito(s). Status e horário de liberação ficaram como estavam.")
     return 0
 
@@ -409,8 +418,36 @@ def cmd_lote_mundo(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lote_nicho(app: App, args: argparse.Namespace) -> int:
+    from .lote import BatchConfig, pending_nicho, run_nicho
+    if app.nichos is None:
+        print(f"{app.settings.nichos_path.name} não encontrado ou inválido.", file=sys.stderr)
+        return 1
+    nid = _nicho_do_dia(app) if args.nicho_do_dia else args.nicho
+    if nid not in app.nichos.itens or not app.nichos.itens[nid].buscas:
+        print(f"Nicho {nid!r} não existe (ou não tem buscas). Veja: prospector nichos", file=sys.stderr)
+        return 1
+    try:
+        cidades = BatchConfig.load(app.settings.buscas_path).cidades
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    todo = pending_nicho(app.conn, app.nichos, nid, cidades)
+    print(f"Nicho: {app.nichos.itens[nid].nome} ({nid}). {len(todo)} busca(s) pendente(s).")
+    if args.listar or not todo:
+        for q in todo[:40]:
+            print(f"  {q}")
+        return 0
+    results = run_nicho(app.conn, app.nichos, nid, cidades, app.search, limit=args.max or 8)
+    ok = sum(1 for _, r in results if not r.startswith("erro"))
+    app.notify(f"buscas do nicho {nid}", f"{ok}/{len(results)} buscas ok.")
+    return 0
+
+
 def cmd_lote(app: App, args: argparse.Namespace) -> int:
     from .lote import BatchConfig, pending, run_batch
+    if args.nicho or args.nicho_do_dia:
+        return cmd_lote_nicho(app, args)
     if args.mundo:
         return cmd_lote_mundo(app, args)
     try:
@@ -522,6 +559,26 @@ def cmd_respostas(app: App, args: argparse.Namespace) -> int:
         time.sleep(args.loop)
 
 
+def cmd_nichos(app: App, args: argparse.Namespace) -> int:
+    from . import metrics
+    from .nichos import reclassificar
+    if app.nichos is None:
+        print(f"{app.settings.nichos_path.name} não encontrado ou inválido.", file=sys.stderr)
+        return 1
+    if args.reclassificar:
+        tagged, humans = reclassificar(app.conn, app.nichos)
+        print(f"{tagged} lead(s) marcado(s) com nicho; {humans} com resposta de gente de verdade.\n")
+    hoje = _nicho_do_dia(app)
+    if hoje:
+        print(f"Nicho de hoje: {app.nichos.itens[hoje].nome} ({hoje})\n")
+    print(f"{'nicho':<14}{'estoque':>8}{'enviadas':>9}{'humanas':>8}{'interes.':>9}{'clientes':>9}{'taxa':>7}")
+    for r in metrics.nicho_report(app.conn):
+        print(f"{r['nicho']:<14}{r['estoque'] or 0:>8}{r['enviadas'] or 0:>9}{r['humanas'] or 0:>8}"
+              f"{r['interessados'] or 0:>9}{r['clientes'] or 0:>9}{r['taxa']:>7.0%}")
+    print("\nhumanas = respostas de gente de verdade (robô de atendimento não conta).")
+    return 0
+
+
 def cmd_painel(app: App, args: argparse.Namespace) -> int:
     from .web import create_app
     web = create_app(app)
@@ -562,6 +619,8 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--cidade")
     a.add_argument("--pais", default="BR",
                    help="países dos leads novos (ISO-2 separados por vírgula, ou 'todos'); padrão: BR")
+    a.add_argument("--nicho", help="só leads deste nicho (id do nichos.yaml)")
+    a.add_argument("--nicho-do-dia", action="store_true", help="começa pelo nicho do dia e completa com os demais")
     a.add_argument("--tamanho", type=int, help="itens abertos na fila (padrão: MAX_POR_DIA)")
     a.add_argument("--so-mostrar", action="store_true", help="não gera, só mostra")
     a.set_defaults(fn=cmd_fila)
@@ -572,6 +631,10 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--liberar-em", metavar="'AAAA-MM-DD HH:MM'",
                    help="aprova agora, mas só envia a partir deste horário (horário do Brasil)")
     a.set_defaults(fn=cmd_aprovar)
+
+    a = sub.add_parser("nichos", help="nicho de hoje e resultado de cada nicho (enviadas, respostas humanas...)")
+    a.add_argument("--reclassificar", action="store_true", help="marca o nicho dos leads antigos e recalcula respostas humanas")
+    a.set_defaults(fn=cmd_nichos)
 
     sub.add_parser("refazer-textos", help="refaz o texto das mensagens pendentes/aprovadas com os templates atuais"
                    ).set_defaults(fn=cmd_refazer_textos)
@@ -628,6 +691,8 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--listar", action="store_true", help="só lista as pendentes")
     a.add_argument("--mundo", action="store_true", help="usa o mundo.yaml (Europa, EUA, Canadá...) em vez do buscas.yaml")
     a.add_argument("--pais", help="com --mundo: só estes países (ISO-2 separados por vírgula, ex.: ES,PT,US)")
+    a.add_argument("--nicho", help="roda só as buscas deste nicho do nichos.yaml nas cidades do buscas.yaml")
+    a.add_argument("--nicho-do-dia", action="store_true", help="idem, para o nicho do dia")
     a.set_defaults(fn=cmd_lote)
 
     a = sub.add_parser("proposta", help="gera a proposta em PDF de um projeto")

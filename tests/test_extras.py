@@ -150,7 +150,7 @@ def test_queue_records_variant_and_stats(conn, listas, templates, rules):
         for i in items:
             db.update_lead(conn, i["lead_id"], enviado_em=db.iso(local_dt(2026, 10, 19, 10)), variante=i["variante"])
         db.update_lead(conn, items[0]["lead_id"], respondeu_em=db.iso(local_dt(2026, 10, 19, 11)),
-                       status=db.RESPONDEU)
+                       status=db.RESPONDEU, resposta_humana=1)
     stats = fq.ab_stats(conn)
     assert sum(v[0] for v in stats.values()) == 2 and sum(v[1] for v in stats.values()) == 1
 

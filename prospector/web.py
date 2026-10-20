@@ -181,7 +181,7 @@ def create_app(app_ctx: App | None = None) -> Flask:
     @web.post("/fila/gerar")
     def gerar_fila() -> Response:
         s = ctx.settings
-        res = fq.build_queue(ctx.conn, ctx.template_set, ctx.rules, db.utcnow(), size=s.max_per_day,
+        res = fq.build_queue(ctx.conn, ctx.template_set, ctx.rules, db.utcnow(), size=s.max_per_day, nichos=ctx.nichos,
                              followup_days=s.followup_business_days, charge_text=ctx.charge_text,
                              checar_presenca=ctx.presence_checker())
         flash(f"Fila gerada: {res.primeiras} novas, {res.followups} follow-ups, {res.cobrancas} cobranças, "
