@@ -193,3 +193,20 @@ def test_wa_client_status_false_is_error():
 def test_check_number_reads_api_envelope(payload, expected):
     client = WaClient("http://wa", "s", "k", request=lambda *a, **kw: HttpResponse(200, payload))
     assert client.check_number("5514996112048") == expected
+
+
+def test_items_approved_while_running_are_picked_up(conn, listas, templates, rules):
+    _approved_queue(conn, listas, templates, rules, 2)
+    extra = [csv_row(title="Pizzaria Nova", phone="(14) 99888-7766", link="nova")]
+    import_rows(conn, extra, "q", listas)
+
+    class Approver(FakeWa):
+        def send_text(self, jid, text):
+            if not self.sent:  # durante o 1º envio o usuário aprova mais um item
+                fq.build_queue(conn, templates, rules, MONDAY_9, size=3, followup_days=3, rng=random.Random(1))
+                fq.approve(conn, fq.pending_ids(conn))
+            return super().send_text(jid, text)
+
+    client = Approver()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True)
+    assert report.enviados == 3 and len(client.sent) == 3

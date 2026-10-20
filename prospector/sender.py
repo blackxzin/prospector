@@ -8,7 +8,7 @@ import sqlite3
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Callable, Protocol
+from typing import Callable, Iterator, Protocol
 
 from . import db
 from . import fila as fq
@@ -89,6 +89,17 @@ def _approved(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         "JOIN leads l ON l.id = f.lead_id WHERE f.status = ? ORDER BY f.id",
         (fq.APROVADO,),
     ).fetchall()
+
+
+def _approved_stream(conn: sqlite3.Connection) -> Iterator[sqlite3.Row]:
+    """Itens aprovados, um por vez, relendo a fila a cada item: o que for aprovado durante o envio entra."""
+    seen: set[int] = set()
+    while True:
+        pending = [i for i in _approved(conn) if i["id"] not in seen]
+        if not pending:
+            return
+        seen.add(pending[0]["id"])
+        yield pending[0]
 
 
 def _skip(conn: sqlite3.Connection, item: sqlite3.Row) -> None:
@@ -198,7 +209,7 @@ def run(
     simulated: list[datetime] = []
     gap = random_gap(rules, rng)
 
-    for item in _approved(conn):
+    for item in _approved_stream(conn):
         if should_stop():
             report.motivo_fim = "Pausado por você."
             break
