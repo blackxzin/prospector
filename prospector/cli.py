@@ -431,6 +431,32 @@ def cmd_webhook(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_respostas(app: App, args: argparse.Namespace) -> int:
+    """Busca no WA-AKG as respostas dos leads (o webhook dele só aceita HTTPS público)."""
+    import time
+
+    from .poll import poll_replies
+
+    if not app.settings.has_whatsapp:
+        print("Configure WAAKG_SESSION e WAAKG_API_KEY no .env", file=sys.stderr)
+        return 1
+    client = app.whatsapp()
+    while True:
+        try:
+            res = poll_replies(app.conn, client,
+                               lambda msg, at: app.handle_inbound(msg, received_at=at, background=False),
+                               db.utcnow())
+            if res.novas or not args.loop:
+                print(f"{res.chats} chats lidos, {res.novas} resposta(s) nova(s), {res.erros} erro(s).", flush=True)
+        except WhatsAppError as exc:
+            print(f"WhatsApp: {exc}", file=sys.stderr, flush=True)
+            if not args.loop:
+                return 1
+        if not args.loop:
+            return 0
+        time.sleep(args.loop)
+
+
 def cmd_painel(app: App, args: argparse.Namespace) -> int:
     from .web import create_app
     web = create_app(app)
@@ -454,6 +480,10 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("arquivo")
     a.add_argument("--busca", required=True, help="texto da busca de origem")
     a.set_defaults(fn=cmd_importar)
+
+    a = sub.add_parser("respostas", help="busca no WA-AKG as respostas dos leads (sem webhook)")
+    a.add_argument("--loop", type=int, metavar="SEGUNDOS", help="repete a cada N segundos até ser parado")
+    a.set_defaults(fn=cmd_respostas)
 
     sub.add_parser("reclassificar", help="reaplica listas.yaml nos leads não contatados").set_defaults(
         fn=cmd_reclassificar)

@@ -67,6 +67,7 @@ class Inbound:
     jids: frozenset[str]
     text: str
     push_name: str
+    msg_id: str | None = None  # id da mensagem no WhatsApp (só quando vem do polling)
 
 
 def _content(data: dict[str, Any]) -> str:
@@ -125,6 +126,7 @@ class ReplyOutcome:
     status: str | None
     auto_reply: bool = False
     closing: bool = False
+    duplicate: bool = False
 
 
 def handle_inbound(
@@ -139,9 +141,11 @@ def handle_inbound(
     lead = find_lead(conn, msg)
     if not lead:
         return ReplyOutcome(None, None)
+    if msg.msg_id and conn.execute("SELECT 1 FROM respostas WHERE msg_id = ?", (msg.msg_id,)).fetchone():
+        return ReplyOutcome(lead["id"], lead["status"], duplicate=True)
     with db.tx(conn):
-        conn.execute("INSERT INTO respostas (lead_id, telefone, texto, recebido_em) VALUES (?, ?, ?, ?)",
-                     (lead["id"], lead["telefone"], msg.text, db.iso(now)))
+        conn.execute("INSERT INTO respostas (lead_id, telefone, texto, recebido_em, msg_id) VALUES (?, ?, ?, ?, ?)",
+                     (lead["id"], lead["telefone"], msg.text, db.iso(now), msg.msg_id))
         fields: dict[str, object] = {"resposta": msg.text[:2000]}
         if not lead["respondeu_em"]:
             fields["respondeu_em"] = db.iso(now)

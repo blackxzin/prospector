@@ -84,6 +84,12 @@ class WaClient:
                 return result.get("jid") or f"{number}@s.whatsapp.net"
         return None
 
+    def chat_messages(self, jid: str) -> list[dict[str, Any]]:
+        """Mensagens do chat com `jid` (enviadas e recebidas), mais recentes por último."""
+        resp = self._call("GET", f"/chat/{quote(self.session, safe='')}/{self._jid_path(jid)}")
+        data = (resp.json() or {}).get("data")
+        return [m for m in data if isinstance(m, dict)] if isinstance(data, list) else []
+
     def create_webhook(self, url: str, secret: str) -> str:
         body = {"name": "prospector", "url": url, "secret": secret,
                 "events": ["message.received", "connection.update"]}

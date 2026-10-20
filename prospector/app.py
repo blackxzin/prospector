@@ -7,7 +7,7 @@ import random
 import sqlite3
 import threading
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import cached_property
 from pathlib import Path
 from typing import Callable
@@ -28,6 +28,8 @@ from .sender import RealClock, type_and_send
 from .whatsapp import WaClient, WhatsAppError
 
 log = logging.getLogger("prospector")
+
+AUTO_REPLY_MAX_AGE = timedelta(minutes=30)  # não responde "fora do horário" a mensagem velha
 
 
 @dataclass
@@ -126,11 +128,14 @@ class App:
 
     # ---------- respostas ----------
 
-    def handle_inbound(self, msg: Inbound, now: datetime | None = None,
-                       background: bool = True) -> ReplyOutcome:
+    def handle_inbound(self, msg: Inbound, now: datetime | None = None, background: bool = True,
+                       received_at: datetime | None = None) -> ReplyOutcome:
+        """`received_at`: quando a mensagem chegou de fato (polling). Resposta automática só para mensagem recente."""
         now = now or db.utcnow()
+        at = received_at or now
+        recent = now - at <= AUTO_REPLY_MAX_AGE
         outcome = handle_inbound(
-            self.conn, msg, now=now, in_business_hours=in_window(now, self.rules),
+            self.conn, msg, now=at, in_business_hours=in_window(at, self.rules) or not recent,
             notify_fn=lambda t, b, urgent: self.notify(t, b, urgent),
         )
         if outcome.auto_reply and outcome.lead_id is not None:

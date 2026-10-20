@@ -214,6 +214,7 @@ _MIGRATIONS = (
     ("leads", "latitude", "REAL"),
     ("leads", "longitude", "REAL"),
     ("leads", "presenca_checada_em", "TEXT"),  # busca de site/Instagram/cardápio online (presenca.py)
+    ("respostas", "msg_id", "TEXT"),          # id da mensagem no WhatsApp (evita contar a mesma resposta 2x)
 )
 
 
@@ -222,6 +223,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_resposta_msg ON respostas(msg_id) WHERE msg_id IS NOT NULL")
     conn.commit()
 
 
