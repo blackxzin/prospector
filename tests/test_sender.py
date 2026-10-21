@@ -359,3 +359,57 @@ def test_no_portfolio_for_languages_without_one_or_when_disabled(conn, listas, r
     client2 = FakeWa()
     _run(conn, client2, rules, VirtualClock(MONDAY_9), templates=tset, portfolio_apos_primeira=False)
     assert len(client2.sent) == 1
+
+
+# ---------- teto diário de envios para fora do Brasil ----------
+
+def _mixed_queue(conn, listas, tset, rules, br=3, es=3):
+    from prospector.mundo import Origem
+    import_rows(conn, [csv_row(title=f"Pizzaria {i}", phone=f"(14) 991{i:02d}-00{i:02d}", link=f"b{i}") for i in range(br)],
+                "q", listas)
+    import_rows(conn, [csv_row(title=f"Café {i}", phone=f"612 34 56 7{i}", link=f"e{i}") for i in range(es)], "q", listas,
+                Origem("ES", "es", "Europe/Madrid", "Madrid"))
+    fq.build_queue(conn, tset, rules, MONDAY_9, size=br + es, followup_days=3, rng=random.Random(0),
+                   pais=("BR", "ES"))
+    fq.approve(conn, fq.pending_ids(conn))
+
+
+def test_foreign_sends_are_capped_per_day_and_brazil_keeps_the_rest(conn, listas, rules):
+    from dataclasses import replace
+    from prospector.messages import TemplateSet
+    tset = TemplateSet.load(ROOT_DIR / "templates.yaml")
+    capped = replace(rules, max_foreign_per_day=2)
+    _mixed_queue(conn, listas, tset, capped)
+    client = FakeWa()
+    report = _run(conn, client, capped, VirtualClock(MONDAY_9), templates=tset)
+    sent = [r["pais"] for r in conn.execute(
+        "SELECT l.pais FROM envios e JOIN leads l ON l.id = e.lead_id WHERE e.ok = 1 AND e.tipo = 'primeira'")]
+    assert sorted(sent) == ["BR", "BR", "BR", "ES", "ES"] and report.enviados == 5
+    assert "agendados" in report.motivo_fim or "Fora do horário" in report.motivo_fim   # o 3º de fora fica para outro dia
+
+
+def test_foreign_item_over_the_cap_goes_the_next_day_when_waiting(conn, listas, rules):
+    from dataclasses import replace
+    from prospector.messages import TemplateSet
+    tset = TemplateSet.load(ROOT_DIR / "templates.yaml")
+    capped = replace(rules, max_foreign_per_day=1)
+    _mixed_queue(conn, listas, tset, capped, br=1, es=2)
+    client = FakeWa()
+    report = _run(conn, client, capped, VirtualClock(MONDAY_9), wait_next_day=True, templates=tset)
+    days = [db.parse_iso(r[0]).astimezone(capped.tz).date() for r in conn.execute(
+        "SELECT e.enviado_em FROM envios e JOIN leads l ON l.id = e.lead_id "
+        "WHERE e.ok = 1 AND e.tipo = 'primeira' AND l.pais = 'ES' ORDER BY e.id")]
+    assert report.enviados == 3 and len(days) == 2 and days[0] < days[1]
+
+
+def test_zero_means_no_separate_foreign_cap(conn, listas, rules):
+    from dataclasses import replace
+    from prospector.messages import TemplateSet
+    tset = TemplateSet.load(ROOT_DIR / "templates.yaml")
+    open_rules = replace(rules, max_foreign_per_day=0)
+    _mixed_queue(conn, listas, tset, open_rules)
+    assert _run(conn, FakeWa(), open_rules, VirtualClock(MONDAY_9), templates=tset).enviados == 6
+
+
+def test_default_cap_for_foreign_is_five(rules):
+    assert rules.max_foreign_per_day == 5

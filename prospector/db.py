@@ -352,11 +352,12 @@ def log_send(
     )
 
 
-def real_send_times(conn: sqlite3.Connection, since: datetime) -> list[datetime]:
-    """Horários dos envios reais que contam para os limites (primeira + followup)."""
+def real_send_times(conn: sqlite3.Connection, since: datetime, foreign_only: bool = False) -> list[datetime]:
+    """Horários dos envios reais que contam para os limites (primeira + followup). `foreign_only`: só leads fora do Brasil."""
     rows = conn.execute(
-        "SELECT enviado_em FROM envios WHERE ok = 1 AND dry_run = 0 "
-        "AND tipo IN ('primeira', 'followup') AND enviado_em >= ? ORDER BY enviado_em",
+        "SELECT e.enviado_em FROM envios e LEFT JOIN leads l ON l.id = e.lead_id WHERE e.ok = 1 AND e.dry_run = 0 "
+        "AND e.tipo IN ('primeira', 'followup') AND e.enviado_em >= ? "
+        + ("AND l.pais != 'BR' " if foreign_only else "") + "ORDER BY e.enviado_em",
         (iso(since),),
     ).fetchall()
     return [datetime.fromisoformat(r["enviado_em"]) for r in rows]

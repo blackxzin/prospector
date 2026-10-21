@@ -215,6 +215,7 @@ prospector fila --pais ES,PT --tamanho 8        # a fila é só do Brasil por pa
   distinguem fixo de celular, então a confirmação vem da checagem no WA-AKG (a maioria não tem WhatsApp lá).
 - **Textos:** `templates.en.yaml`, `.es`, `.fr`, `.de`, `.it` e `.pt-PT` sobrescrevem o `templates.yaml`. Toda abordagem
   traz a linha de saída (STOP/PARAR); sem link do portfólio (ele está em português) e sem preço em reais.
+- **Teto para fora:** `MAX_EXTERIOR_POR_DIA` (padrão 5) limita os envios por dia para leads de fora do Brasil; ele conta dentro do `MAX_POR_DIA`, então com 25 por dia saem no máximo 5 de fora e o resto é Brasil. O que passa do teto fica para o dia seguinte e não trava os do Brasil.
 - **Horário:** o horário comercial (dias úteis, janelas) é medido no relógio do lead. Os limites por intervalo,
   hora e dia continuam globais. Lead de outro fuso não trava os do Brasil: sai primeiro quem pode sair antes.
 - **Respostas:** opt-out, interesse e resposta automática do negócio são reconhecidos em pt, en, es, fr, de e it.

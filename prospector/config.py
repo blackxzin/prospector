@@ -70,6 +70,7 @@ class Settings:
     weekdays: frozenset[int]
     max_per_day: int
     max_per_hour: int
+    max_foreign_per_day: int
     interval_min_s: int
     interval_max_s: int
     typing_min_s: int
@@ -140,6 +141,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         weekdays=parse_weekdays(env.get("DIAS_UTEIS", "0,1,2,3,4")),
         max_per_day=_int(env, "MAX_POR_DIA", 8),
         max_per_hour=_int(env, "MAX_POR_HORA", 3),
+        max_foreign_per_day=_int(env, "MAX_EXTERIOR_POR_DIA", 5),
         interval_min_s=_int(env, "INTERVALO_MIN_SEG", 4 * 60),
         interval_max_s=_int(env, "INTERVALO_MAX_SEG", 12 * 60),
         typing_min_s=_int(env, "DIGITANDO_MIN_SEG", 5),
@@ -165,6 +167,8 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
 def _validate(s: Settings) -> None:
     if s.max_per_day < 1 or s.max_per_hour < 1:
         raise ValueError("MAX_POR_DIA e MAX_POR_HORA precisam ser >= 1")
+    if s.max_foreign_per_day < 0:
+        raise ValueError("MAX_EXTERIOR_POR_DIA precisa ser >= 0 (0 = sem teto separado)")
     if not 0 < s.interval_min_s <= s.interval_max_s:
         raise ValueError("INTERVALO_MIN_SEG precisa ser > 0 e <= INTERVALO_MAX_SEG")
     if not 0 < s.typing_min_s <= s.typing_max_s:

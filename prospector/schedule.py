@@ -19,6 +19,7 @@ class Rules:
     max_per_hour: int
     interval_min_s: int
     interval_max_s: int
+    max_foreign_per_day: int = 0   # 0 = sem teto separado; senão, no máximo N envios/dia para leads fora do Brasil
 
     @classmethod
     def from_settings(cls, s: object) -> Rules:
@@ -26,6 +27,7 @@ class Rules:
             tz=s.tz, windows=s.windows, weekdays=s.weekdays,  # type: ignore[attr-defined]
             max_per_day=s.max_per_day, max_per_hour=s.max_per_hour,  # type: ignore[attr-defined]
             interval_min_s=s.interval_min_s, interval_max_s=s.interval_max_s,  # type: ignore[attr-defined]
+            max_foreign_per_day=s.max_foreign_per_day,  # type: ignore[attr-defined]
         )
 
 

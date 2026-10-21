@@ -16,7 +16,7 @@ from . import fila as fq
 from .messages import TemplateSet, fix_greeting, tidy
 from .notify import notify
 from .phone import to_jid, variants
-from .schedule import fmt_local, Rules, earliest_send_local, random_gap, typing_seconds
+from .schedule import Rules, day_start, earliest_send_local, fmt_local, random_gap, sent_today, typing_seconds
 from .whatsapp import WhatsAppError
 
 log = logging.getLogger("prospector")
@@ -86,7 +86,7 @@ def emergency_stop(conn: sqlite3.Connection, reason: str, notify_enabled: bool) 
 
 def _approved(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT f.*, l.telefone, l.jid, l.nome, l.status AS lead_status, l.fuso, l.idioma FROM fila f "
+        "SELECT f.*, l.telefone, l.jid, l.nome, l.status AS lead_status, l.fuso, l.idioma, l.pais FROM fila f "
         "JOIN leads l ON l.id = f.lead_id WHERE f.status = ? ORDER BY f.id",
         (fq.APROVADO,),
     ).fetchall()
@@ -265,11 +265,16 @@ def run(
     cross_days = wait_next_day or dry_run
     since = clock.now() - timedelta(days=2)
     sent_times = db.real_send_times(conn, since)
+    foreign_times = db.real_send_times(conn, since, foreign_only=True)
     simulated: list[datetime] = []
     gap = random_gap(rules, rng)
 
     def when_for(it: sqlite3.Row) -> datetime | None:
-        return earliest_send_local(clock.now(), sent_times + simulated, rules, gap, _lead_tz(it, rules))
+        start = clock.now()
+        if (rules.max_foreign_per_day and it["pais"] != "BR"
+                and sent_today(start, foreign_times, rules.tz) >= rules.max_foreign_per_day):
+            start = day_start(start, rules.tz) + timedelta(days=1)   # teto de hoje para fora do Brasil: fica para amanhã
+        return earliest_send_local(start, sent_times + simulated, rules, gap, _lead_tz(it, rules))
 
     seen: set[int] = set()
     while True:
@@ -339,6 +344,8 @@ def run(
                             tipo=item["tipo"], texto=text, dry_run=True, ok=True, http_status=None,
                             resposta_api="dry-run", when=clock.now())
             simulated.append(clock.now())
+            if item["pais"] != "BR":
+                foreign_times.append(clock.now())
             report.enviados += 1
             gap = random_gap(rules, rng)
             continue
@@ -382,6 +389,8 @@ def run(
         sent_at = clock.now()
         _record_success(conn, item, text, jid, result, sent_at)
         sent_times.append(sent_at)
+        if item["pais"] != "BR":
+            foreign_times.append(sent_at)
         report.enviados += 1
         out(f"  enviado #{item['id']} {item['tipo']} -> {item['telefone']} ({item['nome']}) às {sent_at.astimezone(rules.tz):%H:%M}")
         gap = random_gap(rules, rng)
