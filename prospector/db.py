@@ -104,6 +104,28 @@ CREATE TABLE IF NOT EXISTS respostas (
     recebido_em TEXT NOT NULL
 );
 
+-- Canais alternativos ao WhatsApp: e-mail (envio automático) e DM do Instagram (envio manual pelo painel).
+CREATE TABLE IF NOT EXISTS canal_fila (
+    id INTEGER PRIMARY KEY,
+    lead_id INTEGER NOT NULL REFERENCES leads(id),
+    canal TEXT NOT NULL,         -- email | instagram
+    destino TEXT NOT NULL,       -- endereço de e-mail ou @perfil
+    assunto TEXT,
+    texto TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendente',  -- pendente|aprovado|enviado|rejeitado|erro
+    erro TEXT,
+    criado_em TEXT NOT NULL,
+    enviado_em TEXT,
+    UNIQUE(canal, destino)
+);
+CREATE INDEX IF NOT EXISTS idx_canal_fila_status ON canal_fila(canal, status);
+
+CREATE TABLE IF NOT EXISTS canal_bloqueio (
+    destino TEXT PRIMARY KEY,    -- e-mail ou @perfil que pediu para parar
+    motivo TEXT,
+    criado_em TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS bloqueio (
     telefone TEXT PRIMARY KEY,
     motivo TEXT,

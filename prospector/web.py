@@ -246,4 +246,6 @@ def create_app(app_ctx: App | None = None) -> Flask:
     from .web_ops import register_ops_routes
     register_finance_routes(web, ctx)
     register_ops_routes(web, ctx)
+    from .web_canais import register_canais_routes
+    register_canais_routes(web, ctx)
     return web

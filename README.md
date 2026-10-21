@@ -376,3 +376,23 @@ buscas.yaml       nichos × cidades das buscas em lote
 ## Licença
 
 MIT
+
+## Canais alternativos: e-mail e Instagram
+
+Para não depender só de um número de WhatsApp, o prospector monta filas separadas para leads brasileiros que têm e-mail
+público ou perfil de Instagram. Cada lead entra em um canal só (sai de `novo` ao entrar na fila), e quem já recebeu
+mensagem no WhatsApp não é reaproveitado. Textos em `templates.canais.yaml` (sem preço, sem cidade, com opt-out no e-mail).
+
+```bash
+prospector canais email montar --limite 15      # cria os itens pendentes
+prospector canais email listar                  # revise os textos
+prospector canais email aprovar --todos         # ou: aprovar 3 4 5
+prospector canais email enviar --aguardar       # SMTP (Gmail), janelas e intervalos do WhatsApp, MAX_EMAIL_POR_DIA
+prospector canais instagram montar --limite 10
+prospector canais email parar --destino alguem@x.com   # pediu para parar: nunca mais entra em fila
+```
+
+- **E-mail** usa SMTP com senha de app do Gmail (`SMTP_USUARIO`, `SMTP_SENHA` no `.env`). Qualquer erro de SMTP
+  aciona a parada de emergência, igual ao WhatsApp. As respostas chegam na sua caixa de entrada.
+- **Instagram nunca é automatizado** (DM automática viola os termos e derruba a conta): a página **Canais** do painel mostra
+  o perfil, o texto pronto e os botões *Enviei* / *Pular* / *Pediu para parar*. Sugestão: até 10 por dia.

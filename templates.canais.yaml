@@ -1,0 +1,75 @@
+# Textos dos canais alternativos: e-mail (enviado pelo sistema) e DM do Instagram (você cola e envia).
+# Variáveis: {saudacao} {nome} {quem} {portfolio} {assinatura} {optout} {arroba}
+# Sem preço: valores só se o lead perguntar.
+
+quem: "Eu e o Felipe somos desenvolvedores de Campinas e região"
+portfolio: "https://portifolio-dupla.vercel.app"
+assinatura: "Lucas e Felipe"
+optout: "Se preferir não receber mais mensagens nossas, é só responder \"parar\"."
+
+email:
+  tem_site:
+    - assunto: "Uma ideia para o site da {nome}"
+      texto: |
+        {saudacao}!
+
+        Sou o Lucas. {quem}. Vi o site da {nome} e tenho uma ideia simples para ele gerar mais contatos: atendimento automático no WhatsApp, que responde na hora e passa só o importante para a equipe de vocês.
+
+        Se fizer sentido, explico em poucas linhas. Nossos trabalhos: {portfolio}
+
+        Com quem eu falo sobre isso?
+
+        Abraço,
+        {assinatura}
+
+        {optout}
+    - assunto: "{nome}: atendimento no WhatsApp"
+      texto: |
+        {saudacao}!
+
+        Meu nome é Lucas. {quem}. Trabalho com sites e atendimento automático por WhatsApp para pequenos negócios.
+
+        Vi a {nome} e queria saber: quando chega cliente fora do horário, alguém responde ou fica para o dia seguinte? Tenho uma solução simples para isso.
+
+        Nossos trabalhos: {portfolio}
+
+        Abraço,
+        {assinatura}
+
+        {optout}
+  site_problema:
+    - assunto: "Sobre o site da {nome}"
+      texto: |
+        {saudacao}!
+
+        Sou o Lucas. {quem}. Ao procurar a {nome} reparei que o site tem um problema que pode estar afastando clientes. Posso mandar o que vi e como resolver, sem compromisso.
+
+        Nossos trabalhos: {portfolio}
+
+        Com quem eu falo sobre isso?
+
+        Abraço,
+        {assinatura}
+
+        {optout}
+  padrao:
+    - assunto: "Uma ideia para a {nome}"
+      texto: |
+        {saudacao}!
+
+        Sou o Lucas. {quem}. Fazemos sites e atendimento automático por WhatsApp para pequenos negócios, e achei a {nome} no Google.
+
+        Posso explicar em poucas linhas como isso ajudaria vocês? Nossos trabalhos: {portfolio}
+
+        Abraço,
+        {assinatura}
+
+        {optout}
+
+instagram:
+  so_social:
+    - "{saudacao}! Sou o Lucas. {quem}. Vi o perfil de vocês e achei bacana. Hoje o pessoal chama mais por aqui ou pelo WhatsApp? Tenho uma ideia simples pra facilitar os pedidos. Com quem falo?"
+    - "Oi, {saudacao_minuscula}! Lucas aqui. {quem}. Vi o Instagram de vocês e fiquei curioso: o cliente consegue fechar tudo direto pelo perfil ou precisa de um site/atendimento no WhatsApp? Posso mostrar uma ideia."
+    - "{saudacao}! Sou o Lucas. {quem}. Passei no perfil de vocês e tenho uma ideia pra ele virar mais contatos, sem trabalho extra pra equipe. Posso explicar rapidinho?"
+  padrao:
+    - "{saudacao}! Sou o Lucas. {quem}. Vi o perfil de vocês. Fazemos sites e atendimento automático no WhatsApp. Posso explicar em 2 linhas como isso ajudaria vocês?"

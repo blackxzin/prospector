@@ -10,6 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from . import db
+from . import canais
 from . import fila as fq
 from .app import App
 from .classify import classify_offer, is_franchise
@@ -498,6 +499,59 @@ def cmd_relatorio(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_canal_item(item) -> None:
+    print(f"\n#{item['id']}  {item['nome']}  [{item['canal']} · {item['status']}]  {item['destino']}")
+    if item["assunto"]:
+        print(f"    assunto: {item['assunto']}")
+    print("    " + item["texto"].replace("\n", "\n    "))
+
+
+def cmd_canais(app: App, args: argparse.Namespace) -> int:
+    """E-mail (Gmail) e DM do Instagram: montar, listar, aprovar, enviar."""
+    conn, s = app.conn, app.settings
+    canal, acao = args.canal, args.acao
+    if acao == "montar":
+        res = canais.build(conn, canal, args.limite, app.canal_templates, db.utcnow(), s.tz)
+        print(f"{res.criados} itens de {canal} criados. Veja com: prospector canais {canal} listar")
+        return 0
+    if acao == "listar":
+        items = canais.list_items(conn, canal)
+        for item in items:
+            _print_canal_item(item)
+        print(f"\n{len(items)} itens." if items else "Nada pendente.")
+        return 0
+    if acao == "aprovar":
+        n = canais.approve(conn, canal, None if args.todos else args.ids)
+        print(f"{n} aprovados.")
+        return 0
+    if acao == "rejeitar":
+        print(f"{canais.reject(conn, args.ids)} rejeitados.")
+        return 0
+    if acao == "enviado":  # DM de Instagram enviada à mão
+        done = sum(canais.mark_sent(conn, i, db.utcnow()) for i in args.ids)
+        print(f"{done} marcados como enviados.")
+        return 0
+    if acao == "parar":
+        for d in args.ids_ou_destinos:
+            canais.block(conn, d, "pediu para parar", db.utcnow())
+        print("Bloqueado: nunca mais entra em fila.")
+        return 0
+    if acao == "enviar":
+        if canal != canais.EMAIL:
+            print("Instagram é manual: abra a página Instagram no painel.", file=sys.stderr)
+            return 1
+        if not s.has_email:
+            print("Configure SMTP_USUARIO e SMTP_SENHA (senha de app do Gmail) no .env.", file=sys.stderr)
+            return 1
+        cfg = canais.SmtpConfig(s.smtp_host, s.smtp_port, s.smtp_user, s.smtp_password, s.smtp_nome)
+        report = canais.send_emails(conn, cfg, app.rules, s.max_email_per_day, clock=RealClock(),
+                                    wait_next_day=args.aguardar)
+        print(f"\nResumo: {report.enviados} enviados, {report.erros} erros. {report.motivo_fim}")
+        return 2 if report.parado else 0
+    print(f"Ação desconhecida: {acao}", file=sys.stderr)
+    return 1
+
+
 def cmd_retomar(app: App, _args: argparse.Namespace) -> int:
     db.set_state(app.conn, db.PARADO, None)
     print("Envio liberado de novo.")
@@ -725,6 +779,16 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--dias", type=int, default=7)
     a.add_argument("--notificar", action="store_true")
     a.set_defaults(fn=cmd_relatorio)
+
+    a = sub.add_parser("canais", help="e-mail e Instagram: prospector canais email montar|listar|aprovar|enviar")
+    a.add_argument("canal", choices=canais.CANAIS)
+    a.add_argument("acao", choices=("montar", "listar", "aprovar", "rejeitar", "enviado", "enviar", "parar"))
+    a.add_argument("ids", nargs="*", type=int, help="ids dos itens (aprovar/rejeitar/enviado)")
+    a.add_argument("--limite", type=int, default=15, help="montar: quantos itens criar")
+    a.add_argument("--todos", action="store_true", help="aprovar: todos os pendentes")
+    a.add_argument("--aguardar", action="store_true", help="enviar: espera a próxima janela")
+    a.add_argument("--destino", dest="ids_ou_destinos", action="append", default=[], help="parar: e-mail ou @perfil")
+    a.set_defaults(fn=cmd_canais)
 
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)
 

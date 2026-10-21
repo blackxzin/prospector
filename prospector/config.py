@@ -91,6 +91,17 @@ class Settings:
     notify: bool = True
     portfolio_apos_primeira: bool = True  # manda o portfólio como 2ª mensagem (se o idioma tiver)
     checar_presenca: bool = True  # busca site/Instagram/cardápio online antes da 1ª mensagem
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = field(default="", repr=False)  # senha de app do Gmail, nunca a senha da conta
+    smtp_nome: str = "Lucas"
+    max_email_per_day: int = 15
+    canais_path: Path = ROOT / "templates.canais.yaml"
+
+    @property
+    def has_email(self) -> bool:
+        return bool(self.smtp_user and self.smtp_password)
 
     @property
     def has_whatsapp(self) -> bool:
@@ -159,6 +170,12 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         notify=_flag(env, "NOTIFICAR"),
         checar_presenca=_flag(env, "CHECAR_PRESENCA"),
         portfolio_apos_primeira=_flag(env, "PORTFOLIO_APOS_PRIMEIRA"),
+        smtp_host=env.get("SMTP_HOST", "smtp.gmail.com").strip(),
+        smtp_port=_int(env, "SMTP_PORTA", 587),
+        smtp_user=env.get("SMTP_USUARIO", "").strip(),
+        smtp_password=env.get("SMTP_SENHA", "").replace(" ", ""),
+        smtp_nome=env.get("SMTP_NOME", "Lucas").strip(),
+        max_email_per_day=_int(env, "MAX_EMAIL_POR_DIA", 15),
     )
     _validate(settings)
     return settings

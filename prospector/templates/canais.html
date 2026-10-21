@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Canais{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Canais: Instagram e e-mail</h1>
+    <p>Instagram é sempre manual: abra o perfil, cole a mensagem e marque como enviada. E-mail sai pelo sistema com <code>prospector canais email enviar --aguardar</code>.</p></div>
+  <div class="toolbar">
+    <form method="post" action="{{ url_for('canais_montar', canal='instagram') }}"><button>Montar Instagram</button></form>
+    <form method="post" action="{{ url_for('canais_montar', canal='email') }}"><button>Montar e-mail</button></form>
+  </div>
+</div>
+
+<section class="card">
+  <h2>Instagram <span class="muted num">{{ hoje.get('instagram', 0) }} hoje · sugestão: até 10/dia</span></h2>
+  {% if instagram %}
+  <div class="stack">
+  {% for i in instagram %}
+    <article class="msg-card">
+      <div class="sub"><b>{{ i.nome }}</b> · {{ i.cidade or '' }} ·
+        <a href="https://instagram.com/{{ i.destino.lstrip('@') }}" target="_blank" rel="noopener noreferrer">{{ i.destino }}</a></div>
+      <pre style="white-space:pre-wrap;user-select:all">{{ i.texto }}</pre>
+      <div class="toolbar">
+        <form method="post" action="{{ url_for('canais_item', item_id=i.id, acao='enviado') }}"><button class="btn-primary">Enviei</button></form>
+        <form method="post" action="{{ url_for('canais_item', item_id=i.id, acao='pular') }}"><button>Pular</button></form>
+        <form method="post" action="{{ url_for('canais_item', item_id=i.id, acao='parar') }}"><button class="btn-danger">Pediu para parar</button></form>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+  {% else %}<p class="empty">Nada pendente. Clique em "Montar Instagram".</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>E-mail <span class="muted num">{{ hoje.get('email', 0) }}/{{ limite_email }} hoje</span></h2>
+  {% if not tem_email %}<p class="empty">Configure SMTP_USUARIO e SMTP_SENHA (senha de app do Gmail) no .env para enviar.</p>{% endif %}
+  {% if email %}
+  <form method="post" action="{{ url_for('canais_aprovar_todos', canal='email') }}"><button>Aprovar todos os pendentes</button></form>
+  <div class="stack">
+  {% for i in email %}
+    <article class="msg-card">
+      <div class="sub"><b>{{ i.nome }}</b> · {{ i.destino }} · <span class="tag plain">{{ i.status }}</span></div>
+      <div class="sub">Assunto: {{ i.assunto }}</div>
+      <pre style="white-space:pre-wrap">{{ i.texto }}</pre>
+      <div class="toolbar">
+        {% if i.status == 'pendente' %}
+        <form method="post" action="{{ url_for('canais_item', item_id=i.id, acao='aprovar') }}"><input type="hidden" name="canal" value="email"><button class="btn-primary">Aprovar</button></form>
+        {% endif %}
+        <form method="post" action="{{ url_for('canais_item', item_id=i.id, acao='pular') }}"><button>Rejeitar</button></form>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+  {% else %}<p class="empty">Nada pendente. Clique em "Montar e-mail".</p>{% endif %}
+</section>
+{% endblock %}

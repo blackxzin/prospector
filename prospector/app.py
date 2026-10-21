@@ -14,6 +14,7 @@ from typing import Callable
 from zoneinfo import ZoneInfo
 
 from . import db, lote, pix, sitecheck
+from .canais import CanalTemplates
 from .classify import Listas
 from .finance import FinanceConfig, brl
 from .config import Settings, load_settings
@@ -50,6 +51,10 @@ class App:
     @cached_property
     def listas(self) -> Listas:
         return Listas.load(self.settings.listas_path)
+
+    @cached_property
+    def canal_templates(self) -> CanalTemplates:
+        return CanalTemplates.load(self.settings.canais_path)
 
     @cached_property
     def finance(self) -> FinanceConfig:
