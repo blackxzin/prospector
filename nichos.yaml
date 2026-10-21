@@ -10,12 +10,12 @@ nichos:
   clinicas:
     nome: Clínicas e consultórios
     buscas: [dentista, clínica odontológica, psicólogo, fisioterapia, nutricionista, clínica de estética]
-    categorias: [dentista, odonto, psicolog, fisioterap, nutricion, clinica, consultorio, medic, ortodont, fonoaudi]
+    categorias: [dentista, odonto, psicolog, fisioterap, nutricion, clinica, consultorio, medic, ortodont, fonoaudi, esteticista, podolog, quiropra, acupuntur, psiquiatr, ginecolog, pediatr, oftalmolog, dermatolog, cardiolog, ortoped, cirurgia, endocrin, urolog, otorrino, biomedic, massoterap, terapeut, saude, laboratorio, implante]
     dor: "Quando um paciente chama no WhatsApp pra marcar horário fora do expediente, alguém responde ou ele procura outra clínica?"
   mecanicos:
     nome: Oficinas e mecânicos
     buscas: [oficina mecânica, auto elétrica, funilaria e pintura, borracharia, centro automotivo]
-    categorias: [oficina, mecanic, auto eletric, funilaria, borracharia, automotiv, autopecas, lava jato, estetica automotiva]
+    categorias: [oficina, mecanic, auto eletric, funilaria, borracharia, automotiv, autopecas, auto pecas, lava jato, lava-rapido, lava rapido, martelinho, lanternagem, pneu, escapamento, vidracaria automotiva, concessionaria, motocicleta, moto pecas]
     dor: "Quando alguém chama no WhatsApp pedindo orçamento, vocês respondem na hora ou só depois do serviço?"
   corretores:
     nome: Imobiliárias e corretores
@@ -40,7 +40,7 @@ nichos:
   academias:
     nome: Academias e estúdios
     buscas: [academia, estúdio de pilates, personal trainer]
-    categorias: [academia, pilates, crossfit, personal, fitness, yoga, musculacao, funcional, danca]
+    categorias: [academia, pilates, crossfit, personal, fitness, yoga, musculacao, funcional, danca, centro de treinamento, treinamento, arte marcial, jiu, muay, boxe]
     dor: "Quando alguém chama no WhatsApp pra saber de plano e horário, quem responde na hora?"
   pets:
     nome: Pet shops e veterinárias

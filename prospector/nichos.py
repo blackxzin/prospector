@@ -57,11 +57,14 @@ class Nichos:
         return cls(itens, ordem, inicio)
 
     def classify(self, busca: str | None, categoria: str | None) -> str | None:
-        """Nicho de um lead: pelas palavras da categoria do Maps; se não bater, pelos termos da busca."""
+        """Nicho de um lead pela categoria do Maps. Só sem categoria usa os termos da busca: a busca de um nicho
+        traz muito negócio de outro (lava-rápido na busca de "clínica de estética") e a mensagem do nicho não serve."""
         cat, termo = fold(categoria or ""), fold(busca or "")
-        for nicho in self.itens.values():
-            if cat and any(word in cat for word in nicho.categorias):
-                return nicho.id
+        if cat:
+            for nicho in self.itens.values():
+                if any(word in cat for word in nicho.categorias):
+                    return nicho.id
+            return None
         for nicho in self.itens.values():
             if termo and any(fold(b) in termo for b in nicho.buscas):
                 return nicho.id
@@ -86,16 +89,16 @@ class Nichos:
 
 
 def reclassificar(conn, nichos: Nichos) -> tuple[int, int]:
-    """Marca o nicho dos leads do Brasil que ainda não têm e recalcula 'resposta_humana' pelo texto das respostas.
-    Devolve (leads marcados agora, leads com resposta de gente de verdade)."""
+    """Recalcula o nicho dos leads do Brasil (regras atuais do nichos.yaml) e 'resposta_humana' pelo texto das
+    respostas. Devolve (leads cujo nicho mudou, leads com resposta de gente de verdade)."""
     from . import db
     from .replies import is_human_reply
 
     tagged = 0
     with db.tx(conn):
-        for lead in conn.execute("SELECT id, busca, categoria FROM leads WHERE nicho IS NULL AND pais = 'BR'").fetchall():
+        for lead in conn.execute("SELECT id, busca, categoria, nicho FROM leads WHERE pais = 'BR'").fetchall():
             nid = nichos.classify(lead["busca"], lead["categoria"])
-            if nid:
+            if nid != lead["nicho"]:
                 db.update_lead(conn, lead["id"], nicho=nid)
                 tagged += 1
         for lead in conn.execute("SELECT id, resposta_humana FROM leads WHERE respondeu_em IS NOT NULL").fetchall():

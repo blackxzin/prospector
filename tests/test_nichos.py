@@ -27,7 +27,8 @@ def nichos(tmp_path):
     ("dentista em Itaí SP", "Dentista", "clinicas"),
     ("pizzaria em Itaí SP", "Pizzaria", "alimentacao"),
     ("x", "Oficina mecânica", "mecanicos"),
-    ("imobiliária em Avaré SP", "Agência", "corretores"),        # categoria não bate, a busca sim
+    ("imobiliária em Avaré SP", "Agência", None),                # categoria desconhecida: não chuta pela busca
+    ("imobiliária em Avaré SP", "", "corretores"),              # sem categoria: usa o termo da busca
     ("x", "Clínica Odontológica", "clinicas"),
     ("x", "Papelaria", None), ("", "", None),
 ])
@@ -71,5 +72,10 @@ def test_shipped_catalog_is_valid_and_restaurants_stay_tagged():
     assert cat.classify("pizzaria em Itaí SP", "Pizzaria") == "alimentacao"
     assert cat.classify("barbearia em Avaré SP", "Barbearia") == "saloes"
     assert cat.classify("x", "Escritório de advocacia") == "advogados"
+    # a busca de um nicho traz negócio de outro: vale a categoria do Maps, não o termo da busca
+    assert cat.classify("clínica de estética em Itaí SP", "Lava-rápido") == "mecanicos"
+    assert cat.classify("clínica de estética em Itaí SP", "Esteticista") == "clinicas"
+    assert cat.classify("clínica de estética em Itaí SP", "Centro de treinamento") == "academias"
+    assert cat.classify("clínica de estética em Itaí SP", "Categoria desconhecida") is None
     for nid in cat.ordem:
         assert cat.itens[nid].dor.endswith("?") and len(cat.itens[nid].dor.split()) <= 22
