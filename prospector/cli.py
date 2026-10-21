@@ -536,6 +536,19 @@ def cmd_canais(app: App, args: argparse.Namespace) -> int:
             canais.block(conn, d, "pediu para parar", db.utcnow())
         print("Bloqueado: nunca mais entra em fila.")
         return 0
+    if acao == "testar":
+        if canal != canais.EMAIL or not s.has_email:
+            print("Teste só para e-mail, com SMTP_USUARIO e SMTP_SENHA no .env.", file=sys.stderr)
+            return 1
+        para = args.para or s.smtp_user
+        cfg = canais.SmtpConfig(s.smtp_host, s.smtp_port, s.smtp_user, s.smtp_password, s.smtp_nome)
+        try:
+            subject, _ = canais.send_test(conn, cfg, para, app.canal_templates, db.utcnow(), s.tz)
+        except canais.CanalError as exc:
+            print(f"PARADO: {exc}", file=sys.stderr)
+            return 2
+        print(f"Teste enviado para {para} ({subject}). Confira a caixa de entrada e o spam.")
+        return 0
     if acao == "enviar":
         if canal != canais.EMAIL:
             print("Instagram é manual: abra a página Instagram no painel.", file=sys.stderr)
@@ -782,11 +795,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     a = sub.add_parser("canais", help="e-mail e Instagram: prospector canais email montar|listar|aprovar|enviar")
     a.add_argument("canal", choices=canais.CANAIS)
-    a.add_argument("acao", choices=("montar", "listar", "aprovar", "rejeitar", "enviado", "enviar", "parar"))
+    a.add_argument("acao", choices=("montar", "listar", "aprovar", "rejeitar", "enviado", "testar", "enviar", "parar"))
     a.add_argument("ids", nargs="*", type=int, help="ids dos itens (aprovar/rejeitar/enviado)")
     a.add_argument("--limite", type=int, default=15, help="montar: quantos itens criar")
     a.add_argument("--todos", action="store_true", help="aprovar: todos os pendentes")
     a.add_argument("--aguardar", action="store_true", help="enviar: espera a próxima janela")
+    a.add_argument("--para", help="testar: destino do teste (padrão: SMTP_USUARIO)")
     a.add_argument("--destino", dest="ids_ou_destinos", action="append", default=[], help="parar: e-mail ou @perfil")
     a.set_defaults(fn=cmd_canais)
 
