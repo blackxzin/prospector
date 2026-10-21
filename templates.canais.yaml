@@ -1,35 +1,37 @@
 # Textos dos canais alternativos: e-mail (enviado pelo sistema) e DM do Instagram (você cola e envia).
-# Variáveis: {saudacao} {nome} {quem} {portfolio} {assinatura} {optout} {arroba}
-# Sem preço: valores só se o lead perguntar.
+# Variáveis: {saudacao} {saudacao_minuscula} {nome} {quem} {portfolio} {assinatura} {optout} {arroba}
+# Sem preço: valores só se o lead perguntar. Sem cidade: só "Campinas e região" (em {quem}).
+#
+# O texto é gerado no 'montar' e fica gravado na fila; o envio pode sair horas depois. Por isso os textos
+# abrem com "Olá"/"Oi" em vez de {saudacao} ("Bom dia" montado de manhã chegaria à tarde).
+# Evite artigo antes de {nome} ("a {nome}", "da {nome}"): não dá para saber o gênero. Use "vocês" ou sem artigo.
 
-quem: "Eu e o Felipe somos desenvolvedores de Campinas e região"
+quem: "Sou o Lucas. Eu e o Felipe somos uma dupla de desenvolvedores de Campinas e região"
 portfolio: "https://portifolio-dupla.vercel.app"
 assinatura: "Lucas e Felipe"
-optout: "Se preferir não receber mais mensagens nossas, é só responder \"parar\"."
+optout: "Se preferir não receber mais mensagens nossas, é só responder \"parar\" que não enviamos mais."
 
 email:
   tem_site:
-    - assunto: "Uma ideia para o site da {nome}"
+    - assunto: "{nome}: uma ideia para o site"
       texto: |
-        {saudacao}!
+        Olá, tudo bem?
 
-        Sou o Lucas. {quem}. Vi o site da {nome} e tenho uma ideia simples para ele gerar mais contatos: atendimento automático no WhatsApp, que responde na hora e passa só o importante para a equipe de vocês.
+        {quem}. Vi o site de vocês e tive uma ideia simples para ele trazer mais contatos: um atendimento automático no WhatsApp, que responde na hora e só passa para a equipe o que importa.
 
-        Se fizer sentido, explico em poucas linhas. Nossos trabalhos: {portfolio}
-
-        Com quem eu falo sobre isso?
+        Posso explicar em poucas linhas? Nossos trabalhos: {portfolio}
 
         Abraço,
         {assinatura}
 
         {optout}
-    - assunto: "{nome}: atendimento no WhatsApp"
+    - assunto: "{nome}: cliente fora do horário"
       texto: |
-        {saudacao}!
+        Olá, tudo bem?
 
-        Meu nome é Lucas. {quem}. Trabalho com sites e atendimento automático por WhatsApp para pequenos negócios.
+        {quem}. Fazemos sites e atendimento automático por WhatsApp para pequenos negócios.
 
-        Vi a {nome} e queria saber: quando chega cliente fora do horário, alguém responde ou fica para o dia seguinte? Tenho uma solução simples para isso.
+        Uma pergunta rápida: quando um cliente chama fora do horário, alguém responde ou fica para o dia seguinte? Temos uma solução simples para isso.
 
         Nossos trabalhos: {portfolio}
 
@@ -38,28 +40,26 @@ email:
 
         {optout}
   site_problema:
-    - assunto: "Sobre o site da {nome}"
+    - assunto: "{nome}: vi um problema no site"
       texto: |
-        {saudacao}!
+        Olá, tudo bem?
 
-        Sou o Lucas. {quem}. Ao procurar a {nome} reparei que o site tem um problema que pode estar afastando clientes. Posso mandar o que vi e como resolver, sem compromisso.
+        {quem}. Procurando vocês no Google, reparei num problema no site que pode estar fazendo cliente desistir. Posso mandar o que vi e como resolver, sem compromisso?
 
         Nossos trabalhos: {portfolio}
-
-        Com quem eu falo sobre isso?
 
         Abraço,
         {assinatura}
 
         {optout}
   padrao:
-    - assunto: "Uma ideia para a {nome}"
+    - assunto: "Uma ideia para {nome}"
       texto: |
-        {saudacao}!
+        Olá, tudo bem?
 
-        Sou o Lucas. {quem}. Fazemos sites e atendimento automático por WhatsApp para pequenos negócios, e achei a {nome} no Google.
+        {quem}. Fazemos sites e atendimento automático por WhatsApp para pequenos negócios, e encontramos vocês no Google.
 
-        Posso explicar em poucas linhas como isso ajudaria vocês? Nossos trabalhos: {portfolio}
+        Posso explicar em poucas linhas como isso ajudaria no dia a dia de vocês? Nossos trabalhos: {portfolio}
 
         Abraço,
         {assinatura}
@@ -68,8 +68,8 @@ email:
 
 instagram:
   so_social:
-    - "{saudacao}! Sou o Lucas. {quem}. Vi o perfil de vocês e achei bacana. Hoje o pessoal chama mais por aqui ou pelo WhatsApp? Tenho uma ideia simples pra facilitar os pedidos. Com quem falo?"
-    - "Oi, {saudacao_minuscula}! Lucas aqui. {quem}. Vi o Instagram de vocês e fiquei curioso: o cliente consegue fechar tudo direto pelo perfil ou precisa de um site/atendimento no WhatsApp? Posso mostrar uma ideia."
-    - "{saudacao}! Sou o Lucas. {quem}. Passei no perfil de vocês e tenho uma ideia pra ele virar mais contatos, sem trabalho extra pra equipe. Posso explicar rapidinho?"
+    - "Oi, tudo bem? {quem}. Vi o perfil de vocês e curti. Hoje os clientes chamam mais por aqui ou pelo WhatsApp? Tenho uma ideia simples pra facilitar os pedidos."
+    - "Oi! {quem}. Fiquei curioso vendo o perfil de vocês: o cliente consegue resolver tudo por aqui ou precisaria de um site ou atendimento no WhatsApp? Posso mostrar uma ideia rápida."
+    - "Olá! {quem}. Tenho uma ideia pra transformar o perfil de vocês em mais contatos, sem trabalho extra pra equipe. Posso explicar rapidinho?"
   padrao:
-    - "{saudacao}! Sou o Lucas. {quem}. Vi o perfil de vocês. Fazemos sites e atendimento automático no WhatsApp. Posso explicar em 2 linhas como isso ajudaria vocês?"
+    - "Oi, tudo bem? {quem}. Fazemos sites e atendimento automático no WhatsApp para pequenos negócios. Posso explicar em 2 linhas como isso ajudaria vocês?"

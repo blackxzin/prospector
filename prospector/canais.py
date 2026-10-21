@@ -218,6 +218,27 @@ def smtp_send(cfg: SmtpConfig, to: str, subject: str, body: str) -> None:
         smtp.send_message(msg)
 
 
+def send_test(conn: sqlite3.Connection, cfg: SmtpConfig, to: str, templates: CanalTemplates, now: datetime, tz: tzinfo,
+              *, mailer: Mailer = smtp_send) -> tuple[str, str]:
+    """Manda só para `to` o 1º e-mail da fila (ou um exemplo), com [TESTE] no assunto; não mexe na fila.
+
+    Erro de SMTP aciona a parada de emergência, como no envio real."""
+    item = conn.execute("SELECT assunto, texto FROM canal_fila WHERE canal = ? AND status IN (?, ?) ORDER BY id LIMIT 1",
+                        (EMAIL, PENDENTE, APROVADO)).fetchone()
+    if item:
+        subject, text = item["assunto"] or "", item["texto"]
+    else:
+        subject, text = templates.render(EMAIL, {"nome": "Negócio Exemplo", "oferta": "tem_site"}, now, tz)
+    subject = f"[TESTE] {subject}"
+    try:
+        mailer(cfg, to, subject, text)
+    except (smtplib.SMTPException, OSError) as exc:
+        reason = f"Erro no teste de e-mail: {exc}"
+        db.set_state(conn, db.PARADO, f"{db.iso(db.utcnow())} {reason}")
+        raise CanalError(reason) from exc
+    return subject, text
+
+
 def email_times(conn: sqlite3.Connection, since: datetime) -> list[datetime]:
     rows = conn.execute("SELECT enviado_em FROM canal_fila WHERE canal = ? AND status = ? AND enviado_em >= ? "
                         "ORDER BY enviado_em", (EMAIL, ENVIADO, db.iso(since))).fetchall()

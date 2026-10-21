@@ -1,4 +1,5 @@
 import random
+import re
 import smtplib
 
 import pytest
@@ -49,6 +50,13 @@ def test_templates_never_mention_city_or_price(tpl):
 def test_email_text_has_optout_and_portfolio(tpl):
     _, text = tpl.render("email", {"nome": "X", "oferta": "tem_site"}, MONDAY_9, TZ)
     assert "parar" in text and "portifolio-dupla.vercel.app" in text
+
+
+def test_templates_avoid_article_before_name_and_time_greeting():
+    raw = (ROOT / "templates.canais.yaml").read_text(encoding="utf-8")
+    body = raw.split("\nemail:", 1)[1]
+    assert not re.search(r"\b(?:[ao]|d[ao]|n[ao])\s+\{nome\}", body, re.I)
+    assert "{saudacao" not in body
 
 
 def test_instagram_render_uses_default_when_offer_unknown(tpl):
@@ -146,6 +154,29 @@ def test_smtp_failure_stops_everything(conn, listas, tpl, rules):
 
     report = _send(conn, rules, VirtualClock(MONDAY_9), boom)
     assert report.enviados == 0 and report.erros == 1 and report.parado
+    assert db.stop_reason(conn)
+
+
+def test_send_test_goes_only_to_given_address_and_keeps_queue(conn, listas, tpl):
+    _approved_emails(conn, listas, tpl, 2)
+    sent: list[tuple[str, str]] = []
+    subject, _ = canais.send_test(conn, CFG, "eu@gmail.com", tpl, MONDAY_9, TZ,
+                                  mailer=lambda c, to, s, b: sent.append((to, s)))
+    assert sent == [("eu@gmail.com", subject)] and subject.startswith("[TESTE] ")
+    assert len(canais.list_items(conn, canais.EMAIL, (canais.APROVADO,))) == 2
+    assert conn.execute("SELECT COUNT(*) FROM leads WHERE status = 'enviado'").fetchone()[0] == 0
+
+
+def test_send_test_without_queue_uses_sample_and_smtp_error_stops(conn, tpl):
+    sent: list[str] = []
+    canais.send_test(conn, CFG, "eu@gmail.com", tpl, MONDAY_9, TZ, mailer=lambda c, to, s, b: sent.append(b))
+    assert "Campinas e região" in sent[0]
+
+    def boom(cfg, to, subject, body):
+        raise smtplib.SMTPAuthenticationError(535, b"bad credentials")
+
+    with pytest.raises(canais.CanalError):
+        canais.send_test(conn, CFG, "eu@gmail.com", tpl, MONDAY_9, TZ, mailer=boom)
     assert db.stop_reason(conn)
 
 
