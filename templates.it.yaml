@@ -1,7 +1,8 @@
 # Textos em italiano (Itália). Sobrescreve o templates.yaml (pt).
 idioma: it
 decimal: ","
-apresentacao: "Sono uno sviluppatore brasiliano e, insieme al mio socio Felipe, realizziamo siti web, automazioni e bot di assistenza clienti per WhatsApp."
+quem: "Io e il mio socio Felipe siamo sviluppatori brasiliani."
+apresentacao: ""
 portfolio: ""
 optout: "(Rispondete STOP e non vi scriverò più.)"
 problema_padrao: "non si caricava correttamente"
@@ -31,26 +32,26 @@ vitrine:
 # Abordagem curta: gancho real do lead, uma pergunta simples e pedido de "com quem falo". Sem link e sem preço.
 primeira:
   sem_site:
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho cercato {nome} su Google e non ho trovato un sito. Con chi posso parlarne? {optout}"
-    - "Ciao, sono Lucas, sviluppatore. Oggi chi vi cerca su Google trova solo la scheda su Maps, senza sito. Ne avete mai parlato? Chi si occupa di questa parte? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho un'idea semplice per far comparire meglio {nome} su Google. Posso spiegarla rapidamente a chi decide? {optout}"
-    - "Ciao, sono Lucas, sviluppatore brasiliano. Vi ho trovati su Google con voto {nota_boa}, ma senza sito. Ci avete mai pensato? Con chi posso parlare? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho letto cosa ha scritto un cliente su di voi su Google: “{avaliacao}”. Ma non ho trovato un sito. Chi se ne occupa? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho cercato {nome} su Google e non ho trovato un sito. Con chi posso parlarne? {optout}"
+    - "Ciao, sono Lucas. {quem} Oggi chi vi cerca su Google trova solo la scheda su Maps, senza sito. Ne avete mai parlato? Chi si occupa di questa parte? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho un'idea semplice per far comparire meglio {nome} su Google. Posso spiegarla rapidamente a chi decide? {optout}"
+    - "Ciao, sono Lucas. {quem} Vi ho trovati su Google con voto {nota_boa}, ma senza sito. Ci avete mai pensato? Con chi posso parlare? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho letto cosa ha scritto un cliente su di voi su Google: “{avaliacao}”. Ma non ho trovato un sito. Chi se ne occupa? {optout}"
   so_social:
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Sono arrivato ai vostri social tramite Google. Avete anche un sito o solo i social? {optout}"
-    - "Ciao, sono Lucas, sviluppatore. Ho visto che {nome} si promuove solo sui social. Avete pensato a un sito semplice con pulsante WhatsApp? Con chi posso parlarne? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Chi cura la vostra comunicazione? Ho un'idea rapida perché chi vi cerca su Google arrivi direttamente su WhatsApp. Posso spiegarla a chi decide? {optout}"
-    - "Ciao, sono Lucas, sviluppatore brasiliano. Ho visto il vostro {arroba}, bravi! Ma non ho trovato un sito. Ci avete pensato? Con chi posso parlare? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho letto una recensione di un cliente su Google: “{avaliacao}”. Chi vi cerca trova solo i social. Chi se ne occupa? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Sono arrivato ai vostri social tramite Google. Avete anche un sito o solo i social? {optout}"
+    - "Ciao, sono Lucas. {quem} Ho visto che {nome} si promuove solo sui social. Avete pensato a un sito semplice con pulsante WhatsApp? Con chi posso parlarne? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Chi cura la vostra comunicazione? Ho un'idea rapida perché chi vi cerca su Google arrivi direttamente su WhatsApp. Posso spiegarla a chi decide? {optout}"
+    - "Ciao, sono Lucas. {quem} Ho visto il vostro {arroba}, bravi! Ma non ho trovato un sito. Ci avete pensato? Con chi posso parlare? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho letto una recensione di un cliente su Google: “{avaliacao}”. Chi vi cerca trova solo i social. Chi se ne occupa? {optout}"
   tem_site:
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Quando un cliente vi scrive su WhatsApp fuori orario, qualcuno risponde o aspetta il giorno dopo? {optout}"
-    - "Ciao, sono Lucas, sviluppatore. Ho visto il vostro sito. WhatsApp è il canale da cui arrivano più richieste? Creo risposte automatiche immediate. Posso spiegarlo a chi se ne occupa? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Qualcuno gestisce WhatsApp tutto il giorno o c'è troppo movimento? Ho un'idea per alleggerire. Con chi posso parlare? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho letto una recensione di un cliente: “{avaliacao}”. Nei giorni pieni riuscite a rispondere a tutti su WhatsApp? Con chi posso parlarne? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Quando un cliente vi scrive su WhatsApp fuori orario, qualcuno risponde o aspetta il giorno dopo? {optout}"
+    - "Ciao, sono Lucas. {quem} Ho visto il vostro sito. WhatsApp è il canale da cui arrivano più richieste? Creo risposte automatiche immediate. Posso spiegarlo a chi se ne occupa? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Qualcuno gestisce WhatsApp tutto il giorno o c'è troppo movimento? Ho un'idea per alleggerire. Con chi posso parlare? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho letto una recensione di un cliente: “{avaliacao}”. Nei giorni pieni riuscite a rispondere a tutti su WhatsApp? Con chi posso parlarne? {optout}"
   site_problema:
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Ho provato ad aprire il vostro sito e {problema}. Lo sapevate? Con chi posso parlare per sistemarlo? {optout}"
-    - "Ciao, sono Lucas, sviluppatore. Sono passato dal vostro sito e {problema}. Così i clienti rinunciano. Chi si occupa del sito? {optout}"
-    - "{saudacao}. Sono Lucas, sviluppatore brasiliano. Un avviso veloce: aprendo il vostro sito, {problema}. Posso aiutare a sistemarlo. Con chi parlo? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Ho provato ad aprire il vostro sito e {problema}. Lo sapevate? Con chi posso parlare per sistemarlo? {optout}"
+    - "Ciao, sono Lucas. {quem} Sono passato dal vostro sito e {problema}. Così i clienti rinunciano. Chi si occupa del sito? {optout}"
+    - "{saudacao}. Sono Lucas. {quem} Un avviso veloce: aprendo il vostro sito, {problema}. Posso aiutare a sistemarlo. Con chi parlo? {optout}"
 
 followup:
   - "Ciao. Volevo solo sapere se il mio messaggio vi è arrivato. Se non siete voi, potreste indicarmi chi se ne occupa? {optout}"

@@ -1,7 +1,8 @@
 # Textos em alemão (Alemanha, Áustria, Suíça). Sobrescreve o templates.yaml (pt).
 idioma: de
 decimal: ","
-apresentacao: "Ich bin Entwickler aus Brasilien und baue mit meinem Partner Felipe Websites, Automatisierungen und Kundenservice-Bots für WhatsApp."
+quem: "Mein Partner Felipe und ich sind Entwickler aus Brasilien."
+apresentacao: ""
 portfolio: ""
 optout: "(Antworten Sie STOP, dann schreibe ich nicht mehr.)"
 problema_padrao: "sie ließ sich nicht richtig laden"
@@ -31,26 +32,26 @@ vitrine:
 # Abordagem curta: gancho real do lead, uma pergunta simples e pedido de "com quem falo". Sem link e sem preço.
 primeira:
   sem_site:
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich habe {nome} bei Google gesucht und keine Website gefunden. Mit wem kann ich darüber sprechen? {optout}"
-    - "Hallo, hier ist Lucas, Entwickler. Wer Sie heute bei Google sucht, sieht nur den Maps-Eintrag, keine Website. War das schon mal Thema? Wer kümmert sich darum? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich habe eine einfache Idee, damit {nome} bei Google besser auffindbar ist. Darf ich sie kurz der Person erklären, die das entscheidet? {optout}"
-    - "Hallo, ich bin Lucas, Entwickler aus Brasilien. Ich habe Sie bei Google mit {nota_boa} Sternen gefunden, aber ohne Website. Haben Sie schon mal darüber nachgedacht? Mit wem kann ich sprechen? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich habe gelesen, was ein Kunde bei Google über Sie schreibt: „{avaliacao}“. Eine Website habe ich aber nicht gefunden. Wer kümmert sich darum? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich habe {nome} bei Google gesucht und keine Website gefunden. Mit wem kann ich darüber sprechen? {optout}"
+    - "Hallo, hier ist Lucas. {quem} Wer Sie heute bei Google sucht, sieht nur den Maps-Eintrag, keine Website. War das schon mal Thema? Wer kümmert sich darum? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich habe eine einfache Idee, damit {nome} bei Google besser auffindbar ist. Darf ich sie kurz der Person erklären, die das entscheidet? {optout}"
+    - "Hallo, ich bin Lucas. {quem} Ich habe Sie bei Google mit {nota_boa} Sternen gefunden, aber ohne Website. Haben Sie schon mal darüber nachgedacht? Mit wem kann ich sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich habe gelesen, was ein Kunde bei Google über Sie schreibt: „{avaliacao}“. Eine Website habe ich aber nicht gefunden. Wer kümmert sich darum? {optout}"
   so_social:
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich bin über Google auf Ihre Social-Media-Seite gekommen. Haben Sie auch eine Website oder nur Social Media? {optout}"
-    - "Hallo, hier ist Lucas, Entwickler. Mir ist aufgefallen, dass {nome} nur über Social Media wirbt. Haben Sie schon an eine einfache Website mit WhatsApp-Button gedacht? Mit wem kann ich darüber sprechen? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Wer kümmert sich bei Ihnen um das Marketing? Ich habe eine schnelle Idee, damit Menschen, die Sie bei Google suchen, direkt in Ihrem WhatsApp landen. Darf ich sie der entscheidenden Person erklären? {optout}"
-    - "Hallo, ich bin Lucas, Entwickler aus Brasilien. Ich habe Ihr {arroba} gesehen, sehr schön! Eine Website habe ich aber nicht gefunden. Haben Sie darüber nachgedacht? Mit wem kann ich sprechen? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich habe eine Kundenbewertung bei Google gelesen: „{avaliacao}“. Wer Sie sucht, findet nur Social Media. Wer kümmert sich darum? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich bin über Google auf Ihre Social-Media-Seite gekommen. Haben Sie auch eine Website oder nur Social Media? {optout}"
+    - "Hallo, hier ist Lucas. {quem} Mir ist aufgefallen, dass {nome} nur über Social Media wirbt. Haben Sie schon an eine einfache Website mit WhatsApp-Button gedacht? Mit wem kann ich darüber sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Wer kümmert sich bei Ihnen um das Marketing? Ich habe eine schnelle Idee, damit Menschen, die Sie bei Google suchen, direkt in Ihrem WhatsApp landen. Darf ich sie der entscheidenden Person erklären? {optout}"
+    - "Hallo, ich bin Lucas. {quem} Ich habe Ihr {arroba} gesehen, sehr schön! Eine Website habe ich aber nicht gefunden. Haben Sie darüber nachgedacht? Mit wem kann ich sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich habe eine Kundenbewertung bei Google gelesen: „{avaliacao}“. Wer Sie sucht, findet nur Social Media. Wer kümmert sich darum? {optout}"
   tem_site:
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Wenn ein Kunde Ihnen außerhalb der Öffnungszeiten per WhatsApp schreibt, antwortet jemand oder wartet das bis zum nächsten Tag? {optout}"
-    - "Hallo, hier ist Lucas, Entwickler. Ich habe Ihre Website gesehen. Kommen die meisten Anfragen über WhatsApp? Ich baue automatische Antworten, die sofort reagieren. Darf ich das der zuständigen Person erklären? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Kümmert sich jemand den ganzen Tag um WhatsApp, oder ist zu viel los dafür? Ich habe eine Idee zur Entlastung. Mit wem kann ich sprechen? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich habe eine Kundenbewertung gelesen: „{avaliacao}“. Schaffen Sie es an vollen Tagen, allen per WhatsApp zu antworten? Mit wem kann ich darüber sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Wenn ein Kunde Ihnen außerhalb der Öffnungszeiten per WhatsApp schreibt, antwortet jemand oder wartet das bis zum nächsten Tag? {optout}"
+    - "Hallo, hier ist Lucas. {quem} Ich habe Ihre Website gesehen. Kommen die meisten Anfragen über WhatsApp? Ich baue automatische Antworten, die sofort reagieren. Darf ich das der zuständigen Person erklären? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Kümmert sich jemand den ganzen Tag um WhatsApp, oder ist zu viel los dafür? Ich habe eine Idee zur Entlastung. Mit wem kann ich sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich habe eine Kundenbewertung gelesen: „{avaliacao}“. Schaffen Sie es an vollen Tagen, allen per WhatsApp zu antworten? Mit wem kann ich darüber sprechen? {optout}"
   site_problema:
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Ich wollte Ihre Website öffnen und {problema}. Wussten Sie das? Mit wem kann ich über die Behebung sprechen? {optout}"
-    - "Hallo, hier ist Lucas, Entwickler. Ich war auf Ihrer Website und {problema}. Dadurch springen Kunden ab. Wer kümmert sich um die Website? {optout}"
-    - "{saudacao}. Ich bin Lucas, Entwickler aus Brasilien. Kurzer Hinweis: Ich habe Ihre Website geöffnet und {problema}. Ich kann beim Beheben helfen. Mit wem kann ich sprechen? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Ich wollte Ihre Website öffnen und {problema}. Wussten Sie das? Mit wem kann ich über die Behebung sprechen? {optout}"
+    - "Hallo, hier ist Lucas. {quem} Ich war auf Ihrer Website und {problema}. Dadurch springen Kunden ab. Wer kümmert sich um die Website? {optout}"
+    - "{saudacao}. Ich bin Lucas. {quem} Kurzer Hinweis: Ich habe Ihre Website geöffnet und {problema}. Ich kann beim Beheben helfen. Mit wem kann ich sprechen? {optout}"
 
 followup:
   - "Hallo. Ich wollte nur nachfragen, ob meine Nachricht angekommen ist. Falls Sie nicht zuständig sind, könnten Sie mir sagen, wer sich darum kümmert? {optout}"

@@ -23,11 +23,11 @@ def test_first_message_is_short_personal_and_asks_who_to_talk_to(templates, offe
             "oferta": offer, "cidade": "Itaí"}
     for seed in range(20):
         text = templates.first_message(lead, NOW, TZ, random.Random(seed))
-        assert text.endswith("?") and "Lucas" in text and "desenvolvedor" in text
+        assert text.endswith("?") and "Lucas" in text and "Felipe" in text and "Campinas e região" in text
         assert "http" not in text and "vercel" not in text          # sem link na 1ª mensagem
         assert len(text.split()) <= 50                              # curta
         assert "{" not in text and "  " not in text and "Delivery" not in text
-        assert "de Itaí" in text                                    # gancho local
+        assert "Itaí" not in text                                   # a cidade de vocês não aparece
 
 
 def test_rating_appears_only_when_it_is_good(templates):
@@ -169,7 +169,7 @@ def test_foreign_messages_are_short_clean_and_localized(tset, lang, offer):
     for seed in range(20):
         text = tpl.first_message(lead, local_dt(2026, 10, 20, 10), TZ, random.Random(seed))
         assert "{" not in text and "  " not in text and len(text.split()) <= 60
-        assert "Lucas" in text and text.endswith(tpl.data["optout"])      # opt-out explícito em toda abordagem
+        assert "Lucas" in text and "Felipe" in text and text.endswith(tpl.data["optout"])   # a dupla + opt-out em toda abordagem
         assert "vercel.app" not in text and "R$" not in text and "http" not in text
         assert "aqui da região" not in text and ("Bom dia" not in text or lang == "pt-pt")
         assert "?" in text                                                # sempre pergunta algo

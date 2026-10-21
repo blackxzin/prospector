@@ -87,10 +87,15 @@ def test_review_quote_and_handle_appear_when_available(pt):
     assert any("“Melhor pizza da cidade”" in t for t in texts) and any("@pizzariabella" in t for t in texts)
 
 
-def test_without_city_it_says_aqui_da_regiao(pt):
-    lead = {"nome": "Bella", "oferta": "sem_site", "nota": None, "avaliacoes": None, "categoria": "Pizzaria"}
-    texts = [pt.first_message(lead, NOW, TZ, random.Random(s)) for s in range(30)]
-    assert all("aqui da região" in t and "de None" not in t for t in texts)
+def test_every_brazil_message_introduces_the_duo_from_campinas_and_never_names_the_city(pt):
+    for cidade in ("Itaí", "Avaré", "Campinas", None):
+        for offer in ("sem_site", "so_social", "tem_site", "site_problema"):
+            lead = {"nome": "Bella", "oferta": offer, "nota": 4.7, "avaliacoes": 90, "categoria": "Pizzaria",
+                    "cidade": cidade, "site_problemas": "o site está fora do ar"}
+            for seed in range(25):
+                text = pt.first_message(lead, NOW, TZ, random.Random(seed))
+                assert "Eu e o Felipe somos desenvolvedores de Campinas e região" in text
+                assert "Itaí" not in text and "aqui da região" not in text and "de None" not in text
 
 
 def test_followups_do_not_repeat_the_pitch_and_only_the_last_has_the_portfolio(pt):
@@ -104,7 +109,7 @@ def test_followups_do_not_repeat_the_pitch_and_only_the_last_has_the_portfolio(p
 def test_template_needs_three_unconditional_variants(tmp_path):
     from prospector.messages import TemplateError
     text = (ROOT / "templates.yaml").read_text(encoding="utf-8")
-    broken = text.replace('"Oi, {saudacao_minuscula}! Sou o Lucas, desenvolvedor {local}. Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"',
+    broken = text.replace('"Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"',
                           '"Oi! {avaliacao} Quem cuida disso?"')
     assert broken != text
     p = tmp_path / "t.yaml"
@@ -152,13 +157,3 @@ def test_regenerate_texts_skips_items_already_sent_and_edited_ones(conn, listas,
     conn.commit()
     assert fq.regenerate_texts(conn, tset, rules, NOW, rng=random.Random(1)) == 1
     assert conn.execute("SELECT texto FROM fila WHERE id = ?", (second,)).fetchone()[0] == "editado por mim"
-
-
-def test_only_the_base_city_is_claimed_as_home(pt):
-    for cidade, expected, forbidden in [("Itaí", "de Itaí", None), ("Avaré", "aqui da região", "de Avaré"),
-                                        ("ITAI", "de Itaí", None), (None, "aqui da região", "de None")]:
-        lead = {"nome": "Bella", "oferta": "sem_site", "nota": None, "avaliacoes": None, "categoria": "x",
-                "cidade": cidade}
-        for seed in range(12):
-            text = pt.first_message(lead, NOW, TZ, random.Random(seed))
-            assert expected in text and (forbidden is None or forbidden not in text)

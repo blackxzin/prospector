@@ -150,6 +150,7 @@ class Templates:
             "avaliacoes": str(avaliacoes or 0),
             "vitrine": self._vitrine(lead.get("categoria")),
             "local": self._local(lead.get("cidade")),
+            "quem": str(self.data.get("quem") or ""),
             "avaliacao": review_snippet(lead.get("avaliacoes_json")),
             "arroba": instagram_handle(lead.get("site")),
             "nota_boa": self._nota_boa(nota, avaliacoes),
