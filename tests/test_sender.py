@@ -185,14 +185,14 @@ def test_wa_client_status_false_is_error():
 
 @pytest.mark.parametrize("payload, expected", [
     # formato real do WA-AKG v1.7: resultado dentro de "data"
-    (b'{"status":true,"data":{"results":[{"number":"5514996112048","exists":true,'
-     b'"jid":"5514996112048@s.whatsapp.net"}]}}', "5514996112048@s.whatsapp.net"),
-    (b'{"results":[{"exists":true,"jid":"5514996112048@s.whatsapp.net"}]}', "5514996112048@s.whatsapp.net"),
-    (b'{"status":true,"data":{"results":[{"number":"5514996112048","exists":false}]}}', None),
+    (b'{"status":true,"data":{"results":[{"number":"5514999990000","exists":true,'
+     b'"jid":"5514999990000@s.whatsapp.net"}]}}', "5514999990000@s.whatsapp.net"),
+    (b'{"results":[{"exists":true,"jid":"5514999990000@s.whatsapp.net"}]}', "5514999990000@s.whatsapp.net"),
+    (b'{"status":true,"data":{"results":[{"number":"5514999990000","exists":false}]}}', None),
 ])
 def test_check_number_reads_api_envelope(payload, expected):
     client = WaClient("http://wa", "s", "k", request=lambda *a, **kw: HttpResponse(200, payload))
-    assert client.check_number("5514996112048") == expected
+    assert client.check_number("5514999990000") == expected
 
 
 def test_items_approved_while_running_are_picked_up(conn, listas, templates, rules):
