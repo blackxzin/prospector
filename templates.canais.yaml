@@ -66,6 +66,29 @@ email:
 
         {optout}
 
+# Lembrete único, 3 dias úteis depois, só para quem não respondeu. O assunto vira "Re: <assunto original>".
+email_followup:
+  - |
+    Olá, tudo bem?
+
+    Passando só para retomar meu e-mail anterior. {quem}. Se fizer sentido conversar sobre atendimento automático no WhatsApp ou o site de vocês, é só responder aqui. Nossos trabalhos: {portfolio}
+
+    Se não for o momento, sem problema.
+
+    Abraço,
+    {assinatura}
+
+    {optout}
+  - |
+    Olá!
+
+    Voltando ao meu e-mail da semana passada, caso tenha passado batido. {quem}. Posso explicar em poucas linhas como ajudaria vocês, sem compromisso. Nossos trabalhos: {portfolio}
+
+    Abraço,
+    {assinatura}
+
+    {optout}
+
 instagram:
   so_social:
     - "Oi, tudo bem? {quem}. Vi o perfil de vocês e curti. Hoje os clientes chamam mais por aqui ou pelo WhatsApp? Tenho uma ideia simples pra facilitar os pedidos."

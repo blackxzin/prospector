@@ -22,7 +22,7 @@ import yaml
 
 from . import db
 from .messages import clean_name, greeting, instagram_handle
-from .schedule import Rules, earliest_send, random_gap
+from .schedule import Rules, add_business_days, earliest_send, random_gap
 
 EMAIL = "email"
 INSTAGRAM = "instagram"
@@ -57,6 +57,15 @@ class CanalTemplates:
             if not str(data.get(key) or "").strip():
                 raise CanalError(f"{path.name}: falta '{key}'")
         return cls(data)
+
+    def render_followup(self, lead: Mapping[str, Any], original_subject: str, rng: random.Random | None = None) -> tuple[str, str]:
+        options = list(self.data.get("email_followup") or [])
+        if not options:
+            raise CanalError("faltam textos em 'email_followup'")
+        ctx = {"nome": clean_name(lead["nome"], lead.get("cidade")), "quem": self.data["quem"],
+               "portfolio": self.data["portfolio"], "assinatura": self.data["assinatura"], "optout": self.data["optout"]}
+        text = re.sub(r"\n{3,}", "\n\n", (rng or random.Random()).choice(options).format(**ctx)).strip()
+        return f"Re: {original_subject}", text
 
     def _options(self, canal: str, oferta: str) -> list[Any]:
         group = self.data[canal]
@@ -179,8 +188,8 @@ def mark_sent(conn: sqlite3.Connection, item_id: int, when: datetime) -> bool:
     return True
 
 
-def block(conn: sqlite3.Connection, destino: str, motivo: str, now: datetime) -> None:
-    """Quem pediu para parar (e-mail ou @perfil): nunca mais entra em fila, e o lead vira 'não quer'."""
+def block(conn: sqlite3.Connection, destino: str, motivo: str, now: datetime, lead_status: str = db.NAO_QUER) -> None:
+    """Destino que nunca mais entra em fila (e-mail ou @perfil). Por padrão o lead vira 'não quer' (pediu para parar)."""
     d = destino.strip().lower()
     with db.tx(conn):
         conn.execute("INSERT OR REPLACE INTO canal_bloqueio (destino, motivo, criado_em) VALUES (?,?,?)",
@@ -188,7 +197,34 @@ def block(conn: sqlite3.Connection, destino: str, motivo: str, now: datetime) ->
         for row in conn.execute("SELECT id, lead_id FROM canal_fila WHERE destino = ?", (d,)).fetchall():
             conn.execute("UPDATE canal_fila SET status = ? WHERE id = ? AND status IN (?, ?)",
                          (REJEITADO, row["id"], PENDENTE, APROVADO))
-            db.update_lead(conn, row["lead_id"], status=db.NAO_QUER)
+            db.update_lead(conn, row["lead_id"], status=lead_status)
+
+
+# ---------- follow-up de e-mail (um lembrete só, depois de N dias úteis sem resposta) ----------
+
+def build_followups(conn: sqlite3.Connection, templates: CanalTemplates, rules: Rules, now: datetime, business_days: int,
+                    rng: random.Random | None = None) -> int:
+    rows = conn.execute(
+        "SELECT c.id, c.assunto, c.enviado_em, l.* FROM canal_fila c JOIN leads l ON l.id = c.lead_id "
+        "WHERE c.canal = ? AND c.status = ? AND c.followup_status IS NULL AND l.status = ? AND l.respondeu_em IS NULL",
+        (EMAIL, ENVIADO, db.ENVIADO)).fetchall()
+    made = 0
+    for row in rows:
+        sent = db.parse_iso(row["enviado_em"])
+        if not sent or add_business_days(sent, business_days, rules) > now:
+            continue
+        subject, text = templates.render_followup(dict(row), row["assunto"] or "", rng)
+        with db.tx(conn):
+            conn.execute("UPDATE canal_fila SET followup_status = ?, followup_assunto = ?, followup_texto = ? WHERE id = ?",
+                         (PENDENTE, subject, text, row["id"]))
+        made += 1
+    return made
+
+
+def approve_followups(conn: sqlite3.Connection) -> int:
+    with db.tx(conn):
+        return conn.execute("UPDATE canal_fila SET followup_status = ? WHERE canal = ? AND followup_status = ?",
+                            (APROVADO, EMAIL, PENDENTE)).rowcount
 
 
 # ---------- envio de e-mail ----------
@@ -240,9 +276,11 @@ def send_test(conn: sqlite3.Connection, cfg: SmtpConfig, to: str, templates: Can
 
 
 def email_times(conn: sqlite3.Connection, since: datetime) -> list[datetime]:
-    rows = conn.execute("SELECT enviado_em FROM canal_fila WHERE canal = ? AND status = ? AND enviado_em >= ? "
-                        "ORDER BY enviado_em", (EMAIL, ENVIADO, db.iso(since))).fetchall()
-    return [datetime.fromisoformat(r["enviado_em"]) for r in rows]
+    rows = conn.execute(
+        "SELECT enviado_em AS t FROM canal_fila WHERE canal = ? AND status = ? AND enviado_em >= ? "
+        "UNION ALL SELECT followup_em FROM canal_fila WHERE canal = ? AND followup_status = ? AND followup_em >= ? "
+        "ORDER BY 1", (EMAIL, ENVIADO, db.iso(since), EMAIL, ENVIADO, db.iso(since))).fetchall()
+    return [datetime.fromisoformat(r["t"]) for r in rows]
 
 
 @dataclass
@@ -251,6 +289,16 @@ class EmailReport:
     erros: int = 0
     parado: str | None = None
     motivo_fim: str = ""
+
+
+def _next_email(conn: sqlite3.Connection) -> tuple[sqlite3.Row | None, bool]:
+    """Próximo e-mail aprovado: 1ª mensagem primeiro, depois lembretes. (linha, é_lembrete)"""
+    base = "SELECT c.*, l.status AS lead_status FROM canal_fila c JOIN leads l ON l.id = c.lead_id WHERE c.canal = ? AND "
+    row = conn.execute(base + "c.status = ? ORDER BY c.id LIMIT 1", (EMAIL, APROVADO)).fetchone()
+    if row:
+        return row, False
+    row = conn.execute(base + "c.followup_status = ? ORDER BY c.id LIMIT 1", (EMAIL, APROVADO)).fetchone()
+    return row, True
 
 
 def send_emails(conn: sqlite3.Connection, cfg: SmtpConfig, rules: Rules, max_per_day: int, *, mailer: Mailer = smtp_send,
@@ -267,8 +315,7 @@ def send_emails(conn: sqlite3.Connection, cfg: SmtpConfig, rules: Rules, max_per
         out(report.motivo_fim)
         return report
     while not should_stop():
-        item = conn.execute("SELECT c.*, l.status AS lead_status FROM canal_fila c JOIN leads l ON l.id = c.lead_id "
-                            "WHERE c.canal = ? AND c.status = ? ORDER BY c.id LIMIT 1", (EMAIL, APROVADO)).fetchone()
+        item, followup = _next_email(conn)
         if item is None:
             report.motivo_fim = "Fila de e-mail vazia."
             return report
@@ -291,15 +338,24 @@ def send_emails(conn: sqlite3.Connection, cfg: SmtpConfig, rules: Rules, max_per
         if db.stop_reason(conn):
             report.parado = db.stop_reason(conn)
             return report
-        if item["lead_status"] == db.NAO_QUER or is_blocked(conn, item["destino"]):
+        gone = item["lead_status"] == db.NAO_QUER or is_blocked(conn, item["destino"])
+        if gone or (followup and item["lead_status"] != db.ENVIADO):   # respondeu/pediu para parar: lembrete cai
             with db.tx(conn):
-                conn.execute("UPDATE canal_fila SET status = ? WHERE id = ?", (REJEITADO, item["id"]))
+                if followup:
+                    conn.execute("UPDATE canal_fila SET followup_status = 'cancelado' WHERE id = ?", (item["id"],))
+                else:
+                    conn.execute("UPDATE canal_fila SET status = ? WHERE id = ?", (REJEITADO, item["id"]))
             continue
+        subject, body = ((item["followup_assunto"], item["followup_texto"]) if followup
+                         else (item["assunto"] or "", item["texto"]))
         try:
-            mailer(cfg, item["destino"], item["assunto"] or "", item["texto"])
+            mailer(cfg, item["destino"], subject, body)
         except (smtplib.SMTPException, OSError) as exc:
             with db.tx(conn):
-                conn.execute("UPDATE canal_fila SET status = ?, erro = ? WHERE id = ?", (ERRO, str(exc)[:300], item["id"]))
+                if followup:
+                    conn.execute("UPDATE canal_fila SET followup_status = 'erro', erro = ? WHERE id = ?", (str(exc)[:300], item["id"]))
+                else:
+                    conn.execute("UPDATE canal_fila SET status = ?, erro = ? WHERE id = ?", (ERRO, str(exc)[:300], item["id"]))
             report.erros += 1
             # Qualquer falha de SMTP (login, bloqueio, cota) para tudo, como no WhatsApp.
             reason = f"Erro de e-mail para {item['destino']}: {exc}"
@@ -307,8 +363,13 @@ def send_emails(conn: sqlite3.Connection, cfg: SmtpConfig, rules: Rules, max_per
             report.parado = reason
             out(f"  PARADO: {reason}")
             return report
-        mark_sent(conn, item["id"], clock.now())
+        if followup:
+            with db.tx(conn):
+                conn.execute("UPDATE canal_fila SET followup_status = ?, followup_em = ? WHERE id = ?",
+                             (ENVIADO, db.iso(clock.now()), item["id"]))
+        else:
+            mark_sent(conn, item["id"], clock.now())
         report.enviados += 1
-        out(f"  e-mail #{item['id']} -> {item['destino']}")
+        out(f"  e-mail{' (lembrete)' if followup else ''} #{item['id']} -> {item['destino']}")
     report.motivo_fim = "Interrompido."
     return report

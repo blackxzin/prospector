@@ -113,3 +113,20 @@ def today_ops(conn: sqlite3.Connection, rules: Rules, now: datetime) -> dict[str
             if _local_date(ts, rules.tz) == now.astimezone(rules.tz).date()),
         "sem_retorno": count("SELECT COUNT(*) FROM leads WHERE status IN ('respondeu', 'interessado')"),
     }
+
+
+def channel_report(conn: sqlite3.Connection) -> list[dict[str, object]]:
+    """Resultado por canal: leads contatados, respostas de gente de verdade e interessados."""
+    def row(canal: str, where: str) -> dict[str, object]:
+        r = conn.execute(
+            f"SELECT COUNT(*) n, COALESCE(SUM(l.resposta_humana = 1), 0) resp, "
+            f"COALESCE(SUM(l.status IN ('interessado', 'cliente')), 0) inter FROM leads l WHERE {where}").fetchone()
+        n = r["n"]
+        return {"canal": canal, "contatados": n, "responderam": r["resp"], "interessados": r["inter"],
+                "taxa": (r["resp"] / n) if n else 0.0}
+
+    return [
+        row("whatsapp", "l.id IN (SELECT lead_id FROM envios WHERE tipo = 'primeira' AND ok = 1 AND dry_run = 0)"),
+        row("e-mail", "l.id IN (SELECT lead_id FROM canal_fila WHERE canal = 'email' AND status = 'enviado')"),
+        row("instagram", "l.id IN (SELECT lead_id FROM canal_fila WHERE canal = 'instagram' AND status = 'enviado')"),
+    ]

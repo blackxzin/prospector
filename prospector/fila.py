@@ -100,7 +100,9 @@ def close_stale_followups(conn: sqlite3.Connection, now: datetime, rules: Rules,
 def due_followups(conn: sqlite3.Connection, now: datetime, rules: Rules, business_days: int) -> list[sqlite3.Row]:
     rows = conn.execute(
         "SELECT * FROM leads WHERE status = ? AND respondeu_em IS NULL AND followup_em IS NULL "
-        "AND id NOT IN (SELECT lead_id FROM fila WHERE tipo = 'followup')",
+        "AND id NOT IN (SELECT lead_id FROM fila WHERE tipo = 'followup') "
+        # só quem recebeu a 1ª mensagem no WhatsApp: lead abordado por e-mail ou Instagram não ganha follow-up de zap
+        "AND telefone IN (SELECT telefone FROM envios WHERE tipo = 'primeira' AND ok = 1 AND dry_run = 0)",
         (db.ENVIADO,),
     ).fetchall()
     out = []

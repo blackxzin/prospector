@@ -1,4 +1,5 @@
 import random
+from datetime import timedelta
 import re
 import smtplib
 
@@ -220,3 +221,75 @@ def test_canais_page_and_instagram_flow(settings, tmp_path):
     assert web.post(f"/canais/item/{item['id']}/enviado").status_code == 302
     assert canais.list_items(app.conn, canais.INSTAGRAM) == []
     assert app.conn.execute("SELECT status FROM leads").fetchone()[0] == db.ENVIADO
+
+
+def _sent_with_age(conn, listas, tpl, days_ago):
+    _approved_emails(conn, listas, tpl, 1)
+    sent = MONDAY_9 - timedelta(days=days_ago)
+    item = canais.list_items(conn, canais.EMAIL, (canais.APROVADO,))[0]
+    canais.mark_sent(conn, item["id"], sent)
+    return item
+
+
+def test_followup_only_after_business_days_and_without_reply(conn, listas, tpl, rules):
+    _sent_with_age(conn, listas, tpl, 1)
+    assert canais.build_followups(conn, tpl, rules, MONDAY_9, 3, random.Random(1)) == 0
+    conn.execute("UPDATE canal_fila SET enviado_em = ?", (db.iso(MONDAY_9 - timedelta(days=5)),))
+    assert canais.build_followups(conn, tpl, rules, MONDAY_9, 3, random.Random(1)) == 1
+    assert canais.build_followups(conn, tpl, rules, MONDAY_9, 3, random.Random(1)) == 0   # um lembrete só
+
+
+def test_followup_is_sent_once_with_re_subject(conn, listas, tpl, rules):
+    _sent_with_age(conn, listas, tpl, 6)
+    canais.build_followups(conn, tpl, rules, MONDAY_9, 3, random.Random(1))
+    assert canais.approve_followups(conn) == 1
+    sent: list[tuple[str, str]] = []
+    report = _send(conn, rules, VirtualClock(MONDAY_9), lambda c, to, s, b: sent.append((s, b)))
+    assert report.enviados == 1 and sent[0][0].startswith("Re: ")
+    assert _send(conn, rules, VirtualClock(MONDAY_9 + timedelta(hours=1)), lambda *a: sent.append(("x", "x"))).enviados == 0
+
+
+def test_followup_dropped_if_lead_replied(conn, listas, tpl, rules):
+    item = _sent_with_age(conn, listas, tpl, 6)
+    canais.build_followups(conn, tpl, rules, MONDAY_9, 3, random.Random(1))
+    canais.approve_followups(conn)
+    db.update_lead(conn, item["lead_id"], status=db.RESPONDEU)
+    sent: list[str] = []
+    _send(conn, rules, VirtualClock(MONDAY_9), lambda c, to, s, b: sent.append(to))
+    assert sent == []
+
+
+def test_whatsapp_followup_skips_leads_never_messaged_on_whatsapp(conn, listas, tpl, rules):
+    from prospector import fila as fq
+    _sent_with_age(conn, listas, tpl, 10)
+    assert fq.due_followups(conn, MONDAY_9, rules, 3) == []
+
+
+def test_channel_report_counts_per_channel(conn, listas, tpl):
+    from prospector import metrics
+    _import(conn, listas, title="Doces", phone="(14) 99111-0009", website="https://instagram.com/doces", link="9")
+    _build(conn, tpl, canais.INSTAGRAM)
+    item = canais.list_items(conn, canais.INSTAGRAM)[0]
+    canais.mark_sent(conn, item["id"], MONDAY_9)
+    db.update_lead(conn, item["lead_id"], status=db.INTERESSADO, resposta_humana=1)
+    rep = {r["canal"]: r for r in metrics.channel_report(conn)}
+    assert rep["instagram"]["contatados"] == 1 and rep["instagram"]["responderam"] == 1 and rep["instagram"]["interessados"] == 1
+    assert rep["whatsapp"]["contatados"] == 0 and rep["e-mail"]["contatados"] == 0
+
+
+def test_canais_page_shows_report_and_marks_instagram_reply(settings):
+    from prospector.app import App
+    from prospector.classify import Listas
+    from prospector.web import create_app
+
+    app = App(settings)
+    import_rows(app.conn, [csv_row(title="Doces da Ana", phone="(14) 99111-0010",
+                                   website="https://instagram.com/docesdaana", link="10")], "q", Listas.load(ROOT / "listas.yaml"))
+    web = create_app(app).test_client()
+    web.post("/canais/instagram/montar")
+    item = canais.list_items(app.conn, canais.INSTAGRAM)[0]
+    web.post(f"/canais/item/{item['id']}/enviado")
+    page = web.get("/canais")
+    assert b"aguardando resposta" in page.data and b"Resultado por canal" in page.data
+    web.post(f"/canais/item/{item['id']}/interessado")
+    assert app.conn.execute("SELECT status, resposta_humana FROM leads").fetchone()[:] == (db.INTERESSADO, 1)

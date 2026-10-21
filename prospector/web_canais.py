@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Flask, Response, flash, redirect, render_template, request, url_for
 
-from . import canais, db
+from . import canais, db, metrics
 from .app import App
 
 
@@ -16,7 +16,11 @@ def register_canais_routes(web: Flask, ctx: App) -> None:
             "SELECT canal, COUNT(*) n FROM canal_fila WHERE status = 'enviado' AND enviado_em >= ? GROUP BY canal",
             (db.iso(db.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)),)).fetchall()
         return render_template(
-            "canais.html", page="canais_page",
+            "canais.html", page="canais_page", resumo=metrics.channel_report(conn),
+            aguardando=conn.execute(
+                "SELECT c.id, c.destino, l.nome, l.status, c.enviado_em FROM canal_fila c JOIN leads l ON l.id = c.lead_id "
+                "WHERE c.canal = 'instagram' AND c.status = 'enviado' AND l.status = 'enviado' ORDER BY c.enviado_em DESC LIMIT 50"
+            ).fetchall(),
             instagram=canais.list_items(conn, canais.INSTAGRAM), email=canais.list_items(conn, canais.EMAIL),
             hoje={r["canal"]: r["n"] for r in enviados_hoje}, tem_email=ctx.settings.has_email,
             limite_email=ctx.settings.max_email_per_day)
@@ -44,6 +48,13 @@ def register_canais_routes(web: Flask, ctx: App) -> None:
             flash("Marcado como enviado.")
         elif acao == "pular":
             canais.reject(ctx.conn, [item_id])
+        elif acao in ("respondeu", "interessado"):
+            row = ctx.conn.execute("SELECT lead_id FROM canal_fila WHERE id = ?", (item_id,)).fetchone()
+            if row:
+                with db.tx(ctx.conn):
+                    db.update_lead(ctx.conn, row["lead_id"], status=db.INTERESSADO if acao == "interessado" else db.RESPONDEU,
+                                   respondeu_em=db.iso(db.utcnow()), resposta_humana=1)
+                flash("Resposta registrada.")
         elif acao == "parar":
             row = ctx.conn.execute("SELECT destino FROM canal_fila WHERE id = ?", (item_id,)).fetchone()
             if row:

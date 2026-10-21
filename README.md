@@ -396,3 +396,19 @@ prospector canais email parar --destino alguem@x.com   # pediu para parar: nunca
   aciona a parada de emergência, igual ao WhatsApp. As respostas chegam na sua caixa de entrada.
 - **Instagram nunca é automatizado** (DM automática viola os termos e derruba a conta): a página **Canais** do painel mostra
   o perfil, o texto pronto e os botões *Enviei* / *Pular* / *Pediu para parar*. Sugestão: até 10 por dia.
+
+### Respostas, lembretes e resultado por canal
+
+```bash
+prospector buscar-emails --limite 50            # procura e-mail de contato nos sites dos leads novos
+prospector canais email respostas --loop 300    # lê o Gmail (IMAP) e trata respostas, "parar" e e-mails que voltaram
+prospector canais email followups --todos       # um lembrete por e-mail, 3 dias úteis depois, só para quem não respondeu
+prospector canais email resumo                  # contatados, respostas de gente de verdade e interessados por canal
+```
+
+- A leitura da caixa usa o mesmo `SMTP_USUARIO`/`SMTP_SENHA` (IMAP do Gmail precisa estar ativo). Nada é apagado nem marcado como lido.
+  Resposta de lead entra no mesmo fluxo do WhatsApp; robô não conta, "parar" bloqueia, ameaça ou denúncia vira alerta urgente.
+- Instagram: na página **Canais** do painel, as DMs enviadas ficam em "aguardando resposta" com os botões *Respondeu* e *Interessado*.
+- **Tetos de segurança** (`config.py`): no máximo 30/dia, 6/hora, intervalo mínimo de 5 min e 30 e-mails/dia. O `.env` não passa disso,
+  a menos que `LIMITES_LIVRES=1` esteja escrito nele de propósito.
+- Lead abordado por e-mail ou Instagram não recebe follow-up de WhatsApp (só quem já recebeu a 1ª mensagem no zap).

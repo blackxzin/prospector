@@ -53,6 +53,14 @@ def parse_weekdays(spec: str) -> frozenset[int]:
     return days
 
 
+# Tetos de segurança contra bloqueio do WhatsApp (depois do aviso de spam de 2026-10-21 com 29 envios em 3,5 h).
+# O .env não passa disso, a não ser com LIMITES_LIVRES=1 (decisão consciente, escrita no .env).
+HARD_MAX_PER_DAY = 30
+HARD_MAX_PER_HOUR = 6
+HARD_MIN_INTERVAL_S = 300
+HARD_MAX_EMAIL_PER_DAY = 30
+
+
 @dataclass(frozen=True)
 class Settings:
     db_path: Path
@@ -96,8 +104,11 @@ class Settings:
     smtp_user: str = ""
     smtp_password: str = field(default="", repr=False)  # senha de app do Gmail, nunca a senha da conta
     smtp_nome: str = "Lucas"
+    imap_host: str = "imap.gmail.com"
+    imap_port: int = 993
     max_email_per_day: int = 15
     canais_path: Path = ROOT / "templates.canais.yaml"
+    limites_livres: bool = False
 
     @property
     def has_email(self) -> bool:
@@ -153,7 +164,7 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         max_per_day=_int(env, "MAX_POR_DIA", 8),
         max_per_hour=_int(env, "MAX_POR_HORA", 3),
         max_foreign_per_day=_int(env, "MAX_EXTERIOR_POR_DIA", 5),
-        interval_min_s=_int(env, "INTERVALO_MIN_SEG", 4 * 60),
+        interval_min_s=_int(env, "INTERVALO_MIN_SEG", HARD_MIN_INTERVAL_S),
         interval_max_s=_int(env, "INTERVALO_MAX_SEG", 12 * 60),
         typing_min_s=_int(env, "DIGITANDO_MIN_SEG", 5),
         typing_max_s=_int(env, "DIGITANDO_MAX_SEG", 20),
@@ -175,10 +186,28 @@ def load_settings(env_file: Path | None = None, overrides: dict[str, str] | None
         smtp_user=env.get("SMTP_USUARIO", "").strip(),
         smtp_password=env.get("SMTP_SENHA", "").replace(" ", ""),
         smtp_nome=env.get("SMTP_NOME", "Lucas").strip(),
+        imap_host=env.get("IMAP_HOST", "imap.gmail.com").strip(),
+        imap_port=_int(env, "IMAP_PORTA", 993),
         max_email_per_day=_int(env, "MAX_EMAIL_POR_DIA", 15),
+        limites_livres=_flag(env, "LIMITES_LIVRES", "0"),
     )
     _validate(settings)
     return settings
+
+
+def _check_hard_limits(s: Settings) -> None:
+    problems = []
+    if s.max_per_day > HARD_MAX_PER_DAY:
+        problems.append(f"MAX_POR_DIA={s.max_per_day} (máx. {HARD_MAX_PER_DAY})")
+    if s.max_per_hour > HARD_MAX_PER_HOUR:
+        problems.append(f"MAX_POR_HORA={s.max_per_hour} (máx. {HARD_MAX_PER_HOUR})")
+    if s.interval_min_s < HARD_MIN_INTERVAL_S:
+        problems.append(f"INTERVALO_MIN_SEG={s.interval_min_s} (mín. {HARD_MIN_INTERVAL_S})")
+    if s.max_email_per_day > HARD_MAX_EMAIL_PER_DAY:
+        problems.append(f"MAX_EMAIL_POR_DIA={s.max_email_per_day} (máx. {HARD_MAX_EMAIL_PER_DAY})")
+    if problems:
+        raise ValueError("Limite acima do teto de segurança contra bloqueio: " + "; ".join(problems)
+                         + ". Para ignorar de propósito, ponha LIMITES_LIVRES=1 no .env.")
 
 
 def _validate(s: Settings) -> None:
@@ -190,6 +219,8 @@ def _validate(s: Settings) -> None:
         raise ValueError("INTERVALO_MIN_SEG precisa ser > 0 e <= INTERVALO_MAX_SEG")
     if not 0 < s.typing_min_s <= s.typing_max_s:
         raise ValueError("DIGITANDO_MIN_SEG precisa ser > 0 e <= DIGITANDO_MAX_SEG")
+    if not s.limites_livres:
+        _check_hard_limits(s)
     if s.backup_keep < 1:
         raise ValueError("BACKUP_MANTER precisa ser >= 1")
     if s.gmaps_max_time_s < 180:

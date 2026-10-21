@@ -220,6 +220,11 @@ def connect(path: Path) -> sqlite3.Connection:
 
 # Colunas adicionadas depois da primeira versão: (tabela, coluna, definição).
 _MIGRATIONS = (
+    ("canal_fila", "followup_status", "TEXT"),   # NULL | pendente | aprovado | enviado (lembrete único por e-mail)
+    ("canal_fila", "followup_assunto", "TEXT"),
+    ("canal_fila", "followup_texto", "TEXT"),
+    ("canal_fila", "followup_em", "TEXT"),
+    ("leads", "email_buscado_em", "TEXT"),    # quando procuramos e-mail no site do lead (emails_site.py)
     ("leads", "sinal_fechamento", "INTEGER NOT NULL DEFAULT 0"),
     ("leads", "variante", "TEXT"),            # hash do template da 1ª mensagem (teste A/B)
     ("leads", "site_problemas", "TEXT"),      # resultado da checagem do site
@@ -316,7 +321,7 @@ def block(conn: sqlite3.Connection, number: str, reason: str) -> None:
 
 _LEAD_COLUMNS = frozenset({
     "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
-    "email", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
+    "email", "email_buscado_em", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
     "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
     "presenca_checada_em", "aprovado_em", "enviado_em", "followup_em", "respondeu_em",

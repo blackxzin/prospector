@@ -11,6 +11,16 @@
 </div>
 
 <section class="card">
+  <h2>Resultado por canal</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Canal</th><th>Contatados</th><th>Responderam</th><th>Taxa</th><th>Interessados</th></tr></thead>
+    <tbody>{% for r in resumo %}<tr><td>{{ r.canal }}</td><td class="num">{{ r.contatados }}</td><td class="num">{{ r.responderam }}</td>
+      <td class="num">{{ '%.0f%%' % (r.taxa * 100) }}</td><td class="num">{{ r.interessados }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="sub">Só conta resposta de gente de verdade (robô e resposta automática ficam de fora).</p>
+</section>
+
+<section class="card">
   <h2>Instagram <span class="muted num">{{ hoje.get('instagram', 0) }} hoje · sugestão: até 10/dia</span></h2>
   {% if instagram %}
   <div class="stack">
@@ -29,6 +39,23 @@
   </div>
   {% else %}<p class="empty">Nada pendente. Clique em "Montar Instagram".</p>{% endif %}
 </section>
+
+{% if aguardando %}
+<section class="card">
+  <h2>Instagram enviadas, aguardando resposta</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Quando</th><th>Perfil</th><th>Negócio</th><th></th></tr></thead>
+    <tbody>{% for a in aguardando %}<tr><td class="num">{{ quando(a.enviado_em) }}</td>
+      <td><a href="https://instagram.com/{{ a.destino.lstrip('@') }}" target="_blank" rel="noopener noreferrer">{{ a.destino }}</a></td>
+      <td>{{ a.nome }}</td>
+      <td class="toolbar">
+        <form method="post" action="{{ url_for('canais_item', item_id=a.id, acao='respondeu') }}"><button>Respondeu</button></form>
+        <form method="post" action="{{ url_for('canais_item', item_id=a.id, acao='interessado') }}"><button class="btn-primary">Interessado</button></form>
+        <form method="post" action="{{ url_for('canais_item', item_id=a.id, acao='parar') }}"><button class="btn-danger">Parar</button></form>
+      </td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
 
 <section class="card">
   <h2>E-mail <span class="muted num">{{ hoje.get('email', 0) }}/{{ limite_email }} hoje</span></h2>

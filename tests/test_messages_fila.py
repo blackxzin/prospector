@@ -109,6 +109,8 @@ def test_followup_after_three_business_days_then_closed(conn, listas, templates,
     sent_at = local_dt(2026, 10, 16, 10, 0)  # sexta
     with db.tx(conn):
         db.update_lead(conn, lead["id"], status=db.ENVIADO, enviado_em=db.iso(sent_at))
+        db.log_send(conn, lead_id=lead["id"], fila_id=None, telefone=lead["telefone"], tipo="primeira", texto="x",
+                    dry_run=False, ok=True, http_status=200, resposta_api="", when=sent_at)
     # terça: só 2 dias úteis
     assert fq.build_queue(conn, templates, rules, local_dt(2026, 10, 20, 11, 0), size=5,
                           followup_days=3).followups == 0

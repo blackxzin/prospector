@@ -10,7 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from . import db
-from . import canais
+from . import canais, emails_site, inbox
 from . import fila as fq
 from .app import App
 from .classify import classify_offer, is_franchise
@@ -549,6 +549,34 @@ def cmd_canais(app: App, args: argparse.Namespace) -> int:
             return 2
         print(f"Teste enviado para {para} ({subject}). Confira a caixa de entrada e o spam.")
         return 0
+    if acao == "resumo":
+        from .metrics import channel_report
+        for r in channel_report(conn):
+            print(f"{r['canal']:<10} contatados {r['contatados']:>4} · responderam {r['responderam']:>3} "
+                  f"({r['taxa']:.0%}) · interessados {r['interessados']}")
+        return 0
+    if acao == "followups":
+        made = canais.build_followups(conn, app.canal_templates, app.rules, db.utcnow(), s.followup_business_days)
+        if args.todos:
+            canais.approve_followups(conn)
+        print(f"{made} lembretes criados" + (" e aprovados." if args.todos else ". Aprove com --todos."))
+        return 0
+    if acao == "respostas":
+        if canal != canais.EMAIL or not s.has_email:
+            print("Leitura de respostas só para e-mail, com SMTP_USUARIO e SMTP_SENHA no .env.", file=sys.stderr)
+            return 1
+        cfg = inbox.ImapConfig(s.imap_host, s.imap_port, s.smtp_user, s.smtp_password)
+        try:
+            if args.loop:
+                inbox.loop(conn, cfg, app.notify, args.loop)
+                return 1   # o loop só termina por erro de login
+            res = inbox.poll(conn, cfg, app.notify, db.utcnow())
+        except inbox.InboxError as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        print(f"{res.lidos} e-mails lidos, {res.respostas} resposta(s) de leads, {res.bounces} voltaram, "
+              f"{res.ignorados} ignorados.")
+        return 0
     if acao == "enviar":
         if canal != canais.EMAIL:
             print("Instagram é manual: abra a página Instagram no painel.", file=sys.stderr)
@@ -563,6 +591,12 @@ def cmd_canais(app: App, args: argparse.Namespace) -> int:
         return 2 if report.parado else 0
     print(f"Ação desconhecida: {acao}", file=sys.stderr)
     return 1
+
+
+def cmd_buscar_emails(app: App, args: argparse.Namespace) -> int:
+    checked, found = emails_site.enrich(app.conn, limit=args.limite)
+    print(f"{checked} sites consultados, {found} e-mails encontrados. Monte a fila: prospector canais email montar")
+    return 0
 
 
 def cmd_retomar(app: App, _args: argparse.Namespace) -> int:
@@ -795,14 +829,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     a = sub.add_parser("canais", help="e-mail e Instagram: prospector canais email montar|listar|aprovar|enviar")
     a.add_argument("canal", choices=canais.CANAIS)
-    a.add_argument("acao", choices=("montar", "listar", "aprovar", "rejeitar", "enviado", "testar", "enviar", "parar"))
+    a.add_argument("acao", choices=("montar", "listar", "aprovar", "rejeitar", "enviado", "testar", "enviar", "parar", "respostas", "followups", "resumo"))
     a.add_argument("ids", nargs="*", type=int, help="ids dos itens (aprovar/rejeitar/enviado)")
     a.add_argument("--limite", type=int, default=15, help="montar: quantos itens criar")
     a.add_argument("--todos", action="store_true", help="aprovar: todos os pendentes")
     a.add_argument("--aguardar", action="store_true", help="enviar: espera a próxima janela")
+    a.add_argument("--loop", type=int, default=0, help="respostas: repete a cada N segundos")
     a.add_argument("--para", help="testar: destino do teste (padrão: SMTP_USUARIO)")
     a.add_argument("--destino", dest="ids_ou_destinos", action="append", default=[], help="parar: e-mail ou @perfil")
     a.set_defaults(fn=cmd_canais)
+
+    a = sub.add_parser("buscar-emails", help="procura e-mail de contato nos sites dos leads novos")
+    a.add_argument("--limite", type=int, default=50)
+    a.set_defaults(fn=cmd_buscar_emails)
 
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)
 
