@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 import yaml
 
 from .classify import SEM_SITE, SITE_PROBLEMA, SO_SOCIAL, TEM_SITE, fold
+from .pessoa import individual_name, is_individual, singularize
 
 OFFERS = (SEM_SITE, SO_SOCIAL, TEM_SITE, SITE_PROBLEMA)
 # Listas simples obrigatórias (pelo menos uma variação cada).
@@ -138,8 +139,11 @@ class Templates:
         avaliacoes = lead.get("avaliacoes")
         hello = greeting(now_local, self.saudacoes)
         portfolio = str(self.data.get("portfolio") or "")
+        nome = clean_name(str(lead.get("nome") or ""), lead.get("cidade"))
+        if self.idioma == "pt" and is_individual(nome):
+            nome = individual_name(nome)
         base = {
-            "nome": clean_name(str(lead.get("nome") or ""), lead.get("cidade")),
+            "nome": nome,
             "remetente": str(self.data["remetente"]),
             "portfolio": portfolio,
             "apresentacao": str(self.data.get("apresentacao") or "").format(portfolio=portfolio),
@@ -167,7 +171,10 @@ class Templates:
         rng = rng or random.Random()
         ctx = self._context(lead, now.astimezone(tz), rng)
         template = chosen if chosen is not None else rng.choice(options)
-        return tidy(template.format(**ctx, **extra))
+        text = tidy(template.format(**ctx, **extra))
+        if self.idioma == "pt" and is_individual(clean_name(str(lead.get("nome") or ""), lead.get("cidade"))):
+            text = singularize(text)   # profissional autônomo: "você", não "vocês"
+        return text
 
     def first_message(self, lead: Mapping[str, Any], now: datetime, tz: tzinfo,
                       rng: random.Random | None = None) -> str:
