@@ -209,6 +209,9 @@ dominios_social:
 # Pode ter caminho (ex.: "exemplo.com/loja" só vale para links que começam assim).
 # iFood não entra aqui: é marketplace, não robô de WhatsApp, e quase todo restaurante está nele.
 dominios_robo:
+  # plataformas de loja/cardápio online: o "site" é da plataforma, não do negócio
+  - eatfood.app
+  - w1shop.com.br
   # reservas e agendamento (Europa, EUA)
   - thefork.com
   - thefork.es
