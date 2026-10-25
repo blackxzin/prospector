@@ -65,6 +65,9 @@ primeira:
     - "{saudacao}! Sou o Lucas. {quem} Li o que um cliente escreveu de vocês no Google: “{avaliacao}”. Mas não achei site de vocês. Quem cuida disso aí?"
     - "{saudacao}! Sou o Lucas. {quem} Procurei {nome} no Google e não achei site. {dor} Faço um atendimento automático que resolve isso. Com quem falo?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} {dor} Hoje quem procura {nome} no Google não acha site, e isso piora. Posso explicar pra quem decide?"
+    # Teste (2026-10): pergunta de sim ou não, compromisso menor que "com quem eu falo".
+    - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Posso te mandar um exemplo rápido de como ficaria um site pra {nome}, sem compromisso?"
+    - "{saudacao}! Sou o Lucas. {quem} Vi vocês no Google com nota {nota_boa}, mas sem site. Posso te mostrar como ficaria o de vocês?"
   so_social:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Cheguei no Instagram de vocês pelo Google. Vocês têm site também ou só o Instagram mesmo?"
     - "{saudacao}! Sou o Lucas. {quem} Vi que {nome} divulga só pelas redes sociais. Já pensaram em ter um site próprio com botão de WhatsApp? Com quem eu falo sobre isso?"
@@ -72,6 +75,9 @@ primeira:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Vi o {arroba} de vocês, muito bom! Só não achei site. Já pensaram em ter um? Com quem eu falo?"
     - "{saudacao}! Sou o Lucas. {quem} Li uma avaliação de cliente de vocês no Google: “{avaliacao}”. Quem procura vocês só encontra rede social. Quem cuida disso aí?"
     - "{saudacao}! Sou o Lucas. {quem} Vi {nome} só nas redes sociais. {dor} Dá pra resolver com botão de WhatsApp e atendimento automático. Com quem falo?"
+    # Teste (2026-10): pergunta de sim ou não.
+    - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Vi o Instagram de vocês. Posso te mandar um exemplo de como ficaria uma página com botão de WhatsApp pra {nome}?"
+    - "{saudacao}! Sou o Lucas. {quem} Posso te mostrar rapidinho como um site simples, ligado ao WhatsApp, ficaria pra {nome}, sem compromisso?"
   tem_site:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Quando um cliente chama vocês no WhatsApp fora do horário, alguém responde ou fica pro dia seguinte?"
     - "{saudacao}! Sou o Lucas. {quem} Vi o site de vocês. O WhatsApp é por onde mais chega pedido ou contato? Faço atendimento automático que responde na hora. Posso explicar pra quem cuida disso?"
@@ -79,6 +85,9 @@ primeira:
     - "{saudacao}! Sou o Lucas. {quem} Li uma avaliação de cliente de vocês: “{avaliacao}”. Em dia cheio, dá conta de responder todo mundo no WhatsApp? Com quem falo sobre isso?"
     - "{saudacao}! Sou o Lucas. {quem} {dor} Faço atendimento automático que responde na hora e passa só o importante pra equipe. Posso explicar pra quem cuida disso?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} {dor} Tenho uma ideia simples pra isso. Com quem falo?"
+    # Teste (2026-10): pergunta de sim ou não.
+    - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Posso te mandar um exemplo de atendimento automático no WhatsApp pra {nome}, que responde na hora e passa só o importante pra equipe?"
+    - "{saudacao}! Sou o Lucas. {quem} Quer ver um exemplo de como o WhatsApp de {nome} responderia sozinho fora do horário?"
   # Só para quem tem site sem botão de WhatsApp (sinal lido no site: sem_whatsapp).
   tem_site_sem_whatsapp:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."

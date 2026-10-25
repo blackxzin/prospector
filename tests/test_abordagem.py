@@ -107,13 +107,17 @@ def test_followups_do_not_repeat_the_pitch_and_only_the_last_has_the_portfolio(p
 
 
 def test_template_needs_three_unconditional_variants(tmp_path):
+    import yaml
     from prospector.messages import TemplateError
-    text = (ROOT / "templates.yaml").read_text(encoding="utf-8")
-    broken = text.replace('"Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Procurei {nome} no Google e não achei site de vocês. Com quem eu falo sobre isso?"',
-                          '"Oi! {avaliacao} Quem cuida disso?"')
-    assert broken != text
+    data = yaml.safe_load((ROOT / "templates.yaml").read_text(encoding="utf-8"))
+    ok = ["Oi {nome}, tudo bem? Quem cuida do site?", "{saudacao}! Posso te mandar um exemplo pra {nome}?",
+          "Oi {nome}! Já pensaram em ter um site?", "Oi! {avaliacao} Quem cuida disso?"]
+    data["primeira"]["sem_site"] = ok
     p = tmp_path / "t.yaml"
-    p.write_text(broken, encoding="utf-8")
+    p.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    Templates.load(p)                      # 3 incondicionais: cumpre o mínimo
+    data["primeira"]["sem_site"] = ok[:2] + ok[3:]   # só 2 incondicionais
+    p.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
     with pytest.raises(TemplateError, match="não dependam"):
         Templates.load(p)
 
