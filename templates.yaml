@@ -94,6 +94,9 @@ primeira:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Tentei abrir o site de vocês e reparei que {problema}. Já sabiam? Com quem eu falo pra ajudar a resolver?"
     - "{saudacao}! Sou o Lucas. {quem} Passei pelo site de vocês e reparei que {problema}. Isso faz cliente desistir. Quem cuida do site?"
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Um aviso rápido: reparei que {problema}. Posso ajudar a arrumar. Com quem falo sobre o site?"
+    # Ângulo "refazer": sem preço, só a ideia de que às vezes compensa um site novo em vez de remendar o velho.
+    - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Reparei que {problema}. A gente refaz sites rápidos, que abrem bem no celular e já vêm com botão de WhatsApp. Posso te mostrar um exemplo? Com quem eu falo?"
+    - "{saudacao}! Sou o Lucas. {quem} Vi que {problema}. Em vez de remendar, às vezes compensa refazer do zero, e a gente faz isso. Quem cuida do site de vocês?"
 
 followup:
   - "Oi, {saudacao_minuscula}! Passando só pra saber se minha mensagem chegou. Se não for com você, me indica quem cuida disso por aí?"
