@@ -420,7 +420,7 @@ para quem já está conversando: só marca a data, avisa no desktop (um aviso po
 
 ```bash
 prospector lembretes                                # o que vence hoje, com o texto sugerido, e os agendados
-prospector lembretes agendar 1065 --dias 3 --nota "ver se viu o exemplo"
+prospector lembretes agendar 1065 --dias 3 --nota "ver se viu o exemplo" --texto "mensagem pronta (opcional)"
 prospector lembretes feito 1065                     # você retomou: próximo lembrete em 3 dias úteis
 prospector lembretes adiar 1065 --dias 2
 prospector lembretes encerrar 1065                  # sem mais lembretes

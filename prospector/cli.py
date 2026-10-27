@@ -621,7 +621,7 @@ def cmd_lembretes(app: App, args: argparse.Namespace) -> int:
         return 1
     if acao == "agendar":
         when = add_business_days(now, args.dias, rules)
-        lembretes.schedule(conn, args.lead, when, args.nota or "")
+        lembretes.schedule(conn, args.lead, when, args.nota or "", args.texto)
         print(f"Lembrete de #{args.lead} para {fmt_local(when, app.settings.tz)}.")
     elif acao == "feito":
         lembretes.done(conn, args.lead, now, rules, args.dias)
@@ -885,6 +885,7 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("lead", nargs="?", type=int, help="id do lead")
     a.add_argument("--dias", type=int, default=3, help="dias úteis (agendar, feito, adiar)")
     a.add_argument("--nota", help="agendar: lembrete do que falar")
+    a.add_argument("--texto", help="agendar: mensagem pronta para esse lead (no lugar da sugestão genérica)")
     a.set_defaults(fn=cmd_lembretes)
 
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)

@@ -100,3 +100,17 @@ def test_followup_page_and_actions(settings):
     assert web.post(f"/lembretes/{lead}/feito").status_code == 302
     assert lembretes.due(app.conn, db.utcnow()) == []
     assert web.post(f"/lembretes/{lead}/encerrar").status_code == 302
+
+
+def test_own_text_replaces_generic_suggestion(conn, listas, rules):
+    data = CanalTemplates.load(ROOT / "templates.canais.yaml").data
+    lead = _lead(conn, listas, phone="(14) 99111-3006")
+    lembretes.schedule(conn, lead, NOW - timedelta(hours=1), "nota", "Oi! Conseguiu repassar minha mensagem?")
+    row = conn.execute("SELECT * FROM leads WHERE id = ?", (lead,)).fetchone()
+    assert lembretes.suggestion(data, row) == "Oi! Conseguiu repassar minha mensagem?"
+    # reagendar sem texto novo mantém o texto próprio; reagendar com texto vazio volta à sugestão genérica
+    lembretes.snooze(conn, lead, NOW, rules, 2)
+    assert conn.execute("SELECT proximo_contato_texto FROM leads WHERE id = ?", (lead,)).fetchone()[0]
+    lembretes.schedule(conn, lead, NOW, "nota", "")
+    row = conn.execute("SELECT * FROM leads WHERE id = ?", (lead,)).fetchone()
+    assert lembretes.suggestion(data, row) != "Oi! Conseguiu repassar minha mensagem?"

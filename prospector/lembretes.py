@@ -30,10 +30,13 @@ def is_soft_decline(text: str | None) -> bool:
     return bool(_RECUSA.search(text or ""))
 
 
-def schedule(conn: sqlite3.Connection, lead_id: int, when: datetime, nota: str = "") -> None:
+def schedule(conn: sqlite3.Connection, lead_id: int, when: datetime, nota: str = "", texto: str | None = None) -> None:
+    """Marca o lembrete. `texto` (opcional) é a mensagem que você escreveu para esse lead; sem ele vale a sugestão genérica."""
+    fields: dict[str, object] = {"proximo_contato_em": db.iso(when), "proximo_contato_nota": nota or None, "lembrete_encerrado": 0}
+    if texto is not None:
+        fields["proximo_contato_texto"] = texto.strip() or None
     with db.tx(conn):
-        db.update_lead(conn, lead_id, proximo_contato_em=db.iso(when), proximo_contato_nota=nota or None,
-                       lembrete_encerrado=0)
+        db.update_lead(conn, lead_id, **fields)
 
 
 def finish(conn: sqlite3.Connection, lead_id: int) -> None:
@@ -85,6 +88,9 @@ def upcoming(conn: sqlite3.Connection, now: datetime) -> list[sqlite3.Row]:
 
 def suggestion(data: Mapping[str, Any], lead: Mapping[str, Any], rng: random.Random | None = None) -> str:
     """Texto sugerido para retomar a conversa (você revisa e manda)."""
+    own = lead["proximo_contato_texto"] if "proximo_contato_texto" in lead.keys() else None
+    if own:
+        return own
     group = (data.get("acompanhamento") or {}).get(lead["status"]) or []
     if not group:
         return ""

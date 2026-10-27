@@ -222,6 +222,7 @@ def connect(path: Path) -> sqlite3.Connection:
 _MIGRATIONS = (
     ("leads", "proximo_contato_em", "TEXT"),          # lembrete de follow-up manual (lembretes.py)
     ("leads", "proximo_contato_nota", "TEXT"),
+    ("leads", "proximo_contato_texto", "TEXT"),        # texto próprio para o lembrete (no lugar da sugestão genérica)
     ("leads", "lembrete_encerrado", "INTEGER NOT NULL DEFAULT 0"),
     ("canal_fila", "followup_status", "TEXT"),   # NULL | pendente | aprovado | enviado (lembrete único por e-mail)
     ("canal_fila", "followup_assunto", "TEXT"),
@@ -324,7 +325,7 @@ def block(conn: sqlite3.Connection, number: str, reason: str) -> None:
 
 _LEAD_COLUMNS = frozenset({
     "nome", "categoria", "endereco", "cidade", "telefone_raw", "telefone", "jid", "site",
-    "proximo_contato_em", "proximo_contato_nota", "lembrete_encerrado",
+    "proximo_contato_em", "proximo_contato_nota", "proximo_contato_texto", "lembrete_encerrado",
     "email", "email_buscado_em", "nota", "avaliacoes", "maps_link", "busca", "oferta", "status", "motivo",
     "resposta", "auto_resposta_enviada", "sinal_fechamento", "variante", "site_problemas", "site_checado_em",
     "demo_url", "foto_url", "avaliacoes_json", "horarios_json", "atributos_json", "latitude", "longitude",
