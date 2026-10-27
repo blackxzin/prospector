@@ -96,3 +96,14 @@ instagram:
     - "Olá! {quem}. Tenho uma ideia pra transformar o perfil de vocês em mais contatos, sem trabalho extra pra equipe. Posso explicar rapidinho?"
   padrao:
     - "Oi, tudo bem? {quem}. Fazemos sites e atendimento automático no WhatsApp para pequenos negócios. Posso explicar em 2 linhas como isso ajudaria vocês?"
+
+# Sugestões de texto para o follow-up de conversas em andamento (você manda à mão, pelo painel Follow-up).
+# {chamada} vira ", Juliana" (nome do contato) ou fica vazio.
+acompanhamento:
+  interessado:
+    - "Oi{chamada}, tudo bem? Conseguiu dar uma olhada no que te mandei? Se quiser mudar alguma coisa, é só falar."
+    - "Oi{chamada}! Passando pra saber o que achou. Posso ajustar o que você preferir, sem compromisso."
+    - "Oi{chamada}, tudo bem? Ficou alguma dúvida? Se preferir, a gente combina uma conversa rápida no horário que for melhor pra você."
+  respondeu:
+    - "Oi{chamada}, tudo bem? Retomando nossa conversa: ficou alguma dúvida sobre o que combinamos?"
+    - "Oi{chamada}! Só passando pra saber se faz sentido a gente conversar sobre isso agora ou se prefere em outro momento."

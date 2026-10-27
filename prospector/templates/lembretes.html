@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Follow-up{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Follow-up</h1>
+    <p>Conversas em andamento que pedem uma retomada. O sistema só avisa e sugere o texto: você manda à mão.</p></div>
+</div>
+
+<section class="card">
+  <h2>Para hoje <span class="muted num">{{ vencidos|length }}</span></h2>
+  {% if vencidos %}
+  <div class="stack">
+  {% for l in vencidos %}
+    <article class="msg-card">
+      <div class="sub"><b>{{ l.nome }}</b> · {{ pretty(l.telefone) }} · <span class="tag plain">{{ l.status }}</span>
+        {% if l.proximo_contato_nota and l.proximo_contato_nota != 'follow-up automático' %} · {{ l.proximo_contato_nota }}{% endif %}</div>
+      {% if l.resposta %}<div class="sub">Última resposta dele(a): “{{ l.resposta[:140] }}”</div>{% endif %}
+      <pre style="white-space:pre-wrap;user-select:all">{{ textos[l.id] }}</pre>
+      <div class="toolbar">
+        <form method="post" action="{{ url_for('lembretes_acao', lead_id=l.id, acao='feito') }}"><button class="btn-primary">Retomei</button></form>
+        <form method="post" action="{{ url_for('lembretes_acao', lead_id=l.id, acao='adiar2') }}"><button>Adiar 2 dias</button></form>
+        <form method="post" action="{{ url_for('lembretes_acao', lead_id=l.id, acao='adiar7') }}"><button>Adiar 1 semana</button></form>
+        <form method="post" action="{{ url_for('lembretes_acao', lead_id=l.id, acao='encerrar') }}"><button class="btn-danger">Encerrar</button></form>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+  {% else %}<p class="empty">Nada para retomar hoje.</p>{% endif %}
+</section>
+
+{% if futuros %}
+<section class="card">
+  <h2>Agendados <span class="muted num">{{ futuros|length }}</span></h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Quando</th><th>Lead</th><th>Status</th></tr></thead>
+    <tbody>{% for l in futuros %}<tr><td class="num">{{ quando(l.proximo_contato_em) }}</td><td>{{ l.nome }}</td>
+      <td><span class="tag plain">{{ l.status }}</span></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+<p class="sub">Para marcar à mão: <code>prospector lembretes agendar &lt;id&gt; --dias 3 --nota "ver se viu o exemplo"</code></p>
+{% endblock %}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Flask, Response, flash, redirect, render_template, request, url_for
 
-from . import canais, db, metrics
+from . import canais, db, lembretes, metrics
 from .app import App
 
 
@@ -24,6 +24,30 @@ def register_canais_routes(web: Flask, ctx: App) -> None:
             instagram=canais.list_items(conn, canais.INSTAGRAM), email=canais.list_items(conn, canais.EMAIL),
             hoje={r["canal"]: r["n"] for r in enviados_hoje}, tem_email=ctx.settings.has_email,
             limite_email=ctx.settings.max_email_per_day)
+
+    @web.get("/lembretes")
+    def lembretes_page() -> str:
+        now = db.utcnow()
+        lembretes.ensure_defaults(ctx.conn, now, ctx.rules)
+        vencidos = lembretes.due(ctx.conn, now)
+        return render_template(
+            "lembretes.html", page="lembretes_page", vencidos=vencidos, futuros=lembretes.upcoming(ctx.conn, now),
+            textos={r["id"]: lembretes.suggestion(ctx.canal_templates.data, r) for r in vencidos})
+
+    @web.post("/lembretes/<int:lead_id>/<acao>")
+    def lembretes_acao(lead_id: int, acao: str) -> Response:
+        now = db.utcnow()
+        if acao == "feito":
+            lembretes.done(ctx.conn, lead_id, now, ctx.rules, 3)
+            flash("Anotado. Próximo lembrete em 3 dias úteis.")
+        elif acao == "adiar2":
+            lembretes.snooze(ctx.conn, lead_id, now, ctx.rules, 2)
+        elif acao == "adiar7":
+            lembretes.snooze(ctx.conn, lead_id, now, ctx.rules, 5)
+        elif acao == "encerrar":
+            lembretes.finish(ctx.conn, lead_id)
+            flash("Sem mais lembretes para esse lead.")
+        return redirect(url_for("lembretes_page"))
 
     @web.post("/canais/<canal>/montar")
     def canais_montar(canal: str) -> Response:

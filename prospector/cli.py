@@ -10,7 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from . import db
-from . import canais, emails_site, inbox
+from . import canais, emails_site, inbox, lembretes
 from . import fila as fq
 from .app import App
 from .classify import classify_offer, is_franchise
@@ -18,7 +18,7 @@ from .importer import import_csv
 from .phone import normalize_mobile, pretty, variants
 from .scraper import ScraperError
 from .sender import RealClock, run as run_sender, type_and_send
-from .schedule import fmt_local, in_window, next_window_start, sent_last_hour, sent_today, typing_seconds
+from .schedule import add_business_days, fmt_local, in_window, next_window_start, sent_last_hour, sent_today, typing_seconds
 from .whatsapp import WhatsAppError
 
 log = logging.getLogger("prospector")
@@ -599,6 +599,42 @@ def cmd_buscar_emails(app: App, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lembretes(app: App, args: argparse.Namespace) -> int:
+    """Follow-up de conversas em andamento: listar, agendar, feito, adiar, encerrar."""
+    conn, now, rules = app.conn, db.utcnow(), app.rules
+    acao = args.acao
+    if acao == "listar":
+        lembretes.ensure_defaults(conn, now, rules)
+        vencidos = lembretes.due(conn, now)
+        for lead in vencidos:
+            print(f"\n#{lead['id']}  {lead['nome']}  [{lead['status']}]  {pretty(lead['telefone'])}")
+            if lead["proximo_contato_nota"]:
+                print(f"    nota: {lead['proximo_contato_nota']}")
+            print("    sugestão: " + lembretes.suggestion(app.canal_templates.data, lead))
+        futuros = lembretes.upcoming(conn, now)
+        print(f"\n{len(vencidos)} para hoje, {len(futuros)} agendados.")
+        for lead in futuros[:10]:
+            print(f"  {fmt_local(db.parse_iso(lead['proximo_contato_em']), app.settings.tz)}  #{lead['id']} {lead['nome']}")
+        return 0
+    if args.lead is None:
+        print("Informe o id do lead.", file=sys.stderr)
+        return 1
+    if acao == "agendar":
+        when = add_business_days(now, args.dias, rules)
+        lembretes.schedule(conn, args.lead, when, args.nota or "")
+        print(f"Lembrete de #{args.lead} para {fmt_local(when, app.settings.tz)}.")
+    elif acao == "feito":
+        lembretes.done(conn, args.lead, now, rules, args.dias)
+        print(f"Anotado. Próximo lembrete em {args.dias} dias úteis.")
+    elif acao == "adiar":
+        lembretes.snooze(conn, args.lead, now, rules, args.dias)
+        print(f"Adiado {args.dias} dias úteis.")
+    elif acao == "encerrar":
+        lembretes.finish(conn, args.lead)
+        print("Sem mais lembretes para esse lead.")
+    return 0
+
+
 def cmd_retomar(app: App, _args: argparse.Namespace) -> int:
     db.set_state(app.conn, db.PARADO, None)
     print("Envio liberado de novo.")
@@ -651,6 +687,7 @@ def cmd_respostas(app: App, args: argparse.Namespace) -> int:
                                db.utcnow())
             if res.novas or not args.loop:
                 print(f"{res.chats} chats lidos, {res.novas} resposta(s) nova(s), {res.erros} erro(s).", flush=True)
+            lembretes.notify_due(app.conn, db.utcnow(), app.notify, app.rules)
         except WhatsAppError as exc:
             print(f"WhatsApp: {exc}", file=sys.stderr, flush=True)
             if not args.loop:
@@ -842,6 +879,13 @@ def build_parser() -> argparse.ArgumentParser:
     a = sub.add_parser("buscar-emails", help="procura e-mail de contato nos sites dos leads novos")
     a.add_argument("--limite", type=int, default=50)
     a.set_defaults(fn=cmd_buscar_emails)
+
+    a = sub.add_parser("lembretes", help="follow-up das conversas em andamento: listar | agendar | feito | adiar | encerrar")
+    a.add_argument("acao", choices=("listar", "agendar", "feito", "adiar", "encerrar"), nargs="?", default="listar")
+    a.add_argument("lead", nargs="?", type=int, help="id do lead")
+    a.add_argument("--dias", type=int, default=3, help="dias úteis (agendar, feito, adiar)")
+    a.add_argument("--nota", help="agendar: lembrete do que falar")
+    a.set_defaults(fn=cmd_lembretes)
 
     sub.add_parser("retomar", help="libera o envio depois de uma parada de emergência").set_defaults(fn=cmd_retomar)
 

@@ -412,3 +412,22 @@ prospector canais email resumo                  # contatados, respostas de gente
 - **Tetos de segurança** (`config.py`): no máximo 30/dia, 6/hora, intervalo mínimo de 5 min e 30 e-mails/dia. O `.env` não passa disso,
   a menos que `LIMITES_LIVRES=1` esteja escrito nele de propósito.
 - Lead abordado por e-mail ou Instagram não recebe follow-up de WhatsApp (só quem já recebeu a 1ª mensagem no zap).
+
+## Follow-up das conversas em andamento
+
+Quem respondeu e demonstrou interesse ganha um lembrete para você retomar a conversa. O sistema não manda nada sozinho
+para quem já está conversando: só marca a data, avisa no desktop (um aviso por dia) e sugere o texto.
+
+```bash
+prospector lembretes                                # o que vence hoje, com o texto sugerido, e os agendados
+prospector lembretes agendar 1065 --dias 3 --nota "ver se viu o exemplo"
+prospector lembretes feito 1065                     # você retomou: próximo lembrete em 3 dias úteis
+prospector lembretes adiar 1065 --dias 2
+prospector lembretes encerrar 1065                  # sem mais lembretes
+```
+
+- Lead **interessado** recebe o 1º lembrete sozinho, 2 dias úteis depois da resposta (só se respondeu nos últimos 14 dias).
+  Quem só respondeu (robô, recusa educada, figurinha) não ganha lembrete sozinho: marque com `agendar` se valer a pena.
+- A página **Follow-up** do painel tem os mesmos botões (*Retomei*, *Adiar*, *Encerrar*). Os textos sugeridos ficam em
+  `templates.canais.yaml`, na seção `acompanhamento`.
+- O follow-up automático de quem **nunca respondeu** (um lembrete por WhatsApp ou e-mail, 3 dias úteis depois) continua como antes.
