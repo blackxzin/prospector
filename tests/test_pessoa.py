@@ -53,7 +53,8 @@ def test_team_business_keeps_plural():
     tpl = Templates.load(ROOT / "templates.yaml")
     text = tpl.first_message({"nome": "Clínica Sorriso", "oferta": "so_social", "site": "https://instagram.com/x"},
                              NOW, TZ, random.Random(1))
-    assert "Clínica Sorriso" in text or "vocês" in text
+    assert "Clínica Sorriso" in text or "vocês" in text or "Fazemos" in text   # variante sem nome nem pronome também vale
+    assert "você marca" not in text and "seu site" not in text
 
 
 def test_singular_verbs_follow_the_pronoun_for_a_solo_professional():

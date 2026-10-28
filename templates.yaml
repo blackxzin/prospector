@@ -72,10 +72,10 @@ primeira:
     - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites, que ajudam bastante nas buscas do Google, e bots de atendimento automático no WhatsApp. O exemplo não custa nada e é sem compromisso. Posso te mandar um pra {nome}?"
     # Teste (2026-10-28): quem decide + ideia rápida, sem pedir "com quem falo".
     - "{saudacao}! Sou o Lucas. {quem} {dor} Quem cuida do WhatsApp aí? Tenho uma ideia rápida pra mostrar, posso te mandar?"
-    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; o portfólio segue em seguida.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites e bots de atendimento no WhatsApp, e já te mando o portfólio pra ver. Posso mandar também um exemplo pra {nome}, sem compromisso?"
+    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; pergunta se pode mandar o portfólio (o envio automático do link não sai nessas).
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
     # Pedido do Lucas (2026-10-28): diz que olhou e o que achou, depois quem somos e o que fazemos.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada e parece que {nome} não tem site. Fazemos sites e bots de atendimento no WhatsApp. Já te mando o portfólio. Posso mandar um exemplo, sem compromisso?"
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada e parece que {nome} não tem site. Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
   so_social:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Cheguei no Instagram de vocês pelo Google. Vocês têm site também ou só o Instagram mesmo?"
     - "{saudacao}! Sou o Lucas. {quem} Vi que {nome} divulga só pelas redes sociais. Já pensaram em ter um site próprio com botão de WhatsApp? Com quem eu falo sobre isso?"
@@ -90,10 +90,10 @@ primeira:
     - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites, que ajudam bastante nas buscas do Google, e bots de atendimento automático no WhatsApp. O exemplo não custa nada e é sem compromisso. Posso te mandar um pra {nome}?"
     # Teste (2026-10-28): quem decide + ideia rápida, sem pedir "com quem falo".
     - "{saudacao}! Sou o Lucas. {quem} {dor} Quem cuida do WhatsApp aí? Tenho uma ideia rápida pra mostrar, posso te mandar?"
-    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; o portfólio segue em seguida.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites e bots de atendimento no WhatsApp, e já te mando o portfólio pra ver. Posso mandar também um exemplo pra {nome}, sem compromisso?"
+    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; pergunta se pode mandar o portfólio (o envio automático do link não sai nessas).
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
     # Pedido do Lucas (2026-10-28): diz que olhou e o que achou, depois quem somos e o que fazemos.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada e parece que {nome} não tem site, só rede social. Fazemos sites e bots de atendimento no WhatsApp. Já te mando o portfólio. Posso mandar um exemplo, sem compromisso?"
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada e parece que {nome} não tem site, só rede social. Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
   tem_site:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Quando um cliente chama vocês no WhatsApp fora do horário, alguém responde ou fica pro dia seguinte?"
     - "{saudacao}! Sou o Lucas. {quem} Vi o site de vocês. O WhatsApp é por onde mais chega pedido ou contato? Faço atendimento automático que responde na hora. Posso explicar pra quem cuida disso?"
@@ -108,10 +108,10 @@ primeira:
     - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos bots de atendimento automático no WhatsApp e melhorias de site pra aparecer mais no Google. O exemplo não custa nada e é sem compromisso. Posso te mandar um pra {nome}?"
     # Teste (2026-10-28): quem decide + ideia rápida, sem pedir "com quem falo".
     - "{saudacao}! Sou o Lucas. {quem} {dor} Quem cuida do WhatsApp aí? Tenho uma ideia rápida pra mostrar, posso te mandar?"
-    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; o portfólio segue em seguida.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites e bots de atendimento no WhatsApp, e já te mando o portfólio pra ver. Posso mandar também um exemplo pra {nome}, sem compromisso?"
+    # Pedido do Lucas (2026-10-28): cumprimento, quem somos, o que fazemos, WhatsApp e site; pergunta se pode mandar o portfólio (o envio automático do link não sai nessas).
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
     # Pedido do Lucas (2026-10-28): diz que olhou e o que achou, depois quem somos e o que fazemos.
-    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada no site de {nome} e acho que dá pra melhorar. Fazemos sites e bots de atendimento no WhatsApp. Já te mando o portfólio. Posso mandar um exemplo, sem compromisso?"
+    - "{saudacao}, tudo bem? Sou o Lucas. {quem} Dei uma olhada no site de {nome} e acho que dá pra melhorar. Fazemos sites, portfólios e bots de atendimento no WhatsApp. Posso te mandar nosso portfólio pra você ver o trabalho?"
   # Só para quem tem site sem botão de WhatsApp (sinal lido no site: sem_whatsapp).
   tem_site_sem_whatsapp:
     - "Oi, {saudacao_minuscula}! Sou o Lucas. {quem} Entrei no site de vocês e não achei botão de WhatsApp. Quem cuida do site? Tenho uma ideia simples pra isso."

@@ -328,6 +328,17 @@ def test_portfolio_follows_the_first_message_without_using_the_daily_limit(conn,
     assert gaps[1] - gaps[0] >= timedelta(minutes=4)                           # o portfólio não encurta o intervalo
 
 
+def test_portfolio_link_is_not_sent_when_first_message_already_asks_about_it(conn, listas, rules, tmp_path):
+    tset = _portfolio_templates(tmp_path)
+    _approved_queue(conn, listas, tset, rules, 1)
+    conn.execute("UPDATE fila SET texto = 'Oi! Posso te mandar nosso portfólio pra você ver o trabalho?'")
+    conn.commit()
+    client = FakeWa()
+    report = _run(conn, client, rules, VirtualClock(MONDAY_9), wait_next_day=True, templates=tset,
+                  portfolio_apos_primeira=True)
+    assert report.enviados == 1 and len(client.sent) == 1                       # sem 2ª mensagem com o link
+
+
 def test_portfolio_is_skipped_when_lead_answers_in_between(conn, listas, rules, tmp_path):
     tset = _portfolio_templates(tmp_path)
     _approved_queue(conn, listas, tset, rules, 1)

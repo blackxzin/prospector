@@ -394,7 +394,7 @@ def run(
         report.enviados += 1
         out(f"  enviado #{item['id']} {item['tipo']} -> {item['telefone']} ({item['nome']}) às {sent_at.astimezone(rules.tz):%H:%M}")
         gap = random_gap(rules, rng)
-        if portfolio_apos_primeira and item["tipo"] == db.PRIMEIRA:
+        if portfolio_apos_primeira and item["tipo"] == db.PRIMEIRA and "portf" not in text.lower():   # se a 1ª já pergunta do portfólio, não manda o link sem resposta
             sent_portfolio, seconds = _send_portfolio(conn, client, clock, rng, item, jid or to_jid(item["telefone"]),
                                                       templates, notify_enabled, should_stop)
             gap += int(seconds)   # o intervalo conta a partir da última mensagem enviada, portfólio incluído
