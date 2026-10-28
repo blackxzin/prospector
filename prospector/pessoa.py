@@ -12,7 +12,7 @@ from .classify import fold
 _TITULOS_DOUTOR = r"dr|dra|doutor|doutora"
 _PROFISSOES = (r"psic[oó]log[oa]|psicanalista|nutricionista|nutri|fisioterapeuta|terapeuta|advogad[oa]|dentista|"
                r"m[eé]dic[oa]|esteticista|massoterapeuta|enfermeir[oa]|fonoaudi[oó]log[oa]|veterin[aá]ri[oa]|"
-               r"cabeleireir[oa]|manicure|personal|professor[a]?|prof|corretor[a]?|contador[a]?")
+               r"cabeleireir[oa]|cabelereir[oa]|barbeir[oa]|manicure|personal|professor[a]?|prof|corretor[a]?|contador[a]?")
 _PROFISSAO = re.compile(rf"^(?:{_PROFISSOES})\b\.?\s*", re.IGNORECASE)
 _TEM_CARGO = re.compile(rf"\b(?:{_TITULOS_DOUTOR}|{_PROFISSOES})\b", re.IGNORECASE)
 # Palavras de empresa: se aparecem, o negócio tem equipe e fica no plural.
@@ -31,6 +31,10 @@ _SINGULAR = [
     (r"\bcliente de vocês", "cliente seu"),
     (r"\bVocês têm\b", "Você tem"),
     (r"\bvocês têm\b", "você tem"),
+    (r"\bVocês marcam\b", "Você marca"),
+    (r"\bvocês marcam\b", "você marca"),
+    (r"\bquando estão atendendo\b", "quando está atendendo"),
+    (r"\bQuando estão atendendo\b", "Quando está atendendo"),
     (r"\bJá pensaram\b", "Já pensou"),
     (r"\bJá sabiam\b", "Já sabia"),
     (r"\bvocês\b", "você"),

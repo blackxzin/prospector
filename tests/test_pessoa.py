@@ -54,3 +54,12 @@ def test_team_business_keeps_plural():
     text = tpl.first_message({"nome": "Clínica Sorriso", "oferta": "so_social", "site": "https://instagram.com/x"},
                              NOW, TZ, random.Random(1))
     assert "Clínica Sorriso" in text or "vocês" in text
+
+
+def test_singular_verbs_follow_the_pronoun_for_a_solo_professional():
+    out = singularize("Vocês marcam horário? Quando estão atendendo, quem responde?")
+    assert out == "Você marca horário? Quando está atendendo, quem responde?"
+
+
+def test_hairdresser_misspelling_is_individual():
+    assert is_individual("Marcelo Gonçalves Cabelereiro Avaré")
