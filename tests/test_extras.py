@@ -182,6 +182,13 @@ def test_site_down_on_connection_error():
     assert "fora do ar" in sitecheck.check_site("x.com", fetch=boom).summary()
 
 
+def test_invalid_redirect_url_does_not_blame_the_site():
+    def bad(url):
+        raise ValueError("URL can't contain control characters")   # redireciona para wa.me/send?text=com espaço
+
+    assert sitecheck.check_site("x.com", fetch=bad).ok
+
+
 def test_ssrf_blocked_for_private_addresses():
     for host in ("localhost", "127.0.0.1", "10.0.0.5", "192.168.0.1"):
         with pytest.raises(sitecheck.UnsafeUrl):

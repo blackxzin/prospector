@@ -91,7 +91,7 @@ def _fetch(url: str) -> tuple[int, str, bytes, float]:
             resp = _opener.open(req, timeout=TIMEOUT_S)  # noqa: S310 (URL validada acima)
         except urllib.error.HTTPError as exc:
             if exc.code in (301, 302, 303, 307, 308) and exc.headers.get("Location"):
-                current = urljoin(current, exc.headers["Location"])
+                current = urljoin(current, exc.headers["Location"]).replace(" ", "%20")   # Location com espaço (wa.me/send?text=...)
                 continue
             return exc.code, current, b"", time.monotonic() - start
         with resp:
@@ -128,6 +128,8 @@ def check_site(url: str, fetch: Callable[[str], tuple[int, str, bytes, float]] =
         if msg.startswith("domínio não existe"):
             return SiteReport(url, ("o endereço do site não abre (domínio não existe mais)",))
         return SiteReport(url, ())  # não checável com segurança: não acusa problema
+    except ValueError:   # URL inválida num redirecionamento (http.client.InvalidURL): não dá para checar, não acusa
+        return SiteReport(url, ())
     except (urllib.error.URLError, TimeoutError, ConnectionError, OSError):
         return SiteReport(url, ("o site está fora do ar",))
     problems: list[str] = []
