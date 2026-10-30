@@ -4,7 +4,7 @@
 # Rode `prospector nichos` para ver o resultado de cada um (enviadas, respostas de gente de verdade, interesse).
 
 inicio: 2026-10-21
-ordem: [clinicas, mecanicos, corretores, saloes, advogados, contabilidade, academias, pets, lojas]
+ordem: [clinicas, mecanicos, corretores, saloes, advogados, contabilidade, academias, pets, lojas, veiculos]
 
 nichos:
   clinicas:
@@ -52,6 +52,11 @@ nichos:
     buscas: [loja de roupas, loja de calçados, papelaria, loja de presentes]
     categorias: [loja, boutique, roupas, calcados, papelaria, presentes, moda, otica, joalheria, floricultura]
     dor: "Quando um cliente pergunta no WhatsApp se tem o produto, quem responde com a loja cheia?"
+  veiculos:
+    nome: Revendas e concessionárias de veículos
+    buscas: [loja de carros, revenda de veículos, concessionária]
+    categorias: [revenda de veiculos, loja de carros, automoveis, seminovos, multimarcas, concessionaria, veiculos usados, comercio de veiculos]
+    dor: "Quando alguém vê um carro de vocês e chama no WhatsApp pra saber valor e condições, responde na hora ou só depois?"
   alimentacao:
     nome: Alimentação (já testado)
     buscas: []
